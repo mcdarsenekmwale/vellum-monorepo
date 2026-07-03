@@ -109,7 +109,7 @@ function ArticleDetail() {
             <p className="font-display italic text-lg leading-relaxed text-foreground">
               {article.excerpt}
             </p>
-            {article.body.map((p, i) => (
+            {article.body.map((p: string, i: number) => (
               <p key={i} className="text-[15px] leading-relaxed text-foreground/85">
                 {p}
               </p>
