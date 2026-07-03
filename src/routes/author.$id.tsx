@@ -91,7 +91,7 @@ function AuthorPage() {
         {stories.length === 0 ? (
           <p className="text-sm text-muted-foreground">No stories published yet.</p>
         ) : (
-          stories.map((a) => (
+          stories.map((a: (typeof stories)[number]) => (
             <Link
               key={a.slug}
               to="/article/$slug"

@@ -73,7 +73,7 @@ function CategoryPage() {
       </Link>
 
       <section className="px-6 pb-10 space-y-6 border-t border-border pt-6">
-        {rest.map((a) => (
+        {rest.map((a: (typeof rest)[number]) => (
           <Link
             key={a.slug}
             to="/article/$slug"
