@@ -100,6 +100,14 @@ function ProfilePage() {
           </div>
         )}
       </section>
+
+      <Link
+        to="/compose"
+        className="absolute bottom-24 right-5 z-40 size-14 rounded-full bg-accent text-accent-foreground grid place-items-center shadow-xl hover:scale-105 transition-transform"
+        aria-label="New story"
+      >
+        <Pencil className="size-5" strokeWidth={2} />
+      </Link>
     </PhoneShell>
   );
 }
