@@ -92,7 +92,11 @@ function ArticleDetail() {
             {article.title}
           </h1>
 
-          <div className="flex items-center gap-3 py-4 border-y border-border">
+          <Link
+            to="/author/$id"
+            params={{ id: article.author.id }}
+            className="flex items-center gap-3 py-4 border-y border-border"
+          >
             <img src={article.author.avatar} alt="" className="size-10 rounded-full object-cover shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium truncate">{article.author.name}</div>
@@ -100,10 +104,10 @@ function ArticleDetail() {
                 {article.author.publication ?? article.author.handle} · {article.publishedAgo}
               </div>
             </div>
-            <button className="text-[10px] font-bold uppercase tracking-widest border border-foreground rounded-full px-3 py-1.5 hover:bg-foreground hover:text-background transition-colors">
+            <span className="text-[10px] font-bold uppercase tracking-widest border border-foreground rounded-full px-3 py-1.5 hover:bg-foreground hover:text-background transition-colors">
               Follow
-            </button>
-          </div>
+            </span>
+          </Link>
 
           <div className="prose prose-sm max-w-none mt-6 space-y-4">
             <p className="font-display italic text-lg leading-relaxed text-foreground">
