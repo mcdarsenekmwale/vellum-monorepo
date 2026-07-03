@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Search, Bell } from "lucide-react";
 import { PhoneShell, TopBar } from "@/components/PhoneShell";
 import { ArticleActions } from "@/components/ArticleActions";
 import { articles, reels, stories } from "@/data/content";
@@ -12,13 +13,30 @@ function FeedPage() {
   const rest = articles.filter((a) => !a.featured);
 
   return (
-    <PhoneShell header={<TopBar />}>
+    <PhoneShell
+      header={
+        <TopBar
+          right={
+            <div className="flex items-center gap-2">
+              <Link to="/discover" className="size-10 rounded-full bg-muted grid place-items-center hover:bg-accent/10">
+                <Search className="size-4" strokeWidth={1.8} />
+              </Link>
+              <Link to="/notifications" className="size-10 rounded-full bg-muted grid place-items-center relative hover:bg-accent/10">
+                <Bell className="size-4" strokeWidth={1.8} />
+                <span className="absolute top-2 right-2 size-1.5 bg-accent rounded-full" />
+              </Link>
+            </div>
+          }
+        />
+      }
+    >
       {/* Stories */}
       <section className="px-6 py-4 flex gap-4 overflow-x-auto no-scrollbar">
         {stories.map((s, i) => (
           <Link
             key={s.id}
-            to="/profile"
+            to="/author/$id"
+            params={{ id: s.id }}
             className="flex-none flex flex-col items-center gap-2 w-16"
           >
             <div className={`size-16 rounded-full p-0.5 ring-2 ring-offset-2 ring-offset-background ${i === 0 ? "ring-accent" : "ring-border"}`}>
