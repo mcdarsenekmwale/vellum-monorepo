@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PhoneShell, TopBar } from "@/components/PhoneShell";
 import { articles, currentUser } from "@/data/content";
 import { useSocial } from "@/lib/social-store";
-import { Settings } from "lucide-react";
+import { Settings, Bell, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -32,9 +32,14 @@ function ProfilePage() {
         <TopBar
           title="Me"
           right={
-            <button className="size-10 rounded-full bg-muted grid place-items-center">
-              <Settings className="size-4" strokeWidth={1.8} />
-            </button>
+            <div className="flex items-center gap-2">
+              <Link to="/notifications" className="size-10 rounded-full bg-muted grid place-items-center">
+                <Bell className="size-4" strokeWidth={1.8} />
+              </Link>
+              <button className="size-10 rounded-full bg-muted grid place-items-center">
+                <Settings className="size-4" strokeWidth={1.8} />
+              </button>
+            </div>
           }
         />
       }
