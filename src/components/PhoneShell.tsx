@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, PlaySquare, Bookmark, User } from "lucide-react";
+import { Home, Compass, PlaySquare, Bookmark, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 const tabs = [
   { to: "/", label: "Feed", icon: Home },
+  { to: "/discover", label: "Find", icon: Compass },
   { to: "/reels", label: "Reels", icon: PlaySquare },
   { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/profile", label: "Me", icon: User },
@@ -25,7 +26,7 @@ export function PhoneShell({ children, header }: { children: ReactNode; header?:
               <Link
                 key={t.to}
                 to={t.to}
-                className={`flex flex-col items-center gap-1 px-3 py-1 transition-opacity ${active ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
+                className={`flex flex-col items-center gap-1 px-2 py-1 transition-opacity ${active ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
               >
                 <Icon className="size-5" strokeWidth={active ? 2.4 : 1.8} />
                 <span className="text-[9px] font-bold uppercase tracking-widest">{t.label}</span>
