@@ -13,12 +13,16 @@ import { Route as SavedRouteImport } from './routes/saved'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ComposeRouteImport } from './routes/compose'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CategoryNameRouteImport } from './routes/category.$name'
 import { Route as AuthorIdRouteImport } from './routes/author.$id'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
 const SavedRoute = SavedRouteImport.update({
   id: '/saved',
@@ -38,6 +42,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscoverRoute = DiscoverRouteImport.update({
@@ -70,43 +79,73 @@ const ArticleSlugRoute = ArticleSlugRouteImport.update({
   path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compose': typeof ComposeRoute
   '/discover': typeof DiscoverRoute
+  '/mcp': typeof McpRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/saved': typeof SavedRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/author/$id': typeof AuthorIdRoute
   '/category/$name': typeof CategoryNameRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compose': typeof ComposeRoute
   '/discover': typeof DiscoverRoute
+  '/mcp': typeof McpRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/saved': typeof SavedRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/author/$id': typeof AuthorIdRoute
   '/category/$name': typeof CategoryNameRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/compose': typeof ComposeRoute
   '/discover': typeof DiscoverRoute
+  '/mcp': typeof McpRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/saved': typeof SavedRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/author/$id': typeof AuthorIdRoute
   '/category/$name': typeof CategoryNameRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,50 +153,66 @@ export interface FileRouteTypes {
     | '/'
     | '/compose'
     | '/discover'
+    | '/mcp'
     | '/notifications'
     | '/profile'
     | '/reels'
     | '/saved'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/article/$slug'
     | '/author/$id'
     | '/category/$name'
+    | '/.mcp/invoke-tool/$tool'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/compose'
     | '/discover'
+    | '/mcp'
     | '/notifications'
     | '/profile'
     | '/reels'
     | '/saved'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/article/$slug'
     | '/author/$id'
     | '/category/$name'
+    | '/.mcp/invoke-tool/$tool'
   id:
     | '__root__'
     | '/'
     | '/compose'
     | '/discover'
+    | '/mcp'
     | '/notifications'
     | '/profile'
     | '/reels'
     | '/saved'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/article/$slug'
     | '/author/$id'
     | '/category/$name'
+    | '/.mcp/invoke-tool/$tool'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ComposeRoute: typeof ComposeRoute
   DiscoverRoute: typeof DiscoverRoute
+  McpRoute: typeof McpRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
   SavedRoute: typeof SavedRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   AuthorIdRoute: typeof AuthorIdRoute
   CategoryNameRoute: typeof CategoryNameRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -188,6 +243,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discover': {
@@ -232,6 +294,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -239,14 +322,29 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ComposeRoute: ComposeRoute,
   DiscoverRoute: DiscoverRoute,
+  McpRoute: McpRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
   SavedRoute: SavedRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   AuthorIdRoute: AuthorIdRoute,
   CategoryNameRoute: CategoryNameRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
