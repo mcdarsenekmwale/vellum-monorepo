@@ -18,11 +18,18 @@ export default function Feed() {
             <Text style={styles.eyebrow}>MONDAY · JULY 6</Text>
             <Text style={styles.wordmark}>Vellum</Text>
           </View>
-          <Link href="/notifications" asChild>
-            <Pressable style={styles.iconBtn}>
-              <Ionicons name="notifications-outline" size={20} color={colors.foreground} />
-            </Pressable>
-          </Link>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Link href="/search" asChild>
+              <Pressable style={styles.iconBtn}>
+                <Ionicons name="search-outline" size={20} color={colors.foreground} />
+              </Pressable>
+            </Link>
+            <Link href="/notifications" asChild>
+              <Pressable style={styles.iconBtn}>
+                <Ionicons name="notifications-outline" size={20} color={colors.foreground} />
+              </Pressable>
+            </Link>
+          </View>
         </View>
 
         <FlatList

@@ -23,6 +23,8 @@ export default function RootLayout() {
             <Stack.Screen name="author/[id]" options={{ title: "" }} />
             <Stack.Screen name="category/[name]" options={{ title: "" }} />
             <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+            <Stack.Screen name="search" options={{ headerShown: false }} />
+            <Stack.Screen name="reels/[id]" options={{ headerShown: false, presentation: "modal" }} />
             <Stack.Screen name="compose" options={{ title: "New story", presentation: "modal" }} />
           </Stack>
         </SocialProvider>

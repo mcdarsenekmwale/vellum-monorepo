@@ -1,12 +1,15 @@
 import { useRef, useState } from "react";
 import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View, type ViewToken } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { reels } from "@/data/content";
 import { colors, font } from "@/theme";
 
+
 const { height } = Dimensions.get("window");
 
 export default function Reels() {
+  const router = useRouter();
   const [active, setActive] = useState(0);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -36,7 +39,10 @@ export default function Reels() {
                   <Ionicons name={isLiked ? "heart" : "heart-outline"} size={30} color={isLiked ? colors.accent : "#fff"} />
                   <Text style={styles.sideCount}>{item.likes + (isLiked ? 1 : 0)}</Text>
                 </Pressable>
-                <Pressable style={styles.sideBtn}>
+                <Pressable
+                  style={styles.sideBtn}
+                  onPress={() => router.push({ pathname: "/reels/[id]", params: { id: item.id } })}
+                >
                   <Ionicons name="chatbubble-outline" size={28} color="#fff" />
                   <Text style={styles.sideCount}>Reply</Text>
                 </Pressable>
@@ -45,11 +51,15 @@ export default function Reels() {
                   <Text style={styles.sideCount}>Share</Text>
                 </Pressable>
               </View>
-              <View style={styles.caption}>
+              <Pressable
+                style={styles.caption}
+                onPress={() => router.push({ pathname: "/reels/[id]", params: { id: item.id } })}
+              >
                 <Text style={styles.handle}>{item.handle}</Text>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.index}>{index + 1} / {reels.length}{active === index ? "" : ""}</Text>
-              </View>
+                <Text style={styles.openLink}>Tap to open comments →</Text>
+              </Pressable>
             </View>
           );
         }}
@@ -68,4 +78,5 @@ const styles = StyleSheet.create({
   handle: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: "600" },
   title: { color: "#fff", fontFamily: font.display, fontSize: 22 },
   index: { color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 4 },
+  openLink: { color: "#fff", fontSize: 11, fontWeight: "700", marginTop: 6, opacity: 0.85 },
 });

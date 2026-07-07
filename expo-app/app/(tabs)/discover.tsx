@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,30 +8,20 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { colors, font } from "@/theme";
 
 export default function Discover() {
-  const [q, setQ] = useState("");
   const categories = useMemo(() => Array.from(new Set(articles.map((a) => a.category))), []);
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return articles;
-    return articles.filter((a) =>
-      [a.title, a.excerpt, a.category, a.author.name].join(" ").toLowerCase().includes(needle),
-    );
-  }, [q]);
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ padding: 20, gap: 12 }}>
         <Text style={styles.title}>Discover</Text>
-        <View style={styles.search}>
-          <Ionicons name="search" size={16} color={colors.mutedForeground} />
-          <TextInput
-            value={q}
-            onChangeText={setQ}
-            placeholder="Search stories, authors, ideas"
-            placeholderTextColor={colors.mutedForeground}
-            style={{ flex: 1, color: colors.foreground }}
-          />
-        </View>
+        <Link href="/search" asChild>
+          <Pressable style={styles.search}>
+            <Ionicons name="search" size={16} color={colors.mutedForeground} />
+            <Text style={{ flex: 1, color: colors.mutedForeground }}>
+              Search stories, authors, ideas
+            </Text>
+          </Pressable>
+        </Link>
         <FlatList
           horizontal
           data={categories}
@@ -48,7 +38,7 @@ export default function Discover() {
         />
       </View>
       <FlatList
-        data={filtered}
+        data={articles}
         keyExtractor={(a) => a.slug}
         contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
         renderItem={({ item }) => <ArticleCard article={item} />}
@@ -73,3 +63,4 @@ const styles = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipLabel: { fontSize: 12, fontWeight: "600", color: colors.foreground },
 });
+
