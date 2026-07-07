@@ -78,4 +78,5 @@ const styles = StyleSheet.create({
   handle: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: "600" },
   title: { color: "#fff", fontFamily: font.display, fontSize: 22 },
   index: { color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 4 },
+  openLink: { color: "#fff", fontSize: 11, fontWeight: "700", marginTop: 6, opacity: 0.85 },
 });
