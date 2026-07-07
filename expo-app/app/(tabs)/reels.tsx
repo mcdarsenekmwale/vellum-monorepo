@@ -9,6 +9,7 @@ import { colors, font } from "@/theme";
 const { height } = Dimensions.get("window");
 
 export default function Reels() {
+  const router = useRouter();
   const [active, setActive] = useState(0);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
