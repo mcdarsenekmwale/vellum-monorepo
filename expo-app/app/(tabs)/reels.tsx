@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View, type ViewToken } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { reels } from "@/data/content";
 import { colors, font } from "@/theme";
+
 
 const { height } = Dimensions.get("window");
 
