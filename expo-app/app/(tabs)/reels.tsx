@@ -39,7 +39,10 @@ export default function Reels() {
                   <Ionicons name={isLiked ? "heart" : "heart-outline"} size={30} color={isLiked ? colors.accent : "#fff"} />
                   <Text style={styles.sideCount}>{item.likes + (isLiked ? 1 : 0)}</Text>
                 </Pressable>
-                <Pressable style={styles.sideBtn}>
+                <Pressable
+                  style={styles.sideBtn}
+                  onPress={() => router.push({ pathname: "/reels/[id]", params: { id: item.id } })}
+                >
                   <Ionicons name="chatbubble-outline" size={28} color="#fff" />
                   <Text style={styles.sideCount}>Reply</Text>
                 </Pressable>
@@ -48,11 +51,15 @@ export default function Reels() {
                   <Text style={styles.sideCount}>Share</Text>
                 </Pressable>
               </View>
-              <View style={styles.caption}>
+              <Pressable
+                style={styles.caption}
+                onPress={() => router.push({ pathname: "/reels/[id]", params: { id: item.id } })}
+              >
                 <Text style={styles.handle}>{item.handle}</Text>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.index}>{index + 1} / {reels.length}{active === index ? "" : ""}</Text>
-              </View>
+                <Text style={styles.openLink}>Tap to open comments →</Text>
+              </Pressable>
             </View>
           );
         }}
