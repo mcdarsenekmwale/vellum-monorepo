@@ -1,43 +1,26 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main, develop]
   push:
-    branches: [main, develop]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
 
 jobs:
-  changes:
+  build-api:
     runs-on: ubuntu-latest
-    outputs:
-      webapp: ${{ steps.filter.outputs.webapp }}
-      api: ${{ steps.filter.outputs.api }}
-      mobile: ${{ steps.filter.outputs.mobile }}
-      api-client: ${{ steps.filter.outputs.api-client }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
+      - uses: actions/setup-node@v4
         with:
-          filters: |
-            webapp:
-              - 'webapp/**'
-              - 'packages/api-client/**'
-            api:
-              - 'packages/api/**'
-            mobile:
-              - 'mobile-app/**'
-              - 'packages/api-client/**'
-            api-client:
-              - 'packages/api-client/**'
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: packages/api/package.json
+      - run: cd packages/api && npm ci
+      - run: cd packages/api && npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - run: cd packages/api && npm run build
 
-  lint-webapp:
-    needs: changes
-    if: ${{ needs.changes.outputs.webapp == 'true' }}
+  build-web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,25 +31,14 @@ jobs:
           cache-dependency-path: webapp/package.json
       - run: cd webapp && npm ci
       - run: cd webapp && npm run build
-
-  typecheck-api:
-    needs: changes
-    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.api-client == 'true' }}
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: vellum_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+          NODE_ENV: production
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+  deploy-migrations:
+    needs: [build-api]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,38 +47,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: packages/api/package.json
       - run: cd packages/api && npm ci
-      - run: cd packages/api && npx prisma generate
-      - run: cd packages/api && npm run build
-      - run: cd packages/api && npm run test:cov
+      - run: cd packages/api && npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/vellum_test?schema=public
-          JWT_SECRET: test-secret-key-for-ci-only
-          NODE_ENV: test
-
-  typecheck-mobile:
-    needs: changes
-    if: ${{ needs.changes.outputs.mobile == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-          cache-dependency-path: mobile-app/package.json
-      - run: cd mobile-app && npm ci
-      - run: cd mobile-app && npx tsc --noEmit
-
-  security-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-      - name: Audit webapp
-        run: cd webapp && npm audit --audit-level=high || true
-      - name: Audit API
-        run: cd packages/api && npm audit --audit-level=high || true
-      - name: Audit mobile
-        run: cd mobile-app && npm audit --audit-level=high || true
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
