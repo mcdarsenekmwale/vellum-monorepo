@@ -24,8 +24,13 @@ COPY --from=builder /app/package*.json ./
 RUN npm ci --only=production
 
 RUN addgroup -S nodejs && adduser -S nodejs -G nodejs
+
+COPY --chown=nodejs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER nodejs
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start:prod"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["node", "dist/src/main.js"]

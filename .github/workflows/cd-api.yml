@@ -7,8 +7,11 @@ on:
       - 'packages/api/**'
   workflow_dispatch:
 
+env:
+  PRISMA_SKIP_POSTINSTALL_GENERATE: true
+
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,16 +27,24 @@ jobs:
 
       - name: Generate Prisma client
         run: cd packages/api && npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Build application
         run: cd packages/api && npm run build
 
       - name: Run tests
-        run: cd packages/api && npm run test:cov
+        run: cd packages/api && npm run test
         env:
           NODE_ENV: test
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/vellum_test' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret' }}
+
+      - name: Run Prisma migrations (production)
+        if: github.ref == 'refs/heads/main'
+        run: cd packages/api && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Build Docker image
         if: ${{ secrets.DOCKER_USERNAME != '' }}
@@ -48,3 +59,13 @@ jobs:
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
           docker push ${{ secrets.DOCKER_USERNAME }}/vellum-api:${{ github.sha }}
           docker push ${{ secrets.DOCKER_USERNAME }}/vellum-api:latest
+
+      - name: Deploy to Prisma Platform
+        if: ${{ secrets.PRISMA_API_KEY != '' }}
+        run: |
+          echo "Deploying to Prisma Platform..."
+          cd packages/api
+          npx prisma deploy
+        env:
+          PRISMA_API_KEY: ${{ secrets.PRISMA_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

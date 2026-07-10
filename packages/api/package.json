@@ -28,6 +28,9 @@
   ],
   "author": "Vellum Team",
   "license": "MIT",
+  "prisma": {
+    "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
+  },
   "dependencies": {
     "@nestjs/common": "^11.1.27",
     "@nestjs/config": "^4.0.4",
