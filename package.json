@@ -1,0 +1,43 @@
+{
+  "name": "vellum-monorepo",
+  "version": "1.0.0",
+  "description": "Vellum — A premium content platform monorepo with web, mobile, and backend",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "webapp",
+    "mobile-app"
+  ],
+  "scripts": {
+    "dev:api": "cd packages/api && npm run start:dev",
+    "dev:web": "cd webapp && npm run dev",
+    "dev:mobile": "cd mobile-app && npm run start",
+    "build:api": "cd packages/api && npm run build",
+    "build:web": "cd webapp && npm run build",
+    "build:mobile": "cd mobile-app && npm run build",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "cd packages/api && npx prisma migrate dev",
+    "db:seed": "cd packages/api && npx prisma db seed",
+    "db:generate": "cd packages/api && npx prisma generate",
+    "db:studio": "cd packages/api && npx prisma studio"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcdarsenekmwale/storyverse-hub-40.git"
+  },
+  "keywords": [
+    "monorepo",
+    "react",
+    "react-native",
+    "nestjs",
+    "prisma",
+    "content-platform"
+  ],
+  "license": "MIT"
+}
