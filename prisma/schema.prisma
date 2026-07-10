@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  CREATOR
+  USER
+  GUEST
+}
+
+enum NotificationKind {
+  LIKE
+  COMMENT
+  REPLY
+  FOLLOW
+  BOOKMARK
+  MENTION
+  SYSTEM
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String
+  handle        String    @unique
+  name          String
+  avatar        String?
+  bio           String?
+  publication   String?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  articles      Article[] @relation("ArticleAuthor")
+  stories       Story[]   @relation("StoryAuthor")
+  highlights    Highlight[] @relation("HighlightAuthor")
+  comments      Comment[] @relation("CommentAuthor")
+  likes         Like[]    @relation("LikeUser")
+  bookmarks     Bookmark[] @relation("BookmarkUser")
+  followers     Follow[]  @relation("Followers")
+  following     Follow[]  @relation("Following")
+  notifications Notification[] @relation("NotificationUser")
+  refreshTokens RefreshToken[] @relation("RefreshTokenUser")
+  sessions      Session[] @relation("SessionUser")
+  settings      UserSettings? @relation("UserSettings")
+  auditLogs     AuditLog[] @relation("AuditLogUser")
+  storyViews    StoryView[] @relation("StoryViewViewer")
+  mediaUploads  Media[]   @relation("MediaUploader")
+  apiKeys       ApiKey[]  @relation("ApiKeyUser")
+
+  @@index([handle])
+  @@index([email])
+  @@index([role])
+}
+
+model UserSettings {
+  id                     String  @id @default(uuid())
+  userId                 String  @unique
+  emailNotifications     Boolean @default(true)
+  pushNotifications      Boolean @default(true)
+  emailMarketing         Boolean @default(false)
+  allowComments          Boolean @default(true)
+  allowLikes             Boolean @default(true)
+  showOnlineStatus       Boolean @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user                   User    @relation("UserSettings", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  excerpt     String
+  body        String[]
+  cover       String?
+  readMinutes Int
+  categoryId  String
+  authorId    String
+  likesCount  Int       @default(0)
+  views       Int       @default(0)
+  featured    Boolean   @default(false)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  author      User      @relation("ArticleAuthor", fields: [authorId], references: [id])
+  category    Category  @relation("ArticleCategory", fields: [categoryId], references: [id])
+
+  @@index([slug])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([featured])
+  @@index([isPublished])
+}
+
+model Highlight {
+  id           String    @id @default(uuid())
+  title        String
+  cover        String?
+  videoUrl     String?
+  thumbnailUrl String?
+  handle       String
+  authorId     String?
+  likesCount   Int       @default(0)
+  commentsCount Int      @default(0)
+  shares       Int       @default(0)
+  description  String?
+  music        String?
+  aspectRatio  Float?    @default(1.777)
+  duration     Int?
+  isPublished  Boolean   @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  author       User?     @relation("HighlightAuthor", fields: [authorId], references: [id])
+  comments     Comment[] @relation("HighlightComments")
+
+  @@index([handle])
+  @@index([authorId])
+  @@index([isPublished])
+}
+
+model Story {
+  id        String     @id @default(uuid())
+  authorId  String
+  image     String
+  caption   String?
+  duration  Int        @default(5000)
+  createdAt DateTime   @default(now())
+  expiresAt DateTime   @default(dbgenerated("now() + interval '24 hours'"))
+
+  author    User       @relation("StoryAuthor", fields: [authorId], references: [id])
+  views     StoryView[] @relation("StoryView")
+
+  @@index([authorId])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story     Story    @relation("StoryView", fields: [storyId], references: [id])
+  viewer    User     @relation("StoryViewViewer", fields: [viewerId], references: [id])
+
+  @@unique([storyId, viewerId])
+}
+
+model Comment {
+  id          String    @id @default(uuid())
+  articleSlug String?
+  highlightId String?
+  authorId    String
+  body        String
+  parentId    String?
+  likesCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  author      User      @relation("CommentAuthor", fields: [authorId], references: [id])
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReplies")
+  highlight   Highlight? @relation("HighlightComments", fields: [highlightId], references: [id])
+
+  @@index([articleSlug])
+  @@index([highlightId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  tint     String    @default("#e5e5e5")
+  slug     String    @unique
+  articles Article[] @relation("ArticleCategory")
+
+  @@index([slug])
+}
+
+model Like {
+  id          String    @id @default(uuid())
+  userId      String
+  articleSlug String?
+  highlightId String?
+  commentId   String?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation("LikeUser", fields: [userId], references: [id])
+
+  @@unique([userId, articleSlug])
+  @@unique([userId, highlightId])
+  @@unique([userId, commentId])
+  @@index([userId])
+}
+
+model Bookmark {
+  id          String    @id @default(uuid())
+  userId      String
+  articleSlug String?
+  highlightId String?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation("BookmarkUser", fields: [userId], references: [id])
+
+  @@unique([userId, articleSlug])
+  @@unique([userId, highlightId])
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Followers", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  actorId     String?
+  kind        NotificationKind
+  articleSlug String?
+  highlightId String?
+  commentId   String?
+  body        String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation("NotificationUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  deviceInfo String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation("RefreshTokenUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  deviceInfo   String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation("SessionUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Media {
+  id           String    @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  type         MediaType
+  url          String
+  thumbnailUrl String?
+  width        Int?
+  height       Int?
+  metadata     Json?
+  uploadedBy   String
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  uploader     User      @relation("MediaUploader", fields: [uploadedBy], references: [id])
+
+  @@index([uploadedBy])
+  @@index([type])
+}
+
+model Webhook {
+  id            String   @id @default(uuid())
+  name          String
+  url           String
+  secret        String
+  events        String[]
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  webhookLogs   WebhookLog[] @relation("WebhookLog")
+}
+
+model WebhookLog {
+  id            String   @id @default(uuid())
+  webhookId     String
+  event         String
+  payload       Json
+  statusCode    Int?
+  response      String?
+  error         String?
+  createdAt     DateTime @default(now())
+
+  webhook       Webhook  @relation("WebhookLog", fields: [webhookId], references: [id])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  action        String
+  resource      String
+  resourceId    String?
+  details       Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation("AuditLogUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ApiKey {
+  id            String   @id @default(uuid())
+  name          String
+  key           String   @unique
+  userId        String?
+  scopes        String[]
+  isActive      Boolean  @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  lastUsedAt    DateTime?
+
+  user          User?    @relation("ApiKeyUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([key])
+}
