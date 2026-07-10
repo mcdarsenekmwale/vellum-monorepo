@@ -10,5 +10,6 @@ export default defineConfig({
   },
   generator: {
     provider: 'prisma-client-js',
+    binaryTargets: ['native', 'rhel-openssl-3.0.x'],
   },
 })

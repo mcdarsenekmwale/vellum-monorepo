@@ -51,7 +51,7 @@ jobs:
 
   typecheck-api:
     needs: changes
-    if: ${{ needs.api == 'true' || needs.changes.outputs.api-client == 'true' }}
+    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.api-client == 'true' }}
     runs-on: ubuntu-latest
     services:
       postgres:
