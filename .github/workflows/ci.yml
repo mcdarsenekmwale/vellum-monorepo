@@ -18,7 +18,7 @@ jobs:
       - run: cd packages/api && npx prisma generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
       - run: cd packages/api && npm run build
 
   build-web:
@@ -51,4 +51,4 @@ jobs:
       - run: cd packages/api && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
