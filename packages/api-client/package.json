@@ -24,7 +24,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.8.3",
+    "typescript": "^7.0.2",
     "@types/react": "^19.0.0",
     "react": "^19.0.0"
   },
