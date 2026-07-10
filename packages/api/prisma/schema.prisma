@@ -137,6 +137,7 @@ model Highlight {
   deletedAt    DateTime?
 
   author       User?     @relation("HighlightAuthor", fields: [authorId], references: [id])
+  comments     Comment[] @relation("HighlightComments")
 
   @@index([handle])
   @@index([authorId])
@@ -186,6 +187,7 @@ model Comment {
   author      User      @relation("CommentAuthor", fields: [authorId], references: [id])
   parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies     Comment[] @relation("CommentReplies")
+  highlight   Highlight? @relation("HighlightComments", fields: [highlightId], references: [id])
 
   @@index([articleSlug])
   @@index([highlightId])
