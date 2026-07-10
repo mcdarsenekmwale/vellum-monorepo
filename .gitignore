@@ -89,9 +89,10 @@ lerna-debug.log*
 # OS files
 Thumbs.db
 
-# Lock files (keep package-lock.json and bun.lock)
-# yarn.lock
-# pnpm-lock.yaml
+# Lock files (keep package-lock.json only)
+bun.lock
+yarn.lock
+pnpm-lock.yaml
 
 # TypeScript
 *.tsbuildinfo
