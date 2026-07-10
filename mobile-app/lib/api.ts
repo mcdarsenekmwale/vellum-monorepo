@@ -13,7 +13,8 @@ const storage: Storage = {
   },
 };
 
-const API_BASE_URL = 'http://localhost:3001';
+// In production builds, override via build config or environment
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 
 export const apiClient: ApiClient = createApiClient({
   baseUrl: API_BASE_URL,

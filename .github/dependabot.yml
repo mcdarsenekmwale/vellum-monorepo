@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /webapp
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    reviewers:
+      - mcdarsenekmwale
+    labels:
+      - dependencies
+      - webapp
+
+  - package-ecosystem: npm
+    directory: /packages/api
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    reviewers:
+      - mcdarsenekmwale
+    labels:
+      - dependencies
+      - backend
+
+  - package-ecosystem: npm
+    directory: /mobile-app
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    reviewers:
+      - mcdarsenekmwale
+    labels:
+      - dependencies
+      - mobile
+
+  - package-ecosystem: npm
+    directory: /packages/api-client
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    reviewers:
+      - mcdarsenekmwale
+    labels:
+      - dependencies
+      - shared

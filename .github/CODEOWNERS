@@ -1,0 +1,27 @@
+# Global fallback
+* @mcdarsenekmwale
+
+# Backend API
+/packages/api/ @mcdarsenekmwale
+/packages/api/src/modules/auth/ @mcdarsenekmwale
+/packages/api/prisma/ @mcdarsenekmwale
+
+# Web Application
+/webapp/ @mcdarsenekmwale
+/webapp/src/routes/ @mcdarsenekmwale
+
+# Mobile Application
+/mobile-app/ @mcdarsenekmwale
+/mobile-app/app/ @mcdarsenekmwale
+
+# Shared Packages
+/packages/api-client/ @mcdarsenekmwale
+
+# Infrastructure & CI/CD
+/.github/ @mcdarsenekmwale
+Dockerfile @mcdarsenekmwale
+docker-compose.yml @mcdarsenekmwale
+
+# Documentation
+/docs/ @mcdarsenekmwale
+README.md @mcdarsenekmwale
