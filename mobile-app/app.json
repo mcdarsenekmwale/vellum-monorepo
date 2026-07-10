@@ -30,6 +30,12 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "storyverse"
+    "scheme": "storyverse",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "472f82e1-b6d9-443a-b22a-cbb993bc2f50"
+      }
+    }
   }
 }
