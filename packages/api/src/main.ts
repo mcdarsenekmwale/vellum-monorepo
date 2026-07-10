@@ -59,10 +59,15 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
   
   const port = configService.get('PORT', 3000);
+  const nodeEnv = configService.get('NODE_ENV', 'development');
   await app.listen(port);
-  
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`API Documentation: http://localhost:${port}/api/docs`);
+
+  console.log(`\n============================================================`);
+  console.log(`  Vellum API — ${nodeEnv.toUpperCase()} MODE`);
+  console.log(`  Server: http://localhost:${port}`);
+  console.log(`  API Docs: http://localhost:${port}/api/docs`);
+  console.log(`  Health: http://localhost:${port}/api/health`);
+  console.log(`============================================================\n`);
 }
 
 bootstrap();

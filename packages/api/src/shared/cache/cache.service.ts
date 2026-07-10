@@ -8,9 +8,12 @@ export class CacheService {
   private isConnected = false;
 
   constructor(private configService: ConfigService) {
-    this.client = redis.createClient({
-      url: configService.get('REDIS_URL', 'redis://localhost:6379'),
-    });
+    const redisUrl = configService.get('REDIS_URL', 'redis://localhost:6379');
+    const isProd = configService.get('NODE_ENV') === 'production';
+    console.log(`[Cache] Environment: ${isProd ? 'production' : 'development'}`);
+    console.log(`[Cache] Connecting to Redis at: ${redisUrl.replace(/:\/\/[^:]+:/, '://***:***@')}`);
+
+    this.client = redis.createClient({ url: redisUrl });
     this.connect();
   }
 
@@ -19,9 +22,9 @@ export class CacheService {
     try {
       await this.client.connect();
       this.isConnected = true;
-      console.log('Redis connected successfully');
+      console.log('[Cache] Redis connected successfully');
     } catch (error) {
-      console.warn('Redis connection failed, using in-memory fallback');
+      console.warn('[Cache] Redis connection failed, using in-memory fallback. Error:', (error as Error).message);
     }
   }
 
