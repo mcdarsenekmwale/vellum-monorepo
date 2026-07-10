@@ -1,3 +1,70 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+dist
+dist-ssr
+build
+.out
+.output
+.vinxi
+.nitro
+*.local
+
+# Expo / React Native
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+ios/Pods/
+android/app/build/
+android/build/
+*.keystore
+!debug.keystore
+
+# Prisma
+.prisma/
+packages/api/prisma/migrations/*/migration_lock.toml
+
+# Vite / Frontend
+.turbo
+.cache
+.vite
+
+# TanStack Router
+tmp
+tmp/
+.tanstack/tmp/
+routeTree.gen.ts
+
+# Testing
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
 # Logs
 logs
 *.log
@@ -7,22 +74,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
-
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -30,3 +85,36 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+
+# Lock files (keep package-lock.json and bun.lock)
+# yarn.lock
+# pnpm-lock.yaml
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.pem
+*.cert
+*.crt
+.eslintcache
+.stylelintcache
+
+# Storybook
+storybook-static
+
+# Playwright
+playwright-report/
+test-results/
+
+# Sentry
+.sentryclirc
+
+# Lovable
+.lovable/
+
+# Screenshots (design assets, not app screenshots)
+screenshots/

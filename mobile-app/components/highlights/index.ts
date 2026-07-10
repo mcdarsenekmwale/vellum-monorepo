@@ -1,0 +1,10 @@
+export { default as HighlightsScreen } from './HighlightsScreen';
+export { default as HighlightPager } from './HighlightPager';
+export { default as HighlightCard } from './HighlightCard';
+export { default as HighlightVideo } from './HighlightVideo';
+export { default as HighlightOverlay } from './HighlightOverlay';
+export { default as HighlightActions } from './HighlightActions';
+export { default as HighlightFooter } from './HighlightFooter';
+export { default as HighlightComments } from './HighlightComments';
+export { type HighlightCardRef } from './HighlightCard';
+export { type HighlightCommentsRef } from './HighlightComments';

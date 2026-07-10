@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bookGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c2c2c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="pageGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f7f4ee;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ebe7df;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="#f7f4ee"/>
+  <rect x="15" y="20" width="70" height="60" rx="4" fill="url(#bookGrad)"/>
+  <path d="M40 20 L40 80" stroke="#f7f4ee" stroke-width="1" opacity="0.3"/>
+  <rect x="18" y="23" width="20" height="54" rx="2" fill="url(#pageGrad)" transform="rotate(-2 28 50)"/>
+  <rect x="62" y="23" width="20" height="54" rx="2" fill="url(#pageGrad)" transform="rotate(2 72 50)"/>
+  <line x1="25" y1="38" x2="35" y2="38" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="25" y1="48" x2="35" y2="48" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="25" y1="58" x2="35" y2="58" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="65" y1="38" x2="75" y2="38" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="65" y1="48" x2="75" y2="48" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+  <line x1="65" y1="58" x2="75" y2="58" stroke="#2c2c2c" stroke-width="1.5" opacity="0.4"/>
+</svg>
