@@ -2,16 +2,14 @@ name: CD — Backend API
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'packages/api/**'
   workflow_dispatch:
 
-env:
-  PRISMA_SKIP_POSTINSTALL_GENERATE: true
-
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,22 +35,18 @@ jobs:
         run: cd packages/api && npm run test
         env:
           NODE_ENV: test
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://localhost:5432/vellum_test' }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret' }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/vellum_test?schema=public
+          JWT_SECRET: test-secret
 
-      - name: Run Prisma migrations (production)
+      - name: Deploy migrations
         if: github.ref == 'refs/heads/main'
         run: cd packages/api && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL || secrets.DATABASE_URL }}
 
       - name: Build Docker image
         if: ${{ secrets.DOCKER_USERNAME != '' }}
-        run: |
-          cd packages/api
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/vellum-api:${{ github.sha }} .
-          docker tag ${{ secrets.DOCKER_USERNAME }}/vellum-api:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/vellum-api:latest
+        run: cd packages/api && docker build -t ${{ secrets.DOCKER_USERNAME }}/vellum-api:${{ github.sha }} .
 
       - name: Push Docker image
         if: ${{ secrets.DOCKER_USERNAME != '' }}
