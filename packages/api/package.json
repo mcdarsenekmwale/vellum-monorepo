@@ -78,7 +78,7 @@
     "@nestjs/cli": "^11.0.23",
     "@nestjs/testing": "^11.1.27",
     "@types/express": "^5.0.6",
-    "@types/helmet": "^0.0.48",
+    "@types/helmet": "^4.0.0",
     "@types/redis": "^4.0.10",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
