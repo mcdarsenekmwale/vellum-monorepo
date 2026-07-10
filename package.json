@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "description": "Vellum — A premium content platform monorepo with web, mobile, and backend",
   "private": true,
+  "main": "packages/api/dist/src/main.js",
   "workspaces": [
     "packages/*",
     "webapp",
     "mobile-app"
   ],
   "scripts": {
+    "build": "cd packages/api && npm run build",
+    "start": "cd packages/api && npm run start:prod",
     "dev:api": "cd packages/api && npm run start:dev",
     "dev:web": "cd webapp && npm run dev",
     "dev:mobile": "cd mobile-app && npm run start",
