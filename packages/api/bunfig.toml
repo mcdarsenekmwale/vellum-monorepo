@@ -1,0 +1,18 @@
+[build]
+external = [
+  "@nestjs/microservices",
+  "@nestjs/microservices/microservices-module",
+  "@nestjs/websockets",
+  "@nestjs/websockets/socket-module",
+  "@nestjs/platform-socket.io",
+  "class-transformer/storage",
+  "nats",
+  "@grpc/grpc-js",
+  "@grpc/proto-loader",
+  "amqplib",
+  "amqp-connection-manager",
+  "kafkajs",
+  "mqtt",
+  "bull",
+  "redis",
+]

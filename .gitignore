@@ -11,3 +11,19 @@ coverage
 *.swp
 *.swo
 .prisma
+.prisma/
+
+# Expo
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# iOS
+ios/.xcode.env
+ios/Pods/
+ios/build/
+DerivedData/

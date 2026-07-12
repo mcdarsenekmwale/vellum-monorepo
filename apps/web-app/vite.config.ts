@@ -1,0 +1,25 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import path from "path";
+
+export default defineConfig({
+  plugins: [react(), tailwindcss(), tsconfigPaths(), TanStackRouterVite()],
+  resolve: {
+    alias: {
+      "@": "/src",
+      react: path.resolve("../../node_modules/react"),
+      "react-dom": path.resolve("../../node_modules/react-dom"),
+    },
+    dedupe: ["react", "react-dom"],
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "@tanstack/react-query", "@vellum/api-client", "@vellum/auth", "@vellum/social-store", "@vellum/react-hooks", "@vellum/utils"],
+  },
+  server: {
+    port: 3000,
+    host: true,
+  },
+});

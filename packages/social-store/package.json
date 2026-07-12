@@ -1,0 +1,28 @@
+{
+  "name": "@vellum/social-store",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@vellum/api-client": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "@types/react": "^19.1.0",
+    "react": "^19.1.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
