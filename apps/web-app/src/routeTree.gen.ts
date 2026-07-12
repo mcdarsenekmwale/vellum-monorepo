@@ -19,6 +19,8 @@ import { Route as HighlightsRouteImport } from './routes/highlights'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ComposeRouteImport } from './routes/compose'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
 import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
 import { Route as SettingsHelpRouteImport } from './routes/settings.help'
@@ -78,6 +80,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
 } as any)
 const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
   id: '/privacy',
@@ -144,6 +156,8 @@ export interface FileRoutesByFullPath {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRoutesByTo {
@@ -153,10 +167,8 @@ export interface FileRoutesByTo {
   '/highlights': typeof HighlightsRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
-  '/profile': typeof ProfileRouteWithChildren
   '/register': typeof RegisterRoute
   '/saved': typeof SavedRoute
-  '/settings': typeof SettingsRouteWithChildren
   '/article/$slug': typeof ArticleSlugRoute
   '/author/$id': typeof AuthorIdRoute
   '/category/$name': typeof CategoryNameRoute
@@ -165,6 +177,8 @@ export interface FileRoutesByTo {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/profile': typeof ProfileIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRoutesById {
@@ -187,6 +201,8 @@ export interface FileRoutesById {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRouteTypes {
@@ -210,6 +226,8 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/profile/'
+    | '/settings/'
     | '/story/$authorId/$storyId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -219,10 +237,8 @@ export interface FileRouteTypes {
     | '/highlights'
     | '/login'
     | '/notifications'
-    | '/profile'
     | '/register'
     | '/saved'
-    | '/settings'
     | '/article/$slug'
     | '/author/$id'
     | '/category/$name'
@@ -231,6 +247,8 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/profile'
+    | '/settings'
     | '/story/$authorId/$storyId'
   id:
     | '__root__'
@@ -252,6 +270,8 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/profile/'
+    | '/settings/'
     | '/story/$authorId/$storyId'
   fileRoutesById: FileRoutesById
 }
@@ -344,6 +364,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/settings/privacy': {
       id: '/settings/privacy'
       path: '/privacy'
@@ -412,10 +446,12 @@ declare module '@tanstack/react-router' {
 
 interface ProfileRouteChildren {
   ProfileEditRoute: typeof ProfileEditRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
 const ProfileRouteChildren: ProfileRouteChildren = {
   ProfileEditRoute: ProfileEditRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
 }
 
 const ProfileRouteWithChildren =
@@ -426,6 +462,7 @@ interface SettingsRouteChildren {
   SettingsHelpRoute: typeof SettingsHelpRoute
   SettingsLanguageRoute: typeof SettingsLanguageRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -433,6 +470,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsHelpRoute: SettingsHelpRoute,
   SettingsLanguageRoute: SettingsLanguageRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
