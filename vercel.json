@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/web-app && npm run build",
+  "buildCommand": "npm run build:packages && cd apps/web-app && npm run build",
   "outputDirectory": "apps/web-app/dist",
   "framework": "vite",
   "installCommand": "npm install",
