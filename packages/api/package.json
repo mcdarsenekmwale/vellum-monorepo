@@ -2,7 +2,7 @@
   "name": "@vellum/api",
   "version": "1.0.0",
   "description": "Vellum Backend API",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
   "scripts": {
     "build": "prisma generate && nest build",
     "start": "nest start",
@@ -19,7 +19,8 @@
     "db:push": "prisma db push",
     "db:pull": "prisma db pull",
     "db:studio": "prisma studio",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "deploy:compute": "ts-node -r tsconfig-paths/register scripts/deploy-compute.ts"
   },
   "keywords": [
     "nestjs",
@@ -77,6 +78,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.1.28",
+    "@prisma/compute-sdk": "^0.34.0",
     "@types/express": "^5.0.6",
     "@types/helmet": "^0.0.48",
     "@types/redis": "^4.0.10",
