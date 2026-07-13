@@ -42,9 +42,11 @@ async function main() {
   });
 
   const region = process.env.PRISMA_REGION || "us-east-1";
+  const appId = process.env.PRISMA_APP_ID || "cps_cmrfcrfjq1g65wfdvx0g77d3v";
 
   console.log("→ Deploying to Prisma Compute...");
   console.log(`  Project: ${projectId}`);
+  console.log(`  App ID: ${appId}`);
   console.log(`  Service: @vellum/api`);
   console.log(`  Region: ${region}`);
   console.log("");
@@ -52,6 +54,7 @@ async function main() {
   const result = await compute.deploy({
     strategy,
     projectId,
+    appId,
     appName: "@vellum/api",
     region,
     envVars: {
