@@ -124,40 +124,36 @@ export class ArticlesService {
       orderBy = { views: 'desc' };
     }
 
-    const [articles, total] = await this.prisma.retryOnConnectionError(() =>
-      Promise.all([
-        this.prisma.article.findMany({
-          where,
-          include: {
-            author: {
-              select: { id: true, handle: true, name: true, avatar: true },
-            },
-            category: true,
+    const [articles, total] = await Promise.all([
+      this.prisma.article.findMany({
+        where,
+        include: {
+          author: {
+            select: { id: true, handle: true, name: true, avatar: true },
           },
-          orderBy,
-          skip,
-          take: limit,
-        }),
-        this.prisma.article.count({ where }),
-      ])
-    );
+          category: true,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.article.count({ where }),
+    ]);
 
     let articlesWithMeta = articles;
 
     if (userId) {
       const articleSlugs = articles.map((a) => a.slug);
-      const [likedArticles, bookmarkedArticles] = await this.prisma.retryOnConnectionError(() =>
-        Promise.all([
-          this.prisma.like.findMany({
-            where: { userId, articleSlug: { in: articleSlugs } },
-            select: { articleSlug: true },
-          }),
-          this.prisma.bookmark.findMany({
-            where: { userId, articleSlug: { in: articleSlugs } },
-            select: { articleSlug: true },
-          }),
-        ])
-      );
+      const [likedArticles, bookmarkedArticles] = await Promise.all([
+        this.prisma.like.findMany({
+          where: { userId, articleSlug: { in: articleSlugs } },
+          select: { articleSlug: true },
+        }),
+        this.prisma.bookmark.findMany({
+          where: { userId, articleSlug: { in: articleSlugs } },
+          select: { articleSlug: true },
+        }),
+      ]);
 
       const likedSlugs = new Set(likedArticles.map((l) => l.articleSlug));
       const bookmarkedSlugs = new Set(bookmarkedArticles.map((b) => b.articleSlug));
