@@ -47,4 +47,54 @@ export class HealthController {
       },
     };
   }
+
+  @Get('debug')
+  @ApiOperation({ summary: 'Debug database schema' })
+  async debug() {
+    const results: any = {};
+    
+    try {
+      results.articleTableExists = await this.prisma.$queryRaw`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Article')`;
+    } catch (error: any) {
+      results.articleTableExistsError = error?.message;
+    }
+    
+    try {
+      results.articleColumns = await this.prisma.$queryRaw`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'Article' ORDER BY ordinal_position`;
+    } catch (error: any) {
+      results.articleColumnsError = error?.message;
+    }
+    
+    try {
+      const start = Date.now();
+      results.rawArticles = await this.prisma.$queryRaw`SELECT id, slug, title, excerpt, readMinutes, categoryId, authorId, likesCount, views, featured, isPublished, createdAt, updatedAt FROM "Article" WHERE "isPublished" = true AND "deletedAt" IS NULL LIMIT 3`;
+      results.rawQueryLatency = Date.now() - start;
+    } catch (error: any) {
+      results.rawArticlesError = {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack,
+      };
+    }
+    
+    try {
+      const start = Date.now();
+      results.prismaArticles = await this.prisma.article.findMany({
+        where: { isPublished: true, deletedAt: null },
+        take: 3,
+      });
+      results.prismaQueryLatency = Date.now() - start;
+    } catch (error: any) {
+      results.prismaArticlesError = {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack,
+      };
+    }
+    
+    return {
+      timestamp: new Date().toISOString(),
+      ...results,
+    };
+  }
 }

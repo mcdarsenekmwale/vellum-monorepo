@@ -107,71 +107,76 @@ export class ArticlesService {
     const limit = query.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = { isPublished: true, deletedAt: null };
-
+    let whereClause = `"isPublished" = true AND "deletedAt" IS NULL`;
     if (query.category) {
-      where.category = { slug: query.category };
+      whereClause += ` AND "categoryId" IN (SELECT "id" FROM "Category" WHERE "slug" = '${query.category}')`;
     }
-
     if (query.featured !== undefined) {
-      where.featured = query.featured;
+      whereClause += ` AND "featured" = ${query.featured}`;
     }
 
-    let orderBy: any = { createdAt: 'desc' };
+    let orderClause = `"createdAt" DESC`;
     if (query.sort === 'trending') {
-      orderBy = { likesCount: 'desc' };
+      orderClause = `"likesCount" DESC`;
     } else if (query.sort === 'views') {
-      orderBy = { views: 'desc' };
+      orderClause = `"views" DESC`;
     }
 
-    const [articles, total] = await Promise.all([
-      this.prisma.article.findMany({
-        where,
-        include: {
-          author: {
-            select: { id: true, handle: true, name: true, avatar: true },
-          },
-          category: true,
-        },
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      this.prisma.article.count({ where }),
-    ]);
+    try {
+      const articles = await this.prisma.$queryRawUnsafe(
+        `SELECT "id", "slug", "title", "excerpt", "body", "cover", "readMinutes", "categoryId", "authorId", 
+                "likesCount", "views", "featured", "isPublished", "publishedAt", "createdAt", "updatedAt", "deletedAt"
+         FROM "Article" WHERE ${whereClause} ORDER BY ${orderClause} OFFSET ${skip} LIMIT ${limit}`
+      );
 
-    let articlesWithMeta = articles;
+      const totalResult = await this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*) as count FROM "Article" WHERE ${whereClause}`
+      );
+      const total = parseInt(totalResult[0].count);
 
-    if (userId) {
-      const articleSlugs = articles.map((a) => a.slug);
-      const [likedArticles, bookmarkedArticles] = await Promise.all([
-        this.prisma.like.findMany({
-          where: { userId, articleSlug: { in: articleSlugs } },
-          select: { articleSlug: true },
+      return {
+        data: articles,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      };
+    } catch (error: any) {
+      console.error('Raw query failed, falling back to Prisma query:', error.message);
+      
+      const where: any = { isPublished: true, deletedAt: null };
+      if (query.category) {
+        where.category = { slug: query.category };
+      }
+      if (query.featured !== undefined) {
+        where.featured = query.featured;
+      }
+
+      let orderBy: any = { createdAt: 'desc' };
+      if (query.sort === 'trending') {
+        orderBy = { likesCount: 'desc' };
+      } else if (query.sort === 'views') {
+        orderBy = { views: 'desc' };
+      }
+
+      const [articles, total] = await Promise.all([
+        this.prisma.article.findMany({
+          where,
+          orderBy,
+          skip,
+          take: limit,
         }),
-        this.prisma.bookmark.findMany({
-          where: { userId, articleSlug: { in: articleSlugs } },
-          select: { articleSlug: true },
-        }),
+        this.prisma.article.count({ where }),
       ]);
 
-      const likedSlugs = new Set(likedArticles.map((l) => l.articleSlug));
-      const bookmarkedSlugs = new Set(bookmarkedArticles.map((b) => b.articleSlug));
-
-      articlesWithMeta = articles.map((article) => ({
-        ...article,
-        isLiked: likedSlugs.has(article.slug),
-        isBookmarked: bookmarkedSlugs.has(article.slug),
-      }));
+      return {
+        data: articles,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      };
     }
-
-    return {
-      data: articlesWithMeta,
-      total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit),
-    };
   }
 
   async getArticlesByAuthor(handle: string, page = 1, limit = 10) {

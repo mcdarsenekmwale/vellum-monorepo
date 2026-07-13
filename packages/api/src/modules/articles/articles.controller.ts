@@ -32,7 +32,14 @@ export class ArticlesController {
   @ApiResponse({ status: 200, description: 'Articles retrieved' })
   async getArticles(@Query() query: ArticleQueryDto, @Request() req?: any) {
     const userId = req?.user?.id;
-    return this.articlesService.getArticles(query, userId);
+    try {
+      const result = await this.articlesService.getArticles(query, userId);
+      return result;
+    } catch (error: any) {
+      console.error('Articles query error:', error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Get('author/:handle')

@@ -52,11 +52,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
-    response.status(status).json({
+    const responseBody: any = {
       statusCode: status,
       message,
       timestamp: new Date().toISOString(),
       path: request.url,
-    });
+    };
+
+    if (status >= 500) {
+      if (exception instanceof Error) {
+        responseBody.errorType = exception.name;
+        responseBody.errorCode = (exception as any).code;
+        responseBody.errorMessage = exception.message;
+        responseBody.stack = process.env.NODE_ENV === 'development' ? exception.stack : undefined;
+      } else if (exception instanceof HttpException) {
+        responseBody.errorDetails = errorDetails;
+      }
+    }
+
+    response.status(status).json(responseBody);
   }
 }
