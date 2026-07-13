@@ -76,6 +76,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Deploy to Prisma Compute
+        if: secrets.PRISMA_API_TOKEN != '' && secrets.PRISMA_PROJECT_ID != ''
         run: node packages/api/scripts/deploy-compute.mjs
         env:
           PRISMA_API_TOKEN: ${{ secrets.PRISMA_API_TOKEN }}
