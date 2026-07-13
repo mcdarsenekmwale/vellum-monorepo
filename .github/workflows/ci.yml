@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, api-only]
   pull_request:
     branches: [main]
 
@@ -51,7 +51,7 @@ jobs:
   deploy-migrations:
     needs: [build-api]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/api-only'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,7 +67,7 @@ jobs:
   deploy-api:
     needs: [build-api, deploy-migrations]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/api-only'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
