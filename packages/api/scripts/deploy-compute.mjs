@@ -51,21 +51,24 @@ async function main() {
   console.log(`  Region: ${region}`);
   console.log("");
 
+  const envVars = {
+    NODE_ENV: "production",
+    PORT: "3000",
+  };
+  
+  if (process.env.DATABASE_URL) envVars.DATABASE_URL = process.env.DATABASE_URL;
+  if (process.env.DIRECT_URL) envVars.DIRECT_URL = process.env.DIRECT_URL;
+  if (process.env.JWT_SECRET) envVars.JWT_SECRET = process.env.JWT_SECRET;
+  if (process.env.CORS_ORIGIN) envVars.CORS_ORIGIN = process.env.CORS_ORIGIN;
+  if (process.env.BCRYPT_ROUNDS) envVars.BCRYPT_ROUNDS = process.env.BCRYPT_ROUNDS;
+
   const result = await compute.deploy({
     strategy,
     projectId,
     appId,
     appName: "@vellum/api",
     region,
-    envVars: {
-      NODE_ENV: "production",
-      DATABASE_URL: process.env.DATABASE_URL || undefined,
-      DIRECT_URL: process.env.DIRECT_URL || undefined,
-      JWT_SECRET: process.env.JWT_SECRET || undefined,
-      CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
-      BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS || undefined,
-      PORT: "3000",
-    },
+    envVars,
     portMapping: { http: 3000 },
     timeoutSeconds: 600,
     progress: {
