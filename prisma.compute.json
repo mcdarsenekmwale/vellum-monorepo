@@ -1,0 +1,16 @@
+{
+  "app": {
+    "name": "@vellum/api",
+    "root": "packages/api",
+    "framework": "nestjs",
+    "httpPort": 3000,
+    "env": {
+      "DATABASE_URL": { "from": "DATABASE_URL" },
+      "DIRECT_URL": { "from": "DIRECT_URL" },
+      "JWT_SECRET": { "from": "JWT_SECRET" },
+      "CORS_ORIGIN": { "from": "CORS_ORIGIN" },
+      "BCRYPT_ROUNDS": { "from": "BCRYPT_ROUNDS" },
+      "NODE_ENV": { "value": "production" }
+    }
+  }
+}
