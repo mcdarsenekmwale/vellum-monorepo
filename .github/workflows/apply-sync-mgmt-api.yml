@@ -139,20 +139,20 @@ jobs:
             // Helper to build a postgres URL from connection data
             function buildPgUrl(connData) {
               // If connectionString is already a postgres:// URL, use it
-              if (connData.connectionString && connData.connectionString.startsWith('postgres')) {
-                // If it's an accelerate URL (prisma+postgres://), we need to build a real one
-                if (connData.connectionString.startsWith('prisma+postgres://')) {
-                  // Extract API key from accelerate URL
-                  const apiKeyMatch = connData.connectionString.match(/api_key=([^&]+)/);
-                  const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
-                  // Use direct endpoint
-                  const host = connData.endpoints?.direct?.host || 'db.prisma.io';
-                  const port = connData.endpoints?.direct?.port || 5432;
-                  const db = connData.database || 'postgres';
-                  // For Prisma Postgres, username is the API key, password can be anything (often empty)
-                  return `postgres://${apiKey}@${host}:${port}/${db}?sslmode=require`;
-                }
+              if (connData.connectionString && typeof connData.connectionString === 'string' && 
+                  connData.connectionString.startsWith('postgres') && 
+                  !connData.connectionString.startsWith('prisma+')) {
                 return connData.connectionString;
+              }
+              
+              // If it's a prisma+postgres (accelerate) URL, extract API key and build real URL
+              if (connData.connectionString && typeof connData.connectionString === 'string' && 
+                  connData.connectionString.startsWith('prisma+postgres://')) {
+                const apiKeyMatch = connData.connectionString.match(/api_key=([^&]+)/);
+                const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
+                const host = connData.endpoints?.direct?.host || 'db.prisma.io';
+                const port = connData.endpoints?.direct?.port || 5432;
+                return `postgres://${apiKey}@${host}:${port}/postgres?sslmode=require`;
               }
               
               // Build from username/password/endpoint
@@ -160,9 +160,8 @@ jobs:
               const password = connData.password || '';
               const host = connData.endpoints?.direct?.host || connData.hostname || connData.host || 'localhost';
               const port = connData.endpoints?.direct?.port || connData.port || 5432;
-              const db = connData.database || connData.db || 'postgres';
               const userPass = password ? `${user}:${password}` : user;
-              return `postgres://${userPass}@${host}:${port}/${db}?sslmode=require`;
+              return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
             }
             
             // Try each connection to get the full detail
