@@ -216,7 +216,7 @@ jobs:
             }
 
             // If no direct connection, try creating one
-            if (!connectionString || connectionString.includes('pooled.')) {
+            if (!connectionString || !connectionString.startsWith('postgres:') || connectionString.includes('pooled.')) {
               console.log("\nCreating new direct connection...");
               try {
                 const newConn = await api("POST", `/v1/databases/${db.id}/connections`, {
@@ -224,11 +224,28 @@ jobs:
                   type: "direct",
                 });
                 const newConnData = newConn.data || newConn;
-                console.log(`  New connection kind: ${newConnData.kind || newConnData.type || 'unknown'}`);
+                console.log(`  New connection keys: ${Object.keys(newConnData).join(', ')}`);
+                console.log(`  kind: ${newConnData.kind || newConnData.type || 'unknown'}`);
+                console.log(`  has url: ${!!newConnData.url}`);
                 console.log(`  has connectionString: ${!!newConnData.connectionString}`);
+                if (newConnData.connectionString) {
+                  console.log(`  connectionString (first 60): ${newConnData.connectionString.slice(0, 60)}...`);
+                }
+                if (newConnData.url) {
+                  console.log(`  url (first 60): ${newConnData.url.slice(0, 60)}...`);
+                }
+                // Check for all possible fields
+                Object.keys(newConnData).forEach(k => {
+                  const val = newConnData[k];
+                  if (typeof val === 'string' && val.includes('postgres')) {
+                    console.log(`  Field '${k}' contains postgres: ${val.slice(0, 50)}...`);
+                  }
+                });
                 const builtUrl = buildPgUrl(newConnData);
                 console.log(`  Built URL: ${maskUrl(builtUrl)}`);
-                connectionString = builtUrl;
+                if (builtUrl && builtUrl.startsWith('postgres:') && !builtUrl.startsWith('postgres://@')) {
+                  connectionString = builtUrl;
+                }
               } catch (e) {
                 console.log(`  Failed to create connection: ${e.message}`);
               }
