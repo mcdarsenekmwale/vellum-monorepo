@@ -1,0 +1,330 @@
+name: Apply Sync Migration via Management API
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: 'Migration directory name to apply'
+        required: true
+        default: '8_comprehensive_sync'
+        type: string
+
+jobs:
+  find-db-and-migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: cd packages/api && npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+
+      - name: Find database and get connection string
+        run: |
+          cat <<'SCRIPT' > find-db.mjs
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const API_BASE = "https://api.prisma.io";
+          const token = process.env.PRISMA_API_TOKEN;
+
+          async function api(method, apiPath, body = null) {
+            const opts = {
+              method,
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(`${API_BASE}${apiPath}`, opts);
+            const text = await res.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = text; }
+            if (!res.ok) {
+              console.error(`  API ${method} ${apiPath} failed: ${res.status}`);
+              console.error(`  ${JSON.stringify(data, null, 2).slice(0, 500)}`);
+              throw new Error(`API ${method} ${apiPath} failed: ${res.status}`);
+            }
+            return data;
+          }
+
+          function maskUrl(url) {
+            return url.replace(/(postgresql?:\/\/[^:]+:)[^@]+(@)/, "$1***$2");
+          }
+
+          try {
+            // List projects
+            console.log("Fetching projects...");
+            const projects = await api("GET", "/v1/projects");
+            const projectList = projects.data || projects;
+            console.log(`Projects: ${projectList.length}`);
+            projectList.forEach(p => console.log(` - ${p.id}: ${p.name}`));
+
+            // List databases in first project
+            const projectId = process.env.PRISMA_PROJECT_ID || projectList[0]?.id;
+            if (!projectId) {
+              console.error("No project found");
+              process.exit(1);
+            }
+            console.log(`\nUsing project: ${projectId}`);
+
+            // List databases
+            console.log("\nFetching databases...");
+            const databasesRes = await api("GET", `/v1/projects/${projectId}/databases`);
+            const databases = databasesRes.data || databasesRes;
+            console.log(`Databases: ${databases.length}`);
+            databases.forEach(d => {
+              console.log(` - ${d.id}: ${d.name} (status: ${d.status || d.state || 'unknown'})`);
+            });
+
+            if (databases.length === 0) {
+              console.error("No databases found");
+              process.exit(1);
+            }
+
+            // Pick the first database
+            const db = databases[0];
+            console.log(`\nSelected database: ${db.name} (${db.id})`);
+            console.log(`  Status: ${db.status || db.state || 'unknown'}`);
+
+            // Try to resume if paused
+            const status = (db.status || db.state || '').toUpperCase();
+            if (status.includes('PAUSED') || status.includes('SUSPENDED') || status.includes('STOPPED')) {
+              console.log("\nDatabase is paused. Trying to resume...");
+              try {
+                const resumeRes = await api("POST", `/v1/databases/${db.id}/resume`);
+                console.log("  Resume triggered:", JSON.stringify(resumeRes).slice(0, 200));
+              } catch (e) {
+                console.log("  Resume endpoint not available, trying restart...");
+                try {
+                  const restartRes = await api("POST", `/v1/databases/${db.id}/restart`);
+                  console.log("  Restart triggered:", JSON.stringify(restartRes).slice(0, 200));
+                } catch (e2) {
+                  console.log("  Restart also failed:", e2.message);
+                }
+              }
+              
+              // Wait a bit for it to come up
+              console.log("  Waiting 30s for database to resume...");
+              await new Promise(r => setTimeout(r, 30000));
+            }
+
+            // List connections
+            console.log("\nFetching connections...");
+            const connsRes = await api("GET", `/v1/databases/${db.id}/connections`);
+            const connections = connsRes.data || connsRes || [];
+            console.log(`Connections: ${connections.length}`);
+            connections.forEach(c => {
+              console.log(` - ${c.id}: ${c.name} (kind: ${c.kind || c.type || 'unknown'})`);
+              if (c.endpoints) {
+                if (c.endpoints.direct) console.log(`   Direct: ${c.endpoints.direct.host}:${c.endpoints.direct.port}`);
+                if (c.endpoints.pooled) console.log(`   Pooled: ${c.endpoints.pooled.host}:${c.endpoints.pooled.port}`);
+              }
+            });
+
+            // Find/create a direct connection with full connection string
+            let connectionString = null;
+            
+            // Try each connection to get the full detail
+            for (const c of connections) {
+              try {
+                const detail = await api("GET", `/v1/connections/${c.id}`);
+                const connData = detail.data || detail;
+                if (connData.connectionString) {
+                  console.log(`\nFound connection string for ${c.name}:`);
+                  console.log(`  ${maskUrl(connData.connectionString)}`);
+                  // Prefer direct (non-pooled) connection
+                  const isPooled = connData.connectionString?.includes('pooled.');
+                  if (!isPooled || !connectionString) {
+                    connectionString = connData.connectionString;
+                    if (!isPooled) break; // Got a direct one, use it
+                  }
+                }
+              } catch (e) {
+                console.log(`  Failed to get detail for ${c.id}: ${e.message}`);
+              }
+            }
+
+            // If no direct connection, try creating one
+            if (!connectionString || connectionString.includes('pooled.')) {
+              console.log("\nCreating new direct connection...");
+              try {
+                const newConn = await api("POST", `/v1/databases/${db.id}/connections`, {
+                  name: `sync-migration-${Date.now()}`,
+                  type: "direct",
+                });
+                const newConnData = newConn.data || newConn;
+                if (newConnData.connectionString) {
+                  console.log(`  New connection: ${maskUrl(newConnData.connectionString)}`);
+                  connectionString = newConnData.connectionString;
+                }
+              } catch (e) {
+                console.log(`  Failed to create connection: ${e.message}`);
+              }
+            }
+
+            if (!connectionString) {
+              console.error("\nCould not find or create a connection string");
+              process.exit(1);
+            }
+
+            // Save for next step
+            fs.writeFileSync(path.join(process.cwd(), ".db-conn.txt"), connectionString);
+            console.log("\nConnection string saved.");
+            console.log(`Masked: ${maskUrl(connectionString)}`);
+
+          } catch (e) {
+            console.error("Error:", e.message);
+            console.error(e.stack);
+            process.exit(1);
+          }
+          SCRIPT
+          node find-db.mjs
+        working-directory: packages/api
+        env:
+          PRISMA_API_TOKEN: ${{ secrets.PRISMA_API_TOKEN }}
+          PRISMA_PROJECT_ID: ${{ secrets.PRISMA_PROJECT_ID }}
+
+      - name: Apply sync migration
+        run: |
+          MIGRATION_NAME="${{ github.event.inputs.migration_name }}"
+          MIGRATION_PATH="prisma/migrations/${MIGRATION_NAME}/migration.sql"
+          
+          if [ ! -f "$MIGRATION_PATH" ]; then
+            echo "Migration not found: $MIGRATION_PATH"
+            exit 1
+          fi
+          
+          if [ ! -f ".db-conn.txt" ]; then
+            echo "Connection string file not found"
+            exit 1
+          fi
+          
+          echo "Applying migration: $MIGRATION_NAME"
+          echo "File size: $(wc -c < "$MIGRATION_PATH") bytes"
+          
+          cat <<'SCRIPT' > apply-migration.mjs
+          import pg from "pg";
+          import fs from "node:fs";
+          import path from "node:path";
+          
+          const { Client } = pg;
+          const migrationName = process.env.MIGRATION_NAME;
+          const migrationPath = path.resolve(process.cwd(), "prisma/migrations", migrationName, "migration.sql");
+          
+          // Read connection string from file
+          let url = process.env.DB_CONN;
+          if (!url && fs.existsSync(".db-conn.txt")) {
+            url = fs.readFileSync(".db-conn.txt", "utf-8").trim();
+          }
+          
+          if (!url) {
+            console.error("No database connection string found");
+            process.exit(1);
+          }
+          
+          function maskUrl(u) {
+            return u.replace(/(postgresql?:\/\/[^:]+:)[^@]+(@)/, "$1***$2");
+          }
+          
+          console.log("Connecting to:", maskUrl(url));
+          
+          const client = new Client({
+            connectionString: url,
+            ssl: { rejectUnauthorized: false },
+            connectionTimeoutMillis: 30000,
+          });
+          
+          try {
+            await client.connect();
+            console.log("Connected to database");
+            
+            // Check tables before
+            const { rows: beforeTables } = await client.query(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+            );
+            console.log(`Tables before: ${beforeTables.length}`);
+            beforeTables.forEach(t => console.log(` - ${t.table_name}`));
+            
+            const sql = fs.readFileSync(migrationPath, "utf-8");
+            console.log(`\nApplying migration (${sql.length} bytes)...`);
+            
+            await client.query("BEGIN");
+            try {
+              await client.query(sql);
+              await client.query("COMMIT");
+              console.log("Migration applied successfully!");
+            } catch (e) {
+              await client.query("ROLLBACK");
+              throw e;
+            }
+            
+            // Check tables after
+            const { rows: tables } = await client.query(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+            );
+            console.log(`\nTables after: ${tables.length}`);
+            
+            // Check columns
+            const { rows: colRows } = await client.query(
+              "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_schema='public'"
+            );
+            console.log(`Total columns: ${colRows[0].count}`);
+            
+            // Check indexes
+            const { rows: idxRows } = await client.query(
+              "SELECT COUNT(*) as count FROM pg_indexes WHERE schemaname = 'public'"
+            );
+            console.log(`Total indexes: ${idxRows[0].count}`);
+            
+            // Mark migration in _prisma_migrations
+            try {
+              const { rows: existing } = await client.query(
+                "SELECT id FROM _prisma_migrations WHERE migration_name = $1",
+                [migrationName]
+              );
+              if (existing.length === 0) {
+                await client.query(
+                  "INSERT INTO _prisma_migrations (id, migration_name, migration_key, finished_at, applied_steps_count) VALUES (gen_random_uuid()::text, $1, $1, now(), 0)",
+                  [migrationName]
+                );
+                console.log(`\nMigration '${migrationName}' marked as applied in _prisma_migrations`);
+              } else {
+                console.log(`\nMigration '${migrationName}' already recorded in _prisma_migrations`);
+              }
+            } catch (e) {
+              console.log(`\nWarning: Could not mark migration - ${e.message}`);
+            }
+            
+            // Verify User table
+            try {
+              await client.query('SELECT 1 as test FROM "User" LIMIT 0');
+              console.log("\nVerification: User table exists ✓");
+            } catch (e) {
+              console.log("\nVerification: User table check failed -", e.message);
+            }
+            
+            await client.end();
+          } catch (e) {
+            console.error("\nMigration failed:", e.message);
+            console.error(e.stack);
+            process.exit(1);
+          }
+          SCRIPT
+          
+          MIGRATION_NAME="$MIGRATION_NAME" node apply-migration.mjs
+        working-directory: packages/api
+        env:
+          MIGRATION_NAME: ${{ github.event.inputs.migration_name }}
+          DB_CONN: ""
