@@ -133,7 +133,7 @@ function NotificationsPage() {
                 }`}
               >
                 <div className="relative shrink-0">
-                  <img src={actor?.avatar || ""} alt="" className="size-12 rounded-full object-cover" />
+                  <img src={actor?.avatar || undefined} alt="" className="size-12 rounded-full object-cover" />
                   <span className="absolute -bottom-1 -right-1 size-6 rounded-full bg-background grid place-items-center border border-border">
                     <Icon className={`size-3.5 ${n.kind === "LIKE" ? "text-accent fill-accent" : "text-foreground"}`} />
                   </span>

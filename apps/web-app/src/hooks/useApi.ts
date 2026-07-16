@@ -55,7 +55,7 @@ export function useArticle(slug: string) {
 
 export function useArticlesByAuthor(handle: string, page = 1, limit = 10) {
   return useFetch<PaginatedResponse<Article>>(
-    () => apiClient.getArticlesByAuthor(handle, page, limit),
+    () => (handle ? apiClient.getArticlesByAuthor(handle, page, limit) : Promise.resolve({ data: [], total: 0, page, limit })),
     [handle, page, limit]
   );
 }

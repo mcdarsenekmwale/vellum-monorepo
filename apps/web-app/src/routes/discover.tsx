@@ -102,7 +102,7 @@ function DiscoverPage() {
                         params={{ id: p.id }}
                         className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
                       >
-                        <img src={p.avatar || ""} alt="" className="size-12 rounded-full object-cover shrink-0" />
+                        <img src={p.avatar || undefined} alt="" className="size-12 rounded-full object-cover shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold truncate">{p.handle}</div>
                           <div className="text-xs text-muted-foreground truncate">
@@ -139,7 +139,7 @@ function DiscoverPage() {
                           <h4 className="text-base leading-tight font-semibold">{a.title}</h4>
                           <p className="text-xs text-muted-foreground">{a.author?.name || "Unknown"}</p>
                         </div>
-                        <img src={a.cover || ""} alt="" className="size-16 rounded-lg object-cover shrink-0" />
+                        <img src={a.cover || undefined} alt="" className="size-16 rounded-lg object-cover shrink-0" />
                       </Link>
                     </li>
                   ))}
@@ -208,7 +208,7 @@ function DiscoverPage() {
                       <span className="font-display italic text-4xl text-muted-foreground/30 w-12 shrink-0 text-center">
                         {i + 1}
                       </span>
-                      <img src={a.cover || ""} alt="" className="size-20 rounded-lg object-cover shrink-0" />
+                      <img src={a.cover || undefined} alt="" className="size-20 rounded-lg object-cover shrink-0" />
                       <div className="min-w-0 space-y-1 flex-1">
                         <p className="text-[10px] font-bold text-accent tracking-widest uppercase">{a.category?.name || "Article"}</p>
                         <h4 className="text-sm leading-tight font-semibold line-clamp-2">{a.title}</h4>

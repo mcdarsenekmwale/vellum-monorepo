@@ -13,6 +13,10 @@ coverage
 .prisma
 .prisma/
 
+# Playwright
+test-results/
+playwright-report/
+
 # Expo
 .expo/
 *.jks

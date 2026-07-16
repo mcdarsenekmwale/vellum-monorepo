@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { useAuthState } from "@/hooks/useApi";
 import { getRedirectUrl } from "@/lib/auth";
@@ -19,12 +19,13 @@ function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (isAuthenticated) {
-    const search = router.state.location.search as Record<string, string>;
-    const redirect = getRedirectUrl(search);
-    router.navigate({ to: redirect });
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      const search = router.state.location.search as Record<string, string>;
+      const redirect = getRedirectUrl(search);
+      router.navigate({ to: redirect });
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
