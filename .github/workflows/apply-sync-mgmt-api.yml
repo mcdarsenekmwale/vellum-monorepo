@@ -102,11 +102,19 @@ jobs:
             console.log(`  Keys: ${Object.keys(connData).join(', ')}`);
 
             // Build connection config from user/pass/host fields
+            let host = connData.host || connData.hostname || 'db.prisma.io';
+            let port = connData.port || 5432;
+            // If host contains a port, split it
+            if (typeof host === 'string' && host.includes(':')) {
+              const parts = host.split(':');
+              host = parts[0];
+              if (parts[1]) port = parseInt(parts[1], 10) || port;
+            }
             const connConfig = {
               user: connData.user || '',
               password: connData.pass || connData.password || '',
-              host: connData.host || connData.hostname || 'db.prisma.io',
-              port: connData.port || 5432,
+              host,
+              port,
               database: 'postgres',
               ssl: { rejectUnauthorized: false },
               connectionTimeoutMillis: 30000,
