@@ -138,6 +138,16 @@ jobs:
             
             // Helper to build a postgres URL from connection data
             function buildPgUrl(connData) {
+              // If user and pass fields are available, use them directly with the direct endpoint
+              if (connData.user || connData.username) {
+                const user = connData.user || connData.username;
+                const password = connData.pass || connData.password || '';
+                const host = connData.host || connData.hostname || connData.endpoints?.direct?.host || 'db.prisma.io';
+                const port = connData.port || connData.endpoints?.direct?.port || 5432;
+                const userPass = password ? `${user}:${password}` : user;
+                return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
+              }
+              
               // The connection might have 'url' or 'connectionString' field
               const rawUrl = connData.url || connData.connectionString || '';
               
@@ -158,16 +168,6 @@ jobs:
                 if (apiKey) {
                   return `postgres://${apiKey}@${host}:${port}/postgres?sslmode=require`;
                 }
-              }
-              
-              // Build from username/password/endpoint
-              const user = connData.username || connData.user || (connData.type === 'api_key' ? connData.id : '');
-              const password = connData.password || '';
-              const host = connData.endpoints?.direct?.host || connData.hostname || connData.host || 'localhost';
-              const port = connData.endpoints?.direct?.port || connData.port || 5432;
-              const userPass = password ? `${user}:${password}` : user;
-              if (userPass) {
-                return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
               }
               
               // Fallback: return url as-is
