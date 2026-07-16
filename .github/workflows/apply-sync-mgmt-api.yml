@@ -138,30 +138,40 @@ jobs:
             
             // Helper to build a postgres URL from connection data
             function buildPgUrl(connData) {
-              // If connectionString is already a postgres:// URL, use it
-              if (connData.connectionString && typeof connData.connectionString === 'string' && 
-                  connData.connectionString.startsWith('postgres') && 
-                  !connData.connectionString.startsWith('prisma+')) {
-                return connData.connectionString;
+              // The connection might have 'url' or 'connectionString' field
+              const rawUrl = connData.url || connData.connectionString || '';
+              
+              // If it's already a postgres:// URL, use it
+              if (rawUrl && typeof rawUrl === 'string' && 
+                  rawUrl.startsWith('postgres') && 
+                  !rawUrl.startsWith('prisma+')) {
+                return rawUrl;
               }
               
               // If it's a prisma+postgres (accelerate) URL, extract API key and build real URL
-              if (connData.connectionString && typeof connData.connectionString === 'string' && 
-                  connData.connectionString.startsWith('prisma+postgres://')) {
-                const apiKeyMatch = connData.connectionString.match(/api_key=([^&]+)/);
+              if (rawUrl && typeof rawUrl === 'string' && 
+                  rawUrl.startsWith('prisma+postgres://')) {
+                const apiKeyMatch = rawUrl.match(/api_key=([^&]+)/);
                 const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
                 const host = connData.endpoints?.direct?.host || 'db.prisma.io';
                 const port = connData.endpoints?.direct?.port || 5432;
-                return `postgres://${apiKey}@${host}:${port}/postgres?sslmode=require`;
+                if (apiKey) {
+                  return `postgres://${apiKey}@${host}:${port}/postgres?sslmode=require`;
+                }
               }
               
               // Build from username/password/endpoint
-              const user = connData.username || connData.user || '';
+              const user = connData.username || connData.user || (connData.type === 'api_key' ? connData.id : '');
               const password = connData.password || '';
               const host = connData.endpoints?.direct?.host || connData.hostname || connData.host || 'localhost';
               const port = connData.endpoints?.direct?.port || connData.port || 5432;
               const userPass = password ? `${user}:${password}` : user;
-              return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
+              if (userPass) {
+                return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
+              }
+              
+              // Fallback: return url as-is
+              return rawUrl;
             }
             
             // Try each connection to get the full detail
@@ -172,6 +182,12 @@ jobs:
                 console.log(`\n--- Connection detail: ${c.name} ---`);
                 console.log(`  kind: ${connData.kind || connData.type || 'unknown'}`);
                 console.log(`  Keys: ${Object.keys(connData).join(', ')}`);
+                console.log(`  type: ${connData.type}`);
+                console.log(`  kind: ${connData.kind}`);
+                console.log(`  has url: ${!!connData.url}`);
+                if (connData.url) {
+                  console.log(`  url (first 60): ${connData.url.slice(0, 60)}...`);
+                }
                 console.log(`  has connectionString: ${!!connData.connectionString}`);
                 if (connData.connectionString) {
                   console.log(`  connectionString (first 60): ${connData.connectionString.slice(0, 60)}...`);
