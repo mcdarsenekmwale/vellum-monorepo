@@ -632,7 +632,7 @@ BEGIN
         ALTER TABLE "User" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'deletedAt') THEN
         ALTER TABLE "User" ADD COLUMN "deletedAt" TIMESTAMP(3);
@@ -670,7 +670,7 @@ BEGIN
         ALTER TABLE "UserSettings" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'UserSettings' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "UserSettings" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "UserSettings" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -723,7 +723,7 @@ BEGIN
         ALTER TABLE "Article" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Article' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Article" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Article" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Article' AND column_name = 'deletedAt') THEN
         ALTER TABLE "Article" ADD COLUMN "deletedAt" TIMESTAMP(3);
@@ -788,7 +788,7 @@ BEGIN
         ALTER TABLE "Highlight" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Highlight' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Highlight" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Highlight" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Highlight' AND column_name = 'deletedAt') THEN
         ALTER TABLE "Highlight" ADD COLUMN "deletedAt" TIMESTAMP(3);
@@ -866,7 +866,7 @@ BEGIN
         ALTER TABLE "Comment" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Comment' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Comment" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Comment" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Comment' AND column_name = 'deletedAt') THEN
         ALTER TABLE "Comment" ADD COLUMN "deletedAt" TIMESTAMP(3);
@@ -993,7 +993,7 @@ BEGIN
         ALTER TABLE "Notification" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Notification' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Notification" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Notification" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1121,7 +1121,7 @@ BEGIN
         ALTER TABLE "Webhook" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Webhook' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Webhook" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Webhook" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1273,7 +1273,7 @@ BEGIN
         ALTER TABLE "Report" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Report' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Report" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Report" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1316,7 +1316,7 @@ BEGIN
         ALTER TABLE "FeatureFlag" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'FeatureFlag' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "FeatureFlag" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "FeatureFlag" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1336,7 +1336,7 @@ BEGIN
         ALTER TABLE "SystemSetting" ADD COLUMN "category" TEXT NOT NULL DEFAULT 'general';
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'SystemSetting' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "SystemSetting" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "SystemSetting" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'SystemSetting' AND column_name = 'createdAt') THEN
         ALTER TABLE "SystemSetting" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
@@ -1374,7 +1374,7 @@ BEGIN
         ALTER TABLE "Advertisement" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'Advertisement' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "Advertisement" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "Advertisement" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1409,7 +1409,7 @@ BEGIN
         ALTER TABLE "AIAgent" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'AIAgent' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "AIAgent" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "AIAgent" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1485,7 +1485,7 @@ BEGIN
         ALTER TABLE "HelpArticle" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'HelpArticle' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "HelpArticle" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "HelpArticle" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
@@ -1514,7 +1514,7 @@ BEGIN
         ALTER TABLE "SupportTicket" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'SupportTicket' AND column_name = 'updatedAt') THEN
-        ALTER TABLE "SupportTicket" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL;
+        ALTER TABLE "SupportTicket" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
     END IF;
 END $$;
 
