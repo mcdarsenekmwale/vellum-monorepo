@@ -1,0 +1,77 @@
+name: Introspect Production DB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  introspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - name: Introspect production database schema
+        working-directory: packages/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: |
+          echo "=== Trying prisma db pull with DIRECT_URL ==="
+          npx prisma db pull --force --schema=prisma/schema.prisma 2>&1 || echo "db pull failed"
+          echo "=== Schema after introspection ==="
+          cat prisma/schema.prisma || echo "No schema file"
+      - name: Query production tables and columns
+        working-directory: packages/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: |
+          node -e "
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+          async function main() {
+            try {
+              const tables = await prisma.\$queryRaw\`
+                SELECT table_name, column_name, data_type, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                ORDER BY table_name, ordinal_position
+              \`;
+              console.log('PROD_TABLES_AND_COLUMNS=' + JSON.stringify(tables));
+            } catch (e) {
+              console.error('Query failed:', e.message);
+              process.exit(1);
+            } finally {
+              await prisma.\$disconnect();
+            }
+          }
+          main();
+          " 2>&1 || echo "Query failed"
+      - name: Query migration history
+        working-directory: packages/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: |
+          node -e "
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+          async function main() {
+            try {
+              const migrations = await prisma.\$queryRaw\`
+                SELECT migration_name, finished_at, applied_steps_count
+                FROM _prisma_migrations
+                ORDER BY finished_at
+              \`;
+              console.log('PROD_MIGRATIONS=' + JSON.stringify(migrations));
+            } catch (e) {
+              console.error('Migration query failed:', e.message);
+            } finally {
+              await prisma.\$disconnect();
+            }
+          }
+          main();
+          " 2>&1 || echo "Migration query failed"
