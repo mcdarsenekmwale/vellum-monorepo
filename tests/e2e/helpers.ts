@@ -80,9 +80,11 @@ type Fixtures = {
   collector: ConsoleCollector;
 };
 
+const API_ORIGIN = process.env.API_ORIGIN || "http://localhost:3001";
+
 export const test = baseTest.extend<Fixtures>({
   collector: async ({ page }, use) => {
-    const collector = attachListeners(page, "http://localhost:3001");
+    const collector = attachListeners(page, API_ORIGIN);
     await use(collector);
   },
 });

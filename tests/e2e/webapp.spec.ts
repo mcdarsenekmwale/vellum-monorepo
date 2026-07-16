@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test, assertClean } from "./helpers";
 
-const WEB_ORIGIN = "http://localhost:3000";
+const WEB_ORIGIN = process.env.WEB_ORIGIN || "http://localhost:3000";
 
 test.describe("web-app navigation", () => {
   test("home page loads without errors", async ({ page, collector }) => {

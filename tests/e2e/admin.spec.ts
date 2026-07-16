@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test, assertClean } from "./helpers";
 
-const ADMIN_ORIGIN = "http://localhost:3002";
+const ADMIN_ORIGIN = process.env.ADMIN_ORIGIN || "http://localhost:3002";
 
 const SIDEBAR_PATHS = [
   "/users",
