@@ -1,0 +1,467 @@
+[
+  {
+    "route": "/dashboard",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/dashboard",
+    "content_elements": [
+      "H1: Good morning, Admin",
+      "9 buttons",
+      "34 links",
+      "14 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/analytics",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/analytics",
+    "content_elements": [
+      "H1: Analytics",
+      "8 buttons",
+      "33 links",
+      "1 tables",
+      "9 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/tags",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/tags",
+    "content_elements": [
+      "H1: Tags",
+      "9 buttons",
+      "33 links",
+      "2 inputs",
+      "6 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/categories",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/categories",
+    "content_elements": [
+      "H1: Categories",
+      "24 buttons",
+      "41 links",
+      "12 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/05_categories.png"
+  },
+  {
+    "route": "/users",
+    "status": "ERROR",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/users",
+    "content_elements": [
+      "H1: User Management",
+      "64 buttons",
+      "44 links",
+      "1 tables",
+      "1 inputs",
+      "4 cards"
+    ],
+    "console_errors": [
+      "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
+    ],
+    "screenshot": "tests/admin_screenshots/06_users.png"
+  },
+  {
+    "route": "/articles",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/articles",
+    "content_elements": [
+      "H1: Articles",
+      "56 buttons",
+      "51 links",
+      "1 tables",
+      "1 inputs"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/highlights",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/highlights",
+    "content_elements": [
+      "H1: Highlights",
+      "14 buttons",
+      "33 links",
+      "10 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/08_highlights.png"
+  },
+  {
+    "route": "/comments",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/comments",
+    "content_elements": [
+      "H1: Comments",
+      "77 buttons",
+      "55 links",
+      "1 tables",
+      "1 inputs",
+      "4 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/09_comments.png"
+  },
+  {
+    "route": "/webhooks",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/webhooks",
+    "content_elements": [
+      "H1: Webhooks",
+      "9 buttons",
+      "33 links",
+      "1 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/api",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/api",
+    "content_elements": [
+      "H1: API management",
+      "10 buttons",
+      "33 links",
+      "3 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/advertisements",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/advertisements",
+    "content_elements": [
+      "H1: Advertisements",
+      "11 buttons",
+      "33 links",
+      "1 inputs",
+      "6 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/12_advertisements.png"
+  },
+  {
+    "route": "/ai",
+    "status": "ERROR",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/ai",
+    "content_elements": [
+      "H1: AI Automation",
+      "25 buttons",
+      "33 links",
+      "5 cards"
+    ],
+    "console_errors": [
+      "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <SafeFragment>\n      <SafeFragment fallback={null}>\n        <SafeFragment getResetKey={function getResetKey} errorComponent={function ErrorComponent} ...>\n          <SafeFragment fallback={function fallback}>\n            <MatchInnerImpl matchId=\"/_app/ai/ai\">\n              <AIPage>\n                <div className=\"space-y-6\">\n                  <PageHeader>\n                  <div>\n                  <SectionCard title=\"Agents\" description=\"Deployed A...\" padded={false}>\n                    <div className=\"surface-card\">\n                      <div>\n                      <div className=\"\">\n                        <ul className=\"divide-y\">\n                          <li className=\"grid grid-...\">\n                            <div>\n                            <div>\n                            <div className=\"flex items...\">\n                              <_c variant=\"ghost\" size=\"icon\" className=\"size-8\" onClick={function onClick} ...>\n>                               <button\n>                                 className={\"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded...\"}\n>                                 ref={null}\n>                                 onClick={function onClick}\n>                                 title=\"Activate agent\"\n>                                 disabled={false}\n>                               >\n                                  ...\n                                    <SwitchTrigger className=\"peer inlin...\" ref={null} __scopeSwitch={undefined}>\n                                      <Primitive.button type=\"button\" role=\"switch\" aria-checked={false} ...>\n>                                       <button\n>                                         type=\"button\"\n>                                         role=\"switch\"\n>                                         aria-checked={false}\n>                                         aria-required={undefined}\n>                                         data-state=\"unchecked\"\n>                                         data-disabled={undefined}\n>                                         disabled={undefined}\n>                                         value=\"on\"\n>                                         className=\"peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rou...\"\n>                                         onClick={function handleEvent}\n>                                         ref={function}\n>                                       >\n                                    ...\n                              ...\n                          ...\n                  ...\n",
+      "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>",
+      "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
+    ],
+    "screenshot": "tests/admin_screenshots/13_ai.png"
+  },
+  {
+    "route": "/flags",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/flags",
+    "content_elements": [
+      "H1: Feature flags",
+      "26 buttons",
+      "33 links",
+      "5 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/settings",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/settings",
+    "content_elements": [
+      "H1: Settings",
+      "22 buttons",
+      "33 links",
+      "2 inputs",
+      "2 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/15_settings.png"
+  },
+  {
+    "route": "/moderation",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/moderation",
+    "content_elements": [
+      "H1: Moderation queue",
+      "18 buttons",
+      "33 links",
+      "1 inputs",
+      "5 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/16_moderation.png"
+  },
+  {
+    "route": "/reports",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/reports",
+    "content_elements": [
+      "H1: Reports",
+      "14 buttons",
+      "33 links",
+      "1 inputs",
+      "4 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/jobs",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/jobs",
+    "content_elements": [
+      "H1: Background jobs",
+      "10 buttons",
+      "33 links",
+      "1 inputs"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/audit",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/audit",
+    "content_elements": [
+      "H1: Audit logs",
+      "17 buttons",
+      "33 links",
+      "1 tables",
+      "1 inputs"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/19_audit.png"
+  },
+  {
+    "route": "/media",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/media",
+    "content_elements": [
+      "H1: Media Library",
+      "13 buttons",
+      "33 links",
+      "4 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/20_media.png"
+  },
+  {
+    "route": "/storage",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/storage",
+    "content_elements": [
+      "H1: Storage",
+      "7 buttons",
+      "33 links",
+      "6 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/status",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/status",
+    "content_elements": [
+      "H1: System status",
+      "7 buttons",
+      "33 links",
+      "3 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/22_status.png"
+  },
+  {
+    "route": "/notifications",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/notifications",
+    "content_elements": [
+      "H1: Notifications",
+      "54 buttons",
+      "33 links",
+      "1 tables",
+      "1 inputs",
+      "4 cards"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/profile",
+    "status": "ERROR",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/profile",
+    "content_elements": [
+      "H1: Your profile",
+      "11 buttons",
+      "33 links",
+      "4 inputs",
+      "4 cards"
+    ],
+    "console_errors": [
+      "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
+    ],
+    "screenshot": "tests/admin_screenshots/24_profile.png"
+  },
+  {
+    "route": "/roles",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/roles",
+    "content_elements": [
+      "H1: Roles",
+      "18 buttons",
+      "33 links",
+      "5 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/25_roles.png"
+  },
+  {
+    "route": "/permissions",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/permissions",
+    "content_elements": [
+      "H1: Permission matrix",
+      "7 buttons",
+      "33 links",
+      "1 tables",
+      "1 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/26_permissions.png"
+  },
+  {
+    "route": "/posts",
+    "status": "ERROR",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/posts",
+    "content_elements": [
+      "H1: Posts",
+      "56 buttons",
+      "51 links",
+      "1 tables",
+      "1 inputs"
+    ],
+    "console_errors": [
+      "Failed to load resource: net::ERR_CONNECTION_TIMED_OUT"
+    ],
+    "screenshot": "tests/admin_screenshots/27_posts.png"
+  },
+  {
+    "route": "/videos",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/videos",
+    "content_elements": [
+      "H1: Videos",
+      "40 buttons",
+      "43 links",
+      "1 tables",
+      "1 inputs"
+    ],
+    "console_errors": [],
+    "screenshot": ""
+  },
+  {
+    "route": "/playlists",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/playlists",
+    "content_elements": [
+      "H1: Playlists",
+      "20 buttons",
+      "33 links",
+      "10 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/29_playlists.png"
+  },
+  {
+    "route": "/music",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/music",
+    "content_elements": [
+      "H1: Music",
+      "9 buttons",
+      "33 links",
+      "5 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/30_music.png"
+  },
+  {
+    "route": "/followers",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/followers",
+    "content_elements": [
+      "H1: Follow graph",
+      "33 buttons",
+      "54 links",
+      "1 tables",
+      "1 inputs"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/31_followers.png"
+  },
+  {
+    "route": "/help",
+    "status": "WORKING",
+    "title": "Admin \u2014 Vellum Platform Console",
+    "url": "http://localhost:3003/help",
+    "content_elements": [
+      "H1: Help center",
+      "1 H2 headings",
+      "8 buttons",
+      "33 links",
+      "1 inputs",
+      "3 cards"
+    ],
+    "console_errors": [],
+    "screenshot": "tests/admin_screenshots/32_help.png"
+  }
+]

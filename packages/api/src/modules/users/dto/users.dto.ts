@@ -28,6 +28,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatar?: string;
+
+  @ApiProperty({ example: 'https://example.com', required: false })
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @ApiProperty({ example: 'San Francisco, CA', required: false })
+  @IsOptional()
+  @IsString()
+  location?: string;
 }
 
 export class UpdateUserSettingsDto {

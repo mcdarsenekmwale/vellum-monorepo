@@ -44,12 +44,12 @@ export class NotificationsService {
     if (notificationId) {
       await this.prisma.notification.update({
         where: { id: notificationId, userId },
-        data: { read: true },
+        data: { read: true, readAt: new Date() },
       });
     } else {
       await this.prisma.notification.updateMany({
         where: { userId, read: false },
-        data: { read: true },
+        data: { read: true, readAt: new Date() },
       });
     }
     return { message: 'Notifications marked as read' };

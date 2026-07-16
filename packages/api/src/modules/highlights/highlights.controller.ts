@@ -2,6 +2,9 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Requ
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HighlightsService } from './highlights.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 import { CreateHighlightDto, UpdateHighlightDto } from './dto/highlights.dto';
 
 @ApiTags('Highlights')
@@ -10,9 +13,11 @@ export class HighlightsController {
   constructor(private highlightsService: HighlightsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Create a highlight' })
   @ApiResponse({ status: 201, description: 'Highlight created' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async createHighlight(@Request() req: any, @Body() dto: CreateHighlightDto) {
     return this.highlightsService.createHighlight(req.user.id, dto);
   }
@@ -35,7 +40,8 @@ export class HighlightsController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Update a highlight' })
   @ApiResponse({ status: 200, description: 'Highlight updated' })
   @ApiResponse({ status: 403, description: 'Not authorized' })
@@ -44,7 +50,8 @@ export class HighlightsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Delete a highlight' })
   @ApiResponse({ status: 200, description: 'Highlight deleted' })
   @ApiResponse({ status: 403, description: 'Not authorized' })

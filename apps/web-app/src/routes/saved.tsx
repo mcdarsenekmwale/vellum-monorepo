@@ -1,8 +1,8 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
 import { useBookmarkedArticles } from "@/hooks/useApi";
 import { Bookmark } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { requireAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/saved")({
   head: () => ({
@@ -11,11 +11,8 @@ export const Route = createFileRoute("/saved")({
       { name: "description", content: "The stories you've bookmarked to read later." },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/saved" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: SavedPage,
 });

@@ -1,4 +1,4 @@
-import { Tabs, Link, useRouter, usePathname } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import {
   Home,
   Compass,
@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
 
 const PUBLIC_ROUTES = ['/login', '/register'];
+const TAB_ROUTES = ['/', '/index', '/discover', '/highlights', '/saved', '/profile'];
 
 function BackButton() {
   const router = useRouter();
@@ -52,37 +53,31 @@ function HeaderLogo() {
 }
 
 function ProfileHeaderActions() {
+  const router = useRouter();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 12 }}>
-      <Link href="/notifications" asChild>
-        <TouchableOpacity style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', position: 'relative' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Bell size={20} color="#000000" />
-          <View style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, backgroundColor: '#ef4444', borderRadius: 3 }} />
-        </TouchableOpacity>
-      </Link>
-      <Link href="/settings" asChild>
-        <TouchableOpacity style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Settings size={20} color="#000000" />
-        </TouchableOpacity>
-      </Link>
+      <TouchableOpacity onPress={() => router.push('/notifications')} style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', position: 'relative' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Bell size={20} color="#000000" />
+        <View style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, backgroundColor: '#ef4444', borderRadius: 3 }} />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/settings')} style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Settings size={20} color="#000000" />
+      </TouchableOpacity>
     </View>
   );
 }
 
 function FeedHeaderActions() {
+  const router = useRouter();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 5 }}>
-      <Link href="/discover" asChild>
-        <TouchableOpacity style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Search size={20} color="#000000" />
-        </TouchableOpacity>
-      </Link>
-      <Link href="/notifications" asChild>
-        <TouchableOpacity style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', position: 'relative' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Bell size={20} color="#000000" />
-          <View style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, backgroundColor: '#ef4444', borderRadius: 3 }} />
-        </TouchableOpacity>
-      </Link>
+      <TouchableOpacity onPress={() => router.push('/discover')} style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Search size={20} color="#000000" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/notifications')} style={{ backgroundColor: '#e5e5e5', width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', position: 'relative' }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Bell size={20} color="#000000" />
+        <View style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, backgroundColor: '#ef4444', borderRadius: 3 }} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -93,8 +88,7 @@ const CustomHeaderActions = () => {
       <TouchableOpacity
         style={styles.profileButton}
         activeOpacity={0.7}
-        onPress={() => {
-        }}
+        onPress={() => {}}
       >
         <View style={styles.innerDot} />
       </TouchableOpacity>
@@ -138,11 +132,11 @@ function CustomHeader({ title, left, right, titleAlign = 'center', customTitle, 
 }
 
 const TAB_ITEMS = [
-  { key: 'index', label: 'Feed', icon: Home },
-  { key: 'discover', label: 'Discover', icon: Compass },
-  { key: 'highlights', label: 'Highlights', icon: Play },
-  { key: 'saved', label: 'Saved', icon: Bookmark },
-  { key: 'profile', label: 'Profile', icon: User },
+  { key: 'index', label: 'Feed', icon: Home, route: '/' },
+  { key: 'discover', label: 'Discover', icon: Compass, route: '/discover' },
+  { key: 'highlights', label: 'Highlights', icon: Play, route: '/highlights' },
+  { key: 'saved', label: 'Saved', icon: Bookmark, route: '/saved' },
+  { key: 'profile', label: 'Profile', icon: User, route: '/profile' },
 ];
 
 function CustomTabBar() {
@@ -161,7 +155,13 @@ function CustomTabBar() {
   const shouldHideTabBar = (): boolean => {
     if (pathname.startsWith('/story/')) return true;
     if (pathname === '/login' || pathname === '/register') return true;
-    if (pathname.startsWith('/highlights')) return false;
+    if (pathname.startsWith('/article/')) return true;
+    if (pathname.startsWith('/author/')) return true;
+    if (pathname.startsWith('/category/')) return true;
+    if (pathname === '/compose') return true;
+    if (pathname === '/notifications') return true;
+    if (pathname === '/settings') return true;
+    if (pathname.startsWith('/settings/')) return true;
     return false;
   };
 
@@ -171,13 +171,12 @@ function CustomTabBar() {
 
   const activeKey = getActiveKey();
 
-  const handlePress = (key: string) => {
-    const route = key === 'index' ? '/' : `/${key}`;
+  const handlePress = (route: string) => {
     router.push(route as any);
   };
 
   return (
-    <SafeAreaView edges={[ 'left', 'right', 'bottom']} style={tabStyles.tabBarSafeArea}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={tabStyles.tabBarSafeArea}>
       <View style={tabStyles.tabBarContainer}>
         {TAB_ITEMS.map((item) => {
           const isActive = activeKey === item.key;
@@ -185,7 +184,7 @@ function CustomTabBar() {
           return (
             <TouchableOpacity
               key={item.key}
-              onPress={() => handlePress(item.key)}
+              onPress={() => handlePress(item.route)}
               style={tabStyles.tabItem}
               activeOpacity={0.7}
             >
@@ -223,6 +222,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuthState();
   const [isReady, setIsReady] = useState(false);
+  const [navigated, setNavigated] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -230,20 +230,23 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   }, [isLoading]);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || navigated) return;
 
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
     if (!isAuthenticated && !isPublicRoute) {
+      setNavigated(true);
       router.replace('/login');
     } else if (isAuthenticated && isPublicRoute) {
+      setNavigated(true);
       router.replace('/');
     }
-  }, [isAuthenticated, isReady, pathname, router]);
+  }, [isAuthenticated, isReady, pathname, router, navigated]);
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       {children}
+      <CustomTabBar />
       {!isReady && (
         <View style={{ 
           position: 'absolute', 
@@ -259,7 +262,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           <ActivityIndicator size="large" color="#000000" />
         </View>
       )}
-    </>
+    </View>
   );
 }
 
@@ -268,138 +271,99 @@ export default function RootLayout() {
     <AuthProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthGate>
-          <Tabs
+          <Stack
             screenOptions={{
               headerShown: false,
-              headerTitleAlign: 'center',
-              tabBarStyle: { 
-                display: 'none',
-                height: TAB_BAR_CONTENT_HEIGHT,
-              },
-              tabBarShowLabel: false,
+              contentStyle: { backgroundColor: '#f7f4ee' },
             }}
-            tabBar={() => <CustomTabBar />}
           >
-          <Tabs.Screen
-            name="login"
-            options={{
-              headerShown: false,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="register"
-            options={{
-              headerShown: false,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Feed',
-              header: () => <CustomHeader isMain={false} customTitle={<HeaderLogo />} titleAlign="left" right={<FeedHeaderActions />} />,
-              headerShown: true,
-            }}
-          />
-          <Tabs.Screen
-            name="discover"
-            options={{
-              title: 'Discover',
-              header: () => <CustomHeader isMain={false} title="Discover" titleAlign="left" right={<CustomHeaderActions />}/>,
-              headerShown: true,
-            }}
-          />
-          <Tabs.Screen
-            name="highlights"
-            options={{
-              title: 'Highlights',
-              header: () => <CustomHeader title="Highlights" />,
-              headerShown: false,
-            }}
-          />
-          <Tabs.Screen
-            name="saved"
-            options={{
-              title: 'Saved',
-              header: () => <CustomHeader title="Saved" isMain={false} titleAlign="left" right={<CustomHeaderActions />}/>,
-              headerShown: true,
-            }}
-          />
-          <Tabs.Screen
-            name="profile"
-            options={{
-              title: 'Profile',
-              header: () => <CustomHeader isMain={false} title="you" titleAlign="left" right={<ProfileHeaderActions />} />,
-              headerShown: true,
-            }}
-          />
-          <Tabs.Screen
-            name="compose"
-            options={{
-              title: 'New Story',
-              header: () => <CustomHeader title="New Story" left={<BackButton />} />,
-              headerShown: false,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="notifications"
-            options={{
-              title: 'Activity',
-              header: () => <CustomHeader title="Activity" left={<BackButton />} />,
-              headerShown: true,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="settings"
-            options={{
-              title: 'Settings',
-              header: () => <CustomHeader title="Settings" left={<BackButton />} />,
-              headerShown: true,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="article/[slug]"
-            options={{
-              title: 'Article',
-              tabBarLabel: 'Article',
-              tabBarShowLabel: false,
-              header: () => <CustomHeader title="Article" left={<BackButton />} />,
-              headerShown: false,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="author/[id]"
-            options={{
-              title: 'Author',
-              header: () => <CustomHeader title="Author" left={<BackButton />} />,
-              headerShown: true,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="category/[name]"
-            options={{
-              title: 'Section',
-              header: () => <CustomHeader title="Section" left={<BackButton />} />,
-              headerShown: true,
-              tabBarButton: () => null,
-            }}
-          />
-          <Tabs.Screen
-            name="story/[authorId]/[storyId]"
-            options={{
-              title: 'Story',
-              tabBarButton: () => null,
-              headerShown: false,
-              tabBarStyle: { display: 'none' },
-            }}
-          />
-          </Tabs>
+            <Stack.Screen
+              name="index"
+              options={{
+                title: 'Feed',
+                header: () => <CustomHeader isMain={false} customTitle={<HeaderLogo />} titleAlign="left" right={<FeedHeaderActions />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="login"
+              options={{
+                title: 'Sign In',
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="register"
+              options={{
+                title: 'Create Account',
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="discover"
+              options={{
+                title: 'Discover',
+                header: () => <CustomHeader isMain={false} title="Discover" titleAlign="left" right={<CustomHeaderActions />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="highlights"
+              options={{
+                title: 'Highlights',
+                header: () => <CustomHeader title="Highlights" />,
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="saved"
+              options={{
+                title: 'Saved',
+                header: () => <CustomHeader isMain={false} title="Saved" titleAlign="left" right={<CustomHeaderActions />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="profile"
+              options={{
+                title: 'Profile',
+                header: () => <CustomHeader isMain={false} title="you" titleAlign="left" right={<ProfileHeaderActions />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="compose"
+              options={{
+                title: 'New Story',
+                header: () => <CustomHeader title="New Story" left={<BackButton />} />,
+                headerShown: false,
+                presentation: 'modal',
+              }}
+            />
+            <Stack.Screen
+              name="notifications"
+              options={{
+                title: 'Activity',
+                header: () => <CustomHeader title="Activity" left={<BackButton />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="settings"
+              options={{
+                title: 'Settings',
+                header: () => <CustomHeader title="Settings" left={<BackButton />} />,
+                headerShown: true,
+              }}
+            />
+            <Stack.Screen
+              name="feed-api"
+              options={{
+                title: 'Feed API',
+                headerShown: false,
+              }}
+            />
+          </Stack>
         </AuthGate>
       </GestureHandlerRootView>
     </AuthProvider>
@@ -444,11 +408,16 @@ const tabStyles = StyleSheet.create({
     elevation: 2,
     width: '100%',
     paddingTop: 3,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
   tabBarContainer: {
     flexDirection: 'row',
     width: '100%',
-    height: TAB_BAR_CONTENT_HEIGHT ,
+    height: TAB_BAR_CONTENT_HEIGHT,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'space-around',

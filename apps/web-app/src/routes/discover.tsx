@@ -165,7 +165,7 @@ function DiscoverPage() {
                       to="/category/$name"
                       params={{ name: c.slug }}
                       className="aspect-[4/3] rounded-2xl p-5 flex flex-col justify-between overflow-hidden hover:scale-[1.02] transition-transform"
-                      style={{ backgroundColor: c.tint }}
+                      style={{ backgroundColor: c.tint+'50' }}
                     >
                       <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/60">
                         Section

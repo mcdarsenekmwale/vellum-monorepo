@@ -39,6 +39,7 @@ export interface ApiClientConfig {
   storage: Storage;
   onAuthError?: () => void;
   onRefreshToken?: (tokens: { accessToken: string; refreshToken: string }) => void;
+  withCredentials?: boolean;
 }
 
 export class ApiClient {
@@ -46,6 +47,7 @@ export class ApiClient {
   private storage: Storage;
   private onAuthError?: () => void;
   private onRefreshToken?: (tokens: { accessToken: string; refreshToken: string }) => void;
+  private withCredentials: boolean;
   private refreshPromise?: Promise<string>;
 
   constructor(config: ApiClientConfig) {
@@ -53,6 +55,7 @@ export class ApiClient {
     this.storage = config.storage;
     this.onAuthError = config.onAuthError;
     this.onRefreshToken = config.onRefreshToken;
+    this.withCredentials = config.withCredentials ?? false;
   }
 
   // Token management
@@ -157,6 +160,7 @@ export class ApiClient {
     const fetchOptions: RequestInit = {
       method,
       headers,
+      credentials: this.withCredentials ? 'include' : 'same-origin',
     };
 
     if (body && method !== 'GET') {
@@ -170,7 +174,7 @@ export class ApiClient {
       try {
         const newToken = await this.refreshAccessToken();
         headers['Authorization'] = `Bearer ${newToken}`;
-        const retryResponse = await fetch(url, { ...fetchOptions, headers });
+        const retryResponse = await fetch(url, { ...fetchOptions, headers, credentials: this.withCredentials ? 'include' : 'same-origin' });
         return this.handleResponse<T>(retryResponse);
       } catch {
         await this.clearTokens();

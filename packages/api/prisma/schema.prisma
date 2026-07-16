@@ -17,6 +17,8 @@ model User {
   name          String
   avatar        String?
   bio           String?
+  website       String?
+  location      String?
   publication   String?
   role          Role           @default(USER)
   isActive      Boolean        @default(true)
@@ -39,6 +41,8 @@ model User {
   stories       Story[]        @relation("StoryAuthor")
   storyViews    StoryView[]    @relation("StoryViewViewer")
   settings      UserSettings?  @relation("UserSettings")
+  reports       Report[]       @relation("ReportReporter")
+  supportTickets SupportTicket[] @relation("SupportTicketUser")
 
   @@index([handle])
   @@index([email])
@@ -216,17 +220,21 @@ model Follow {
 }
 
 model Notification {
-  id          String           @id @default(uuid())
-  userId      String
-  actorId     String?
-  kind        NotificationKind
-  articleSlug String?
-  highlightId String?
-  commentId   String?
-  body        String?
-  read        Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  user        User             @relation("NotificationUser", fields: [userId], references: [id])
+  id           String           @id @default(uuid())
+  userId       String
+  actorId      String?
+  kind         NotificationKind
+  articleSlug  String?
+  highlightId  String?
+  commentId    String?
+  body         String?
+  metadata     Json?
+  read         Boolean          @default(false)
+  readAt       DateTime?
+  scheduledFor DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation("NotificationUser", fields: [userId], references: [id])
 
   @@index([userId])
   @@index([userId, read])
@@ -313,14 +321,19 @@ model AuditLog {
   resource   String
   resourceId String?
   details    Json?
+  metadata   Json?    // Additional metadata (description, etc.)
+  changes    Json?    // Field changes (old/new values)
+  success    Boolean  @default(true)
   ipAddress  String?
   userAgent  String?
+  location   String?  // Geographic location from IP
   createdAt  DateTime @default(now())
   user       User?    @relation("AuditLogUser", fields: [userId], references: [id])
 
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+  @@index([success])
 }
 
 model ApiKey {
@@ -337,6 +350,110 @@ model ApiKey {
 
   @@index([userId])
   @@index([key])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  targetType  String   // "Article" | "Highlight" | "Comment" | "User"
+  targetId    String
+  reason      String   // "spam" | "harassment" | "copyright" | "inappropriate" | "other"
+  reporterId  String
+  status      String   @default("open") // "open" | "reviewing" | "resolved" | "dismissed"
+  priority    String   @default("medium") // "low" | "medium" | "high" | "critical"
+  aiScore     Int?     // AI risk score (0-100)
+  aiCategory  String?  // AI detected category
+  notes       String?
+  resolvedById String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter    User     @relation("ReportReporter", fields: [reporterId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@index([reporterId])
+  @@index([createdAt])
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+
+  @@index([slug])
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  description String
+  enabled   Boolean  @default(false)
+  rollout   Int      @default(0) // 0-100 percentage
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  category  String   @default("general") // "general" | "branding" | "auth" | "security" | "uploads" | "notifications" | "email" | "api" | "integrations" | "appearance" | "localization"
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([key])
+  @@index([category])
+}
+
+model Advertisement {
+  id          String    @id @default(uuid())
+  name        String
+  status      String    @default("draft") // "draft" | "active" | "paused" | "completed"
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  spend       Float     @default(0)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIAgent {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  model       String   @default("gpt-4")
+  status      String   @default("idle") // "idle" | "running" | "error" | "disabled"
+  runs        Int      @default(0)
+  lastRunAt   DateTime?
+  config      Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model BackgroundJob {
+  id        String   @id @default(uuid())
+  name      String
+  queue     String   @default("default")
+  status    String   @default("pending") // "pending" | "running" | "success" | "failed" | "retry"
+  duration  Int?     // milliseconds
+  error     String?
+  payload   Json?
+  ranAt     DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([queue])
+  @@index([ranAt])
 }
 
 enum Role {
@@ -361,4 +478,41 @@ enum MediaType {
   IMAGE
   VIDEO
   DOCUMENT
+}
+
+model HelpArticle {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String
+  content     String[]
+  category    String   // "Basics" | "Access" | "Trust & Safety" | "Developers" | "Analytics" | "AI"
+  icon        String   // icon name like "BookOpen", "Users", etc.
+  readMinutes Int      @default(3)
+  popular     Boolean  @default(false)
+  views       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  subject   String
+  message   String
+  priority  String   @default("medium") // "low" | "medium" | "high" | "critical"
+  status    String   @default("open")   // "open" | "in_progress" | "resolved" | "closed"
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("SupportTicketUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
 }

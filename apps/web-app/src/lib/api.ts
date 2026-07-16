@@ -10,6 +10,7 @@ const storage = {
 export const apiClient = createApiClient({
   baseUrl: apiBaseUrl,
   storage,
+  withCredentials: true,
 });
 
 export type { User, Article, Highlight, Comment, Category, Notification, PaginatedResponse, Story, UserSettings, ArticleAuthor, SearchResults } from '@vellum/api-client/types';

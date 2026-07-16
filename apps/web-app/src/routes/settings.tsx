@@ -1,5 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { apiClient } from "@/lib/api";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { requireAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -8,11 +8,8 @@ export const Route = createFileRoute("/settings")({
       { name: "description", content: "Customize your Vellum experience." },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/settings" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: SettingsLayout,
 });

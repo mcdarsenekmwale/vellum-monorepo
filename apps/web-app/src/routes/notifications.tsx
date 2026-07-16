@@ -1,6 +1,7 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
 import { useNotifications } from "@/hooks/useApi";
+import { requireAuth } from "@/lib/auth";
 import { apiClient } from "@/lib/api";
 import { Heart, MessageCircle, UserPlus, Bookmark } from "lucide-react";
 import type { ComponentType } from "react";
@@ -44,11 +45,8 @@ export const Route = createFileRoute("/notifications")({
       { name: "description", content: "Recent activity on your stories and profile." },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/notifications" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: NotificationsPage,
 });

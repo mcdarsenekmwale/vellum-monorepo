@@ -2,6 +2,9 @@ import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, Request }
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { StoriesService } from './stories.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Stories')
 @Controller('api/stories')
@@ -9,9 +12,11 @@ export class StoriesController {
   constructor(private storiesService: StoriesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Create a story' })
   @ApiResponse({ status: 201, description: 'Story created' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async createStory(@Request() req: any, @Body() body: { image: string; caption?: string; duration?: number }) {
     return this.storiesService.createStory(req.user.id, body.image, body.caption, body.duration);
   }
@@ -47,10 +52,12 @@ export class StoriesController {
   }
 
   @Delete(':storyId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Delete a story' })
   @ApiResponse({ status: 200, description: 'Story deleted' })
   @ApiResponse({ status: 404, description: 'Story not found' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async deleteStory(@Request() req: any, @Param('storyId') storyId: string) {
     return this.storiesService.deleteStory(req.user.id, storyId);
   }

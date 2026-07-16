@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { useAuthState } from "@/hooks/useApi";
+import { getRedirectUrl } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -20,7 +21,7 @@ function LoginPage() {
 
   if (isAuthenticated) {
     const search = router.state.location.search as Record<string, string>;
-    const redirect = search?.redirect || "/";
+    const redirect = getRedirectUrl(search);
     router.navigate({ to: redirect });
     return null;
   }
@@ -32,7 +33,7 @@ function LoginPage() {
     try {
       await login(email, password);
       const search = router.state.location.search as Record<string, string>;
-      const redirect = search?.redirect || "/";
+      const redirect = getRedirectUrl(search);
       router.navigate({ to: redirect });
     } catch (err: any) {
       setError(err.message || "Invalid email or password");

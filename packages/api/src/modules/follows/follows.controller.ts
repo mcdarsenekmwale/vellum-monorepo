@@ -2,6 +2,9 @@ import { Controller, Post, Get, Query, Param, UseGuards, Request } from '@nestjs
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FollowsService } from './follows.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Follows')
 @Controller('api/follows')
@@ -9,9 +12,11 @@ export class FollowsController {
   constructor(private followsService: FollowsService) {}
 
   @Post(':userId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Follow or unfollow a user' })
   @ApiResponse({ status: 200, description: 'Follow toggled' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async followUser(@Request() req: any, @Param('userId') userId: string) {
     return this.followsService.followUser(req.user.id, userId);
   }
