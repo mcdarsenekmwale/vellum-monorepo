@@ -31,8 +31,7 @@ jobs:
 
       - name: Check database connectivity
         run: |
-          cd packages/api
-          cat <<'SCRIPT' > /tmp/check-db.mjs
+          cat <<'SCRIPT' > check-db.mjs
           import pg from "pg";
           const { Client } = pg;
           const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
@@ -60,14 +59,14 @@ jobs:
             process.exit(1);
           }
           SCRIPT
-          node /tmp/check-db.mjs
+          node check-db.mjs
+        working-directory: packages/api
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
 
       - name: Apply sync migration
         run: |
-          cd packages/api
           MIGRATION_NAME="${{ github.event.inputs.migration_name }}"
           MIGRATION_PATH="prisma/migrations/${MIGRATION_NAME}/migration.sql"
           
@@ -79,7 +78,7 @@ jobs:
           echo "Applying migration: $MIGRATION_NAME"
           echo "File size: $(wc -c < "$MIGRATION_PATH") bytes"
           
-          cat <<'SCRIPT' > /tmp/apply-migration.mjs
+          cat <<'SCRIPT' > apply-migration.mjs
           import pg from "pg";
           import fs from "node:fs";
           import path from "node:path";
@@ -161,7 +160,8 @@ jobs:
           }
           SCRIPT
           
-          MIGRATION_NAME="$MIGRATION_NAME" node /tmp/apply-migration.mjs
+          MIGRATION_NAME="$MIGRATION_NAME" node apply-migration.mjs
+        working-directory: packages/api
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
