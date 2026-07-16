@@ -171,10 +171,15 @@ jobs:
                 const connData = detail.data || detail;
                 console.log(`\n--- Connection detail: ${c.name} ---`);
                 console.log(`  kind: ${connData.kind || connData.type || 'unknown'}`);
+                console.log(`  Keys: ${Object.keys(connData).join(', ')}`);
                 console.log(`  has connectionString: ${!!connData.connectionString}`);
                 if (connData.connectionString) {
-                  console.log(`  connectionString starts with: ${connData.connectionString.slice(0, 30)}...`);
+                  console.log(`  connectionString (first 60): ${connData.connectionString.slice(0, 60)}...`);
                 }
+                // Check for apiKey, token, username, password fields
+                ['apiKey', 'token', 'key', 'username', 'password', 'user'].forEach(k => {
+                  if (connData[k]) console.log(`  has ${k}: yes (len=${connData[k].length})`);
+                });
                 if (connData.endpoints) {
                   console.log(`  direct endpoint: ${connData.endpoints.direct?.host}:${connData.endpoints.direct?.port}`);
                   console.log(`  pooled endpoint: ${connData.endpoints.pooled?.host}:${connData.endpoints.pooled?.port}`);
