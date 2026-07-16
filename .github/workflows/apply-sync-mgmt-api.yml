@@ -136,20 +136,59 @@ jobs:
             // Find/create a direct connection with full connection string
             let connectionString = null;
             
+            // Helper to build a postgres URL from connection data
+            function buildPgUrl(connData) {
+              // If connectionString is already a postgres:// URL, use it
+              if (connData.connectionString && connData.connectionString.startsWith('postgres')) {
+                // If it's an accelerate URL (prisma+postgres://), we need to build a real one
+                if (connData.connectionString.startsWith('prisma+postgres://')) {
+                  // Extract API key from accelerate URL
+                  const apiKeyMatch = connData.connectionString.match(/api_key=([^&]+)/);
+                  const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
+                  // Use direct endpoint
+                  const host = connData.endpoints?.direct?.host || 'db.prisma.io';
+                  const port = connData.endpoints?.direct?.port || 5432;
+                  const db = connData.database || 'postgres';
+                  // For Prisma Postgres, username is the API key, password can be anything (often empty)
+                  return `postgres://${apiKey}@${host}:${port}/${db}?sslmode=require`;
+                }
+                return connData.connectionString;
+              }
+              
+              // Build from username/password/endpoint
+              const user = connData.username || connData.user || '';
+              const password = connData.password || '';
+              const host = connData.endpoints?.direct?.host || connData.hostname || connData.host || 'localhost';
+              const port = connData.endpoints?.direct?.port || connData.port || 5432;
+              const db = connData.database || connData.db || 'postgres';
+              const userPass = password ? `${user}:${password}` : user;
+              return `postgres://${userPass}@${host}:${port}/${db}?sslmode=require`;
+            }
+            
             // Try each connection to get the full detail
             for (const c of connections) {
               try {
                 const detail = await api("GET", `/v1/connections/${c.id}`);
                 const connData = detail.data || detail;
+                console.log(`\n--- Connection detail: ${c.name} ---`);
+                console.log(`  kind: ${connData.kind || connData.type || 'unknown'}`);
+                console.log(`  has connectionString: ${!!connData.connectionString}`);
                 if (connData.connectionString) {
-                  console.log(`\nFound connection string for ${c.name}:`);
-                  console.log(`  ${maskUrl(connData.connectionString)}`);
-                  // Prefer direct (non-pooled) connection
-                  const isPooled = connData.connectionString?.includes('pooled.');
-                  if (!isPooled || !connectionString) {
-                    connectionString = connData.connectionString;
-                    if (!isPooled) break; // Got a direct one, use it
-                  }
+                  console.log(`  connectionString starts with: ${connData.connectionString.slice(0, 30)}...`);
+                }
+                if (connData.endpoints) {
+                  console.log(`  direct endpoint: ${connData.endpoints.direct?.host}:${connData.endpoints.direct?.port}`);
+                  console.log(`  pooled endpoint: ${connData.endpoints.pooled?.host}:${connData.endpoints.pooled?.port}`);
+                }
+                
+                const builtUrl = buildPgUrl(connData);
+                console.log(`  Built URL: ${maskUrl(builtUrl)}`);
+                
+                // Prefer direct connection (has direct endpoint
+                const isPooled = builtUrl.includes('pooled.');
+                if (!isPooled || !connectionString) {
+                  connectionString = builtUrl;
+                  if (!isPooled) break;
                 }
               } catch (e) {
                 console.log(`  Failed to get detail for ${c.id}: ${e.message}`);
@@ -165,10 +204,11 @@ jobs:
                   type: "direct",
                 });
                 const newConnData = newConn.data || newConn;
-                if (newConnData.connectionString) {
-                  console.log(`  New connection: ${maskUrl(newConnData.connectionString)}`);
-                  connectionString = newConnData.connectionString;
-                }
+                console.log(`  New connection kind: ${newConnData.kind || newConnData.type || 'unknown'}`);
+                console.log(`  has connectionString: ${!!newConnData.connectionString}`);
+                const builtUrl = buildPgUrl(newConnData);
+                console.log(`  Built URL: ${maskUrl(builtUrl)}`);
+                connectionString = builtUrl;
               } catch (e) {
                 console.log(`  Failed to create connection: ${e.message}`);
               }
