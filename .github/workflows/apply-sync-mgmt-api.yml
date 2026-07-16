@@ -29,7 +29,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
 
-      - name: Find database and get connection string
+      - name: Find database and get connection config
         run: |
           cat <<'SCRIPT' > find-db.mjs
           import fs from "node:fs";
@@ -59,19 +59,13 @@ jobs:
             return data;
           }
 
-          function maskUrl(url) {
-            return url.replace(/(postgresql?:\/\/[^:]+:)[^@]+(@)/, "$1***$2");
-          }
-
           try {
             // List projects
             console.log("Fetching projects...");
             const projects = await api("GET", "/v1/projects");
             const projectList = projects.data || projects;
             console.log(`Projects: ${projectList.length}`);
-            projectList.forEach(p => console.log(` - ${p.id}: ${p.name}`));
 
-            // List databases in first project
             const projectId = process.env.PRISMA_PROJECT_ID || projectList[0]?.id;
             if (!projectId) {
               console.error("No project found");
@@ -96,170 +90,45 @@ jobs:
             // Pick the first database
             const db = databases[0];
             console.log(`\nSelected database: ${db.name} (${db.id})`);
-            console.log(`  Status: ${db.status || db.state || 'unknown'}`);
 
-            // Try to resume if paused
-            const status = (db.status || db.state || '').toUpperCase();
-            if (status.includes('PAUSED') || status.includes('SUSPENDED') || status.includes('STOPPED')) {
-              console.log("\nDatabase is paused. Trying to resume...");
-              try {
-                const resumeRes = await api("POST", `/v1/databases/${db.id}/resume`);
-                console.log("  Resume triggered:", JSON.stringify(resumeRes).slice(0, 200));
-              } catch (e) {
-                console.log("  Resume endpoint not available, trying restart...");
-                try {
-                  const restartRes = await api("POST", `/v1/databases/${db.id}/restart`);
-                  console.log("  Restart triggered:", JSON.stringify(restartRes).slice(0, 200));
-                } catch (e2) {
-                  console.log("  Restart also failed:", e2.message);
-                }
-              }
-              
-              // Wait a bit for it to come up
-              console.log("  Waiting 30s for database to resume...");
-              await new Promise(r => setTimeout(r, 30000));
-            }
-
-            // List connections
-            console.log("\nFetching connections...");
-            const connsRes = await api("GET", `/v1/databases/${db.id}/connections`);
-            const connections = connsRes.data || connsRes || [];
-            console.log(`Connections: ${connections.length}`);
-            connections.forEach(c => {
-              console.log(` - ${c.id}: ${c.name} (kind: ${c.kind || c.type || 'unknown'})`);
-              if (c.endpoints) {
-                if (c.endpoints.direct) console.log(`   Direct: ${c.endpoints.direct.host}:${c.endpoints.direct.port}`);
-                if (c.endpoints.pooled) console.log(`   Pooled: ${c.endpoints.pooled.host}:${c.endpoints.pooled.port}`);
-              }
+            // Create a new direct connection to get fresh credentials
+            console.log("\nCreating new direct connection...");
+            const newConn = await api("POST", `/v1/databases/${db.id}/connections`, {
+              name: `sync-migration-${Date.now()}`,
+              type: "direct",
             });
+            const connData = newConn.data || newConn;
+            console.log(`  Connection created: ${connData.id || connData.name || 'unknown'}`);
+            console.log(`  Keys: ${Object.keys(connData).join(', ')}`);
 
-            // Find/create a direct connection with full connection string
-            let connectionString = null;
-            
-            // Helper to build a postgres URL from connection data
-            function buildPgUrl(connData) {
-              // If user and pass fields are available, use them directly with the direct endpoint
-              if (connData.user || connData.username) {
-                const user = connData.user || connData.username;
-                const password = connData.pass || connData.password || '';
-                const host = connData.host || connData.hostname || connData.endpoints?.direct?.host || 'db.prisma.io';
-                const port = connData.port || connData.endpoints?.direct?.port || 5432;
-                const userPass = password ? `${user}:${password}` : user;
-                return `postgres://${userPass}@${host}:${port}/postgres?sslmode=require`;
-              }
-              
-              // The connection might have 'url' or 'connectionString' field
-              const rawUrl = connData.url || connData.connectionString || '';
-              
-              // If it's already a postgres:// URL, use it
-              if (rawUrl && typeof rawUrl === 'string' && 
-                  rawUrl.startsWith('postgres') && 
-                  !rawUrl.startsWith('prisma+')) {
-                return rawUrl;
-              }
-              
-              // If it's a prisma+postgres (accelerate) URL, extract API key and build real URL
-              if (rawUrl && typeof rawUrl === 'string' && 
-                  rawUrl.startsWith('prisma+postgres://')) {
-                const apiKeyMatch = rawUrl.match(/api_key=([^&]+)/);
-                const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
-                const host = connData.endpoints?.direct?.host || 'db.prisma.io';
-                const port = connData.endpoints?.direct?.port || 5432;
-                if (apiKey) {
-                  return `postgres://${apiKey}@${host}:${port}/postgres?sslmode=require`;
-                }
-              }
-              
-              // Fallback: return url as-is
-              return rawUrl;
-            }
-            
-            // Try each connection to get the full detail
-            for (const c of connections) {
-              try {
-                const detail = await api("GET", `/v1/connections/${c.id}`);
-                const connData = detail.data || detail;
-                console.log(`\n--- Connection detail: ${c.name} ---`);
-                console.log(`  kind: ${connData.kind || connData.type || 'unknown'}`);
-                console.log(`  Keys: ${Object.keys(connData).join(', ')}`);
-                console.log(`  type: ${connData.type}`);
-                console.log(`  kind: ${connData.kind}`);
-                console.log(`  has url: ${!!connData.url}`);
-                if (connData.url) {
-                  console.log(`  url (first 60): ${connData.url.slice(0, 60)}...`);
-                }
-                console.log(`  has connectionString: ${!!connData.connectionString}`);
-                if (connData.connectionString) {
-                  console.log(`  connectionString (first 60): ${connData.connectionString.slice(0, 60)}...`);
-                }
-                // Check for apiKey, token, username, password fields
-                ['apiKey', 'token', 'key', 'username', 'password', 'user'].forEach(k => {
-                  if (connData[k]) console.log(`  has ${k}: yes (len=${connData[k].length})`);
-                });
-                if (connData.endpoints) {
-                  console.log(`  direct endpoint: ${connData.endpoints.direct?.host}:${connData.endpoints.direct?.port}`);
-                  console.log(`  pooled endpoint: ${connData.endpoints.pooled?.host}:${connData.endpoints.pooled?.port}`);
-                }
-                
-                const builtUrl = buildPgUrl(connData);
-                console.log(`  Built URL: ${maskUrl(builtUrl)}`);
-                
-                // Prefer direct connection (has direct endpoint
-                const isPooled = builtUrl.includes('pooled.');
-                if (!isPooled || !connectionString) {
-                  connectionString = builtUrl;
-                  if (!isPooled) break;
-                }
-              } catch (e) {
-                console.log(`  Failed to get detail for ${c.id}: ${e.message}`);
-              }
-            }
+            // Build connection config from user/pass/host fields
+            const connConfig = {
+              user: connData.user || '',
+              password: connData.pass || connData.password || '',
+              host: connData.host || connData.hostname || 'db.prisma.io',
+              port: connData.port || 5432,
+              database: 'postgres',
+              ssl: { rejectUnauthorized: false },
+              connectionTimeoutMillis: 30000,
+            };
 
-            // If no direct connection, try creating one
-            if (!connectionString || !connectionString.startsWith('postgres:') || connectionString.includes('pooled.')) {
-              console.log("\nCreating new direct connection...");
-              try {
-                const newConn = await api("POST", `/v1/databases/${db.id}/connections`, {
-                  name: `sync-migration-${Date.now()}`,
-                  type: "direct",
-                });
-                const newConnData = newConn.data || newConn;
-                console.log(`  New connection keys: ${Object.keys(newConnData).join(', ')}`);
-                console.log(`  kind: ${newConnData.kind || newConnData.type || 'unknown'}`);
-                console.log(`  has url: ${!!newConnData.url}`);
-                console.log(`  has connectionString: ${!!newConnData.connectionString}`);
-                if (newConnData.connectionString) {
-                  console.log(`  connectionString (first 60): ${newConnData.connectionString.slice(0, 60)}...`);
-                }
-                if (newConnData.url) {
-                  console.log(`  url (first 60): ${newConnData.url.slice(0, 60)}...`);
-                }
-                // Check for all possible fields
-                Object.keys(newConnData).forEach(k => {
-                  const val = newConnData[k];
-                  if (typeof val === 'string' && val.includes('postgres')) {
-                    console.log(`  Field '${k}' contains postgres: ${val.slice(0, 50)}...`);
-                  }
-                });
-                const builtUrl = buildPgUrl(newConnData);
-                console.log(`  Built URL: ${maskUrl(builtUrl)}`);
-                if (builtUrl && builtUrl.startsWith('postgres:') && !builtUrl.startsWith('postgres://@')) {
-                  connectionString = builtUrl;
-                }
-              } catch (e) {
-                console.log(`  Failed to create connection: ${e.message}`);
-              }
-            }
+            console.log(`\nConnection config:`);
+            console.log(`  host: ${connConfig.host}:${connConfig.port}`);
+            console.log(`  user: ${connConfig.user ? connConfig.user.slice(0, 10) + '...' : 'not set'}`);
+            console.log(`  password: ${connConfig.password ? 'set (' + connConfig.password.length + ' chars)' : 'not set'}`);
+            console.log(`  database: ${connConfig.database}`);
 
-            if (!connectionString) {
-              console.error("\nCould not find or create a connection string");
+            if (!connConfig.user) {
+              console.error("\nNo user found in connection data");
               process.exit(1);
             }
 
-            // Save for next step
-            fs.writeFileSync(path.join(process.cwd(), ".db-conn.txt"), connectionString);
-            console.log("\nConnection string saved.");
-            console.log(`Masked: ${maskUrl(connectionString)}`);
+            // Save connection config as JSON
+            fs.writeFileSync(
+              path.join(process.cwd(), ".db-conn.json"),
+              JSON.stringify(connConfig)
+            );
+            console.log("\nConnection config saved to .db-conn.json");
 
           } catch (e) {
             console.error("Error:", e.message);
@@ -283,8 +152,8 @@ jobs:
             exit 1
           fi
           
-          if [ ! -f ".db-conn.txt" ]; then
-            echo "Connection string file not found"
+          if [ ! -f ".db-conn.json" ]; then
+            echo "Connection config file not found"
             exit 1
           fi
           
@@ -300,28 +169,18 @@ jobs:
           const migrationName = process.env.MIGRATION_NAME;
           const migrationPath = path.resolve(process.cwd(), "prisma/migrations", migrationName, "migration.sql");
           
-          // Read connection string from file
-          let url = process.env.DB_CONN;
-          if (!url && fs.existsSync(".db-conn.txt")) {
-            url = fs.readFileSync(".db-conn.txt", "utf-8").trim();
-          }
-          
-          if (!url) {
-            console.error("No database connection string found");
+          // Read connection config from JSON file
+          let connConfig;
+          try {
+            connConfig = JSON.parse(fs.readFileSync(".db-conn.json", "utf-8"));
+          } catch (e) {
+            console.error("Failed to read connection config:", e.message);
             process.exit(1);
           }
           
-          function maskUrl(u) {
-            return u.replace(/(postgresql?:\/\/[^:]+:)[^@]+(@)/, "$1***$2");
-          }
+          console.log(`Connecting to ${connConfig.user.slice(0, 10)}...@${connConfig.host}:${connConfig.port}/${connConfig.database}`);
           
-          console.log("Connecting to:", maskUrl(url));
-          
-          const client = new Client({
-            connectionString: url,
-            ssl: { rejectUnauthorized: false },
-            connectionTimeoutMillis: 30000,
-          });
+          const client = new Client(connConfig);
           
           try {
             await client.connect();
@@ -404,4 +263,3 @@ jobs:
         working-directory: packages/api
         env:
           MIGRATION_NAME: ${{ github.event.inputs.migration_name }}
-          DB_CONN: ""
