@@ -2,6 +2,9 @@ import { Controller, Get, Post, Delete, Param, Query, UseGuards, Request, Upload
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Media')
@@ -10,11 +13,13 @@ export class MediaController {
   constructor(private mediaService: MediaService) {}
 
   @Post('upload')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload media file' })
   @ApiResponse({ status: 201, description: 'Media uploaded' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async uploadMedia(@Request() req: any, @UploadedFile() file: any) {
     return this.mediaService.uploadMedia(req.user.id, file);
   }

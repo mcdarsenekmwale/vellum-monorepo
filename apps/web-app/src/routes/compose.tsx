@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { WebShell } from "@/components/WebShell";
 import { ArrowLeft, ImagePlus, Sparkles, Send } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { useCategories } from "@/hooks/useApi";
+import { requireAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/compose")({
   head: () => ({
@@ -14,11 +15,8 @@ export const Route = createFileRoute("/compose")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/compose" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: ComposePage,
 });

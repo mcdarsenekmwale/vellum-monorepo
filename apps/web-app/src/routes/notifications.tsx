@@ -1,6 +1,7 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
 import { useNotifications } from "@/hooks/useApi";
+import { requireAuth } from "@/lib/auth";
 import { apiClient } from "@/lib/api";
 import { Heart, MessageCircle, UserPlus, Bookmark } from "lucide-react";
 import type { ComponentType } from "react";
@@ -44,11 +45,8 @@ export const Route = createFileRoute("/notifications")({
       { name: "description", content: "Recent activity on your stories and profile." },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/notifications" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: NotificationsPage,
 });
@@ -135,7 +133,7 @@ function NotificationsPage() {
                 }`}
               >
                 <div className="relative shrink-0">
-                  <img src={actor?.avatar || ""} alt="" className="size-12 rounded-full object-cover" />
+                  <img src={actor?.avatar || undefined} alt="" className="size-12 rounded-full object-cover" />
                   <span className="absolute -bottom-1 -right-1 size-6 rounded-full bg-background grid place-items-center border border-border">
                     <Icon className={`size-3.5 ${n.kind === "LIKE" ? "text-accent fill-accent" : "text-foreground"}`} />
                   </span>

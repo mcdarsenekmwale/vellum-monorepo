@@ -100,7 +100,7 @@ function FeedPage() {
             {isAuthenticated && user && (
               <Link to="/profile" className="flex-none flex flex-col items-center gap-1.5 w-16">
                 <div className="size-16 rounded-full p-0.5 ring-3 ring-amber-600 ring-offset-2 ring-offset-background">
-                  <img src={user.avatar || ""} alt="You" className="size-full rounded-full object-cover" />
+                  <img src={user.avatar || undefined} alt="You" className="size-full rounded-full object-cover" />
                 </div>
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground truncate w-full text-center">
                   You
@@ -134,7 +134,7 @@ function FeedPage() {
                     <div className={`size-16 rounded-full p-0.5 ring-3 ring-offset-2 ring-offset-background transition-all ${
                       unviewed ? "ring-amber-600" : "ring-muted-foreground/20"
                     }`}>
-                      <img src={author.avatar || ""} alt={author.name} className="size-full rounded-full object-cover" />
+                      <img src={author.avatar || undefined} alt={author.name} className="size-full rounded-full object-cover" />
                     </div>
                     <span className={`text-[10px] font-semibold uppercase tracking-wider truncate w-full text-center ${
                       unviewed ? "text-foreground" : "text-muted-foreground"
@@ -187,7 +187,7 @@ function FeedPage() {
                   to="/highlights"
                   className="flex-none w-[140px] aspect-[9/16] bg-muted rounded-2xl overflow-hidden relative group"
                 >
-                  <img src={r.cover || r.thumbnailUrl || ""} alt={r.title} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src={r.cover || r.thumbnailUrl || undefined} alt={r.title} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3 text-white">
                     <p className="text-[10px] font-medium opacity-80">{r.author?.handle || r.handle}</p>
@@ -258,7 +258,7 @@ function FeaturedPost({ article }: { article: Article }) {
       <Link to="/article/$slug" params={{ slug }} className="block">
         <div className="relative overflow-hidden rounded-[2rem] bg-muted mb-6">
           <img
-            src={article.cover || ""}
+            src={article.cover || undefined}
             alt={article.title}
             className="size-full object-cover aspect-[4/5]"
           />
@@ -297,7 +297,7 @@ function FeaturedPost({ article }: { article: Article }) {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img
-            src={article.author?.avatar || ""}
+            src={article.author?.avatar || undefined}
             alt=""
             className="size-12 rounded-full object-cover"
           />
@@ -396,7 +396,7 @@ function ArticleCard({ article }: { article: Article }) {
       <Link to="/article/$slug" params={{ slug }} className="block">
         <div className="overflow-hidden rounded-[1.5rem] bg-muted mb-5">
           <img
-            src={article.cover || ""}
+            src={article.cover || undefined}
             alt={article.title}
             className="size-full object-cover aspect-[16/10] hover:scale-[1.02] transition-transform duration-500"
           />
@@ -430,7 +430,7 @@ function ArticleCard({ article }: { article: Article }) {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img
-            src={article.author?.avatar || ""}
+            src={article.author?.avatar || undefined}
             alt=""
             className="size-10 rounded-full object-cover"
           />

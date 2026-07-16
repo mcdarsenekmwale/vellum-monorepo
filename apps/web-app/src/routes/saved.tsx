@@ -1,8 +1,8 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
 import { useBookmarkedArticles } from "@/hooks/useApi";
 import { Bookmark } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { requireAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/saved")({
   head: () => ({
@@ -11,11 +11,8 @@ export const Route = createFileRoute("/saved")({
       { name: "description", content: "The stories you've bookmarked to read later." },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await apiClient.getCurrentUser();
-    if (!user) {
-      throw redirect({ to: "/login", search: { redirect: "/saved" } });
-    }
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location.pathname);
   },
   component: SavedPage,
 });
@@ -90,7 +87,7 @@ function SavedPage() {
                 params={{ slug: a.slug }}
                 className="flex gap-4 p-4 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
               >
-                <img src={a.cover || ""} alt="" className="size-24 rounded-lg object-cover shrink-0" />
+                <img src={a.cover || undefined} alt="" className="size-24 rounded-lg object-cover shrink-0" />
                 <div className="min-w-0 space-y-1 flex-1">
                   <p className="text-[10px] font-bold text-accent tracking-widest uppercase">
                     {a.category?.name || "Article"}

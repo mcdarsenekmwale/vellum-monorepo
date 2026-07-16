@@ -182,7 +182,7 @@ export default function DiscoverPage() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {categories.map((c) => (
                 <Link key={c.name} href={`/category/${c.slug}`} asChild>
-                  <TouchableOpacity style={{ width: '47%', aspectRatio: 6/4, borderRadius: 16, backgroundColor: c.tint, padding: 12, justifyContent: 'space-between' }}>
+                  <TouchableOpacity style={{ width: '47%', aspectRatio: 6/4, borderRadius: 16, backgroundColor: c.tint+'50', padding: 12, justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: '#666666' }}>Section</Text>
                     <Text style={{ fontSize: 20, fontFamily: 'Georgia', fontStyle: 'italic', color: '#000000' }}>{c.name}</Text>
                   </TouchableOpacity>

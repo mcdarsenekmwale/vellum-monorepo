@@ -2,6 +2,9 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Requ
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 import { CreateArticleDto, UpdateArticleDto, ArticleQueryDto } from './dto/articles.dto';
 
 @ApiTags('Articles')
@@ -10,10 +13,12 @@ export class ArticlesController {
   constructor(private articlesService: ArticlesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Create a new article' })
   @ApiResponse({ status: 201, description: 'Article created' })
   @ApiResponse({ status: 400, description: 'Invalid input or category not found' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async createArticle(@Request() req: any, @Body() dto: CreateArticleDto) {
     return this.articlesService.createArticle(req.user.id, dto);
   }
@@ -32,7 +37,14 @@ export class ArticlesController {
   @ApiResponse({ status: 200, description: 'Articles retrieved' })
   async getArticles(@Query() query: ArticleQueryDto, @Request() req?: any) {
     const userId = req?.user?.id;
-    return this.articlesService.getArticles(query, userId);
+    try {
+      const result = await this.articlesService.getArticles(query, userId);
+      return result;
+    } catch (error: any) {
+      console.error('Articles query error:', error.message);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Get('author/:handle')
@@ -55,7 +67,8 @@ export class ArticlesController {
   }
 
   @Put(':slug')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Update an article' })
   @ApiResponse({ status: 200, description: 'Article updated' })
   @ApiResponse({ status: 403, description: 'Not authorized' })
@@ -65,7 +78,8 @@ export class ArticlesController {
   }
 
   @Delete(':slug')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Delete an article' })
   @ApiResponse({ status: 200, description: 'Article deleted' })
   @ApiResponse({ status: 403, description: 'Not authorized' })

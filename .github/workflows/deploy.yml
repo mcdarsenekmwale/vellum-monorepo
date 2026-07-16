@@ -1,0 +1,69 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main, api-only]
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build:packages
+      - name: Deploy web-app to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_WEB_APP_PROJECT_ID }}
+          working-directory: ./apps/web-app
+          vercel-args: '--prod'
+          vercel-env: |
+            NODE_ENV=production
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+
+  deploy-admin:
+    runs-on: ubuntu-latest
+    needs: [deploy-web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build:packages
+      - name: Deploy admin-dashboard to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+          working-directory: ./apps/admin-dashboard
+          vercel-args: '--prod'
+          vercel-env: |
+            NODE_ENV=production
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}/api
+
+  verify-deployments:
+    runs-on: ubuntu-latest
+    needs: [deploy-admin]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install requests
+        run: pip install requests
+      - name: Run API verification tests
+        run: python scripts/deploy-verify.py
+        env:
+          WEB_ORIGIN: ${{ secrets.WEB_ORIGIN }}
+          ADMIN_ORIGIN: ${{ secrets.ADMIN_ORIGIN }}
+          API_ORIGIN: ${{ secrets.VITE_API_BASE_URL }}

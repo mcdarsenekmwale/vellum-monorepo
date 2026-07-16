@@ -76,7 +76,7 @@ function ProfileIndexPage() {
         <section className="bg-card border border-border rounded-2xl p-8 mb-6">
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             <img
-              src={currentProfile?.avatar || ""}
+              src={currentProfile?.avatar || undefined}
               alt=""
               className="size-32 rounded-full object-cover ring-4 ring-accent ring-offset-4 ring-offset-card"
             />
@@ -100,7 +100,7 @@ function ProfileIndexPage() {
               </div>
               <div>
                 <p className="font-semibold">{currentProfile?.name || "You"}</p>
-                <p className="text-sm text-muted-foreground">{currentProfile?.bio || ""}</p>
+                <p className="text-sm text-muted-foreground">{currentProfile?.bio || undefined}</p>
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ function ProfileIndexPage() {
                         params={{ slug: a.slug }}
                         className="aspect-square bg-muted rounded-lg overflow-hidden group relative"
                       >
-                        <img src={a.cover || ""} alt="" className="size-full object-cover transition-transform group-hover:scale-105" />
+                        <img src={a.cover || undefined} alt="" className="size-full object-cover transition-transform group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-4 text-white font-semibold">
                             <span className="flex items-center gap-1">
@@ -206,7 +206,7 @@ function ProfileIndexPage() {
                           <h4 className="text-base leading-tight font-semibold">{a.title}</h4>
                           <p className="text-xs text-muted-foreground">{a.author?.name || "Unknown"}</p>
                         </div>
-                        <img src={a.cover || ""} alt="" className="size-20 rounded-lg object-cover" />
+                        <img src={a.cover || undefined} alt="" className="size-20 rounded-lg object-cover" />
                       </Link>
                     ))}
                   </div>

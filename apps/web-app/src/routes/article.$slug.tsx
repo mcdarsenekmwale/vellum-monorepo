@@ -136,7 +136,7 @@ function ArticleDetail() {
         <div className="relative mb-8">
           <div className="overflow-hidden rounded-[2rem] bg-muted">
             <img
-              src={article.cover || ""}
+              src={article.cover || undefined}
               alt={article.title}
               className="size-full object-cover"
             />
@@ -175,7 +175,7 @@ function ArticleDetail() {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img
-              src={article.author?.avatar || ""}
+              src={article.author?.avatar || undefined}
               alt=""
               className="size-12 rounded-full object-cover"
             />
@@ -396,7 +396,7 @@ function CommentBlock({
   return (
     <div className="flex gap-4">
       <img
-        src={comment.author?.avatar || ""}
+        src={comment.author?.avatar || undefined}
         alt=""
         className="size-10 rounded-full object-cover shrink-0"
       />
@@ -426,7 +426,7 @@ function CommentBlock({
             {replies.map((r) => (
               <div key={r.id} className="flex gap-3">
                 <img
-                  src={r.author?.avatar || ""}
+                  src={r.author?.avatar || undefined}
                   alt=""
                   className="size-8 rounded-full object-cover shrink-0"
                 />

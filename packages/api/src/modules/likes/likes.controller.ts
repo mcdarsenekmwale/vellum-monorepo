@@ -2,6 +2,9 @@ import { Controller, Post, Get, Query, UseGuards, Request, Body } from '@nestjs/
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LikesService } from './likes.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '@prisma/client';
 import { ToggleLikeDto } from './dto/likes.dto';
 
 @ApiTags('Likes')
@@ -10,9 +13,11 @@ export class LikesController {
   constructor(private likesService: LikesService) {}
 
   @Post('toggle')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Toggle like on content' })
   @ApiResponse({ status: 200, description: 'Like toggled' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async toggleLike(
     @Request() req: any,
     @Body() dto: ToggleLikeDto,

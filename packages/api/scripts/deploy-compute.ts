@@ -50,6 +50,7 @@ async function main() {
     envVars: {
       NODE_ENV: "production",
       DATABASE_URL: process.env.DATABASE_URL || undefined,
+      DIRECT_URL: process.env.DIRECT_URL || undefined,
       JWT_SECRET: process.env.JWT_SECRET || undefined,
       CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
       BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS || undefined,
@@ -59,11 +60,11 @@ async function main() {
     timeoutSeconds: 300,
     progress: {
       onBuildStart: () => console.log("  [build] Starting build..."),
-      onBuildEnd: () => console.log("  [build] Build complete"),
+      onBuildComplete: () => console.log("  [build] Build complete"),
       onUploadStart: () => console.log("  [upload] Uploading artifact..."),
-      onUploadEnd: () => console.log("  [upload] Upload complete"),
-      onDeployStart: () => console.log("  [deploy] Starting deployment..."),
-      onDeployEnd: () => console.log("  [deploy] Deployment complete"),
+      onUploadComplete: () => console.log("  [upload] Upload complete"),
+      onStatusChange: (status) => console.log(`  [deploy] Status: ${status}`),
+      onRunning: (url) => console.log(`  [deploy] Running at ${url}`),
     },
   });
 

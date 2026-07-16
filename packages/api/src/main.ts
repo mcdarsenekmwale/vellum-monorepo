@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
 import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -15,6 +16,8 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -47,7 +50,7 @@ async function bootstrap() {
   const corsOrigins = configService
     .get(
       'CORS_ORIGIN',
-      'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3004,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:8085,http://localhost:8086,http://localhost:8087,http://localhost:8088,http://localhost:8089,http://localhost:19006,https://vellum-monorepo-webapp.vercel.app',
+      process.env.CORS_ORIGIN??'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:8085,http://localhost:8086,http://localhost:8087,http://localhost:8088,http://localhost:8089,http://localhost:19006,https://vellum-monorepo-webapp.vercel.app',
     )
     .split(',');
 

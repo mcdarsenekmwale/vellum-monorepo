@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './modules/auth/auth.module';
@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { CacheModule } from './shared/cache/cache.module';
+import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware';
 
 @Module({
   imports: [
@@ -52,4 +53,8 @@ import { CacheModule } from './shared/cache/cache.module';
     HealthModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthLoggerMiddleware).forRoutes('*');
+  }
+}

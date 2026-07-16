@@ -13,11 +13,17 @@
     "dev:mobile": "cd apps/mobile-app && npm run start",
     "build:api": "cd packages/api && npm run build",
     "build:web": "cd apps/web-app && npm run build",
+    "build:admin": "cd apps/admin-dashboard && npm run build",
     "build:mobile": "cd apps/mobile-app && npm run build",
+    "dev:admin": "cd apps/admin-dashboard && npm run dev",
     "build:packages": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:e2e": "cd tests/e2e && npx tsc --noEmit",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "db:migrate": "cd packages/api && npx prisma migrate dev",
     "db:seed": "cd packages/api && npx prisma db seed",
     "db:generate": "cd packages/api && npx prisma generate",
@@ -26,5 +32,11 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
   }
 }
