@@ -34,28 +34,49 @@ jobs:
           cat <<'SCRIPT' > check-db.mjs
           import pg from "pg";
           const { Client } = pg;
-          const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
-          console.log("Connecting to:", url.replace(/(:[^:@]+@)/, ":***@"));
-          const client = new Client({
-            connectionString: url,
-            ssl: { rejectUnauthorized: false },
-            connectionTimeoutMillis: 30000,
-          });
-          try {
-            await client.connect();
-            console.log("Connected successfully!");
-            const { rows } = await client.query(
-              "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
-            );
-            console.log(`Tables before: ${rows.length}`);
-            rows.forEach(r => console.log(` - ${r.table_name}`));
-            const { rows: colRows } = await client.query(
-              "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_schema='public'"
-            );
-            console.log(`Columns total: ${colRows[0].count}`);
-            await client.end();
-          } catch (e) {
-            console.error("Connection failed:", e.message);
+          
+          function deriveDirectUrl(pooledUrl) {
+            if (!pooledUrl) return null;
+            return pooledUrl.replace('pooled.db.prisma.io', 'db.prisma.io');
+          }
+          
+          const directUrl = process.env.DIRECT_URL || deriveDirectUrl(process.env.DATABASE_URL);
+          const databaseUrl = process.env.DATABASE_URL;
+          
+          console.log("DIRECT_URL set:", !!process.env.DIRECT_URL);
+          console.log("DATABASE_URL set:", !!process.env.DATABASE_URL);
+          console.log("Using direct URL:", directUrl ? directUrl.replace(/(:[^:@]+@)/, ':***@') : 'none');
+          
+          async function tryConnect(url, label) {
+            console.log(`\n--- Trying ${label} ---`);
+            const client = new Client({
+              connectionString: url,
+              ssl: { rejectUnauthorized: false },
+              connectionTimeoutMillis: 15000,
+            });
+            try {
+              await client.connect();
+              console.log(`${label}: Connected successfully!`);
+              const { rows } = await client.query(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+              );
+              console.log(`${label}: Tables found: ${rows.length}`);
+              rows.slice(0, 10).forEach(r => console.log(` - ${r.table_name}`));
+              if (rows.length > 10) console.log(` ... and ${rows.length - 10} more`);
+              await client.end();
+              return true;
+            } catch (e) {
+              console.log(`${label}: Failed - ${e.message}`);
+              try { await client.end(); } catch {}
+              return false;
+            }
+          }
+          
+          const directOk = directUrl ? await tryConnect(directUrl, "DIRECT_URL") : false;
+          const pooledOk = databaseUrl ? await tryConnect(databaseUrl, "DATABASE_URL (pooled)") : false;
+          
+          if (!directOk && !pooledOk) {
+            console.log("\nAll connections failed");
             process.exit(1);
           }
           SCRIPT
@@ -84,7 +105,15 @@ jobs:
           import path from "node:path";
           
           const { Client } = pg;
-          const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
+          
+          function deriveDirectUrl(pooledUrl) {
+            if (!pooledUrl) return null;
+            return pooledUrl.replace('pooled.db.prisma.io', 'db.prisma.io');
+          }
+          
+          const url = process.env.DIRECT_URL || deriveDirectUrl(process.env.DATABASE_URL) || process.env.DATABASE_URL;
+          console.log("Connecting to:", url.replace(/(:[^:@]+@)/, ':***@'));
+          
           const migrationName = process.env.MIGRATION_NAME;
           const migrationPath = path.resolve(process.cwd(), "prisma/migrations", migrationName, "migration.sql");
           
