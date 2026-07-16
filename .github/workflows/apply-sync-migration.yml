@@ -1,0 +1,168 @@
+name: Apply Sync Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: 'Migration directory name to apply (e.g. 8_comprehensive_sync)'
+        required: true
+        default: '8_comprehensive_sync'
+        type: string
+
+jobs:
+  apply-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: cd packages/api && npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+
+      - name: Check database connectivity
+        run: |
+          cd packages/api
+          cat <<'SCRIPT' > /tmp/check-db.mjs
+          import pg from "pg";
+          const { Client } = pg;
+          const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
+          console.log("Connecting to:", url.replace(/(:[^:@]+@)/, ":***@"));
+          const client = new Client({
+            connectionString: url,
+            ssl: { rejectUnauthorized: false },
+            connectionTimeoutMillis: 30000,
+          });
+          try {
+            await client.connect();
+            console.log("Connected successfully!");
+            const { rows } = await client.query(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+            );
+            console.log(`Tables before: ${rows.length}`);
+            rows.forEach(r => console.log(` - ${r.table_name}`));
+            const { rows: colRows } = await client.query(
+              "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_schema='public'"
+            );
+            console.log(`Columns total: ${colRows[0].count}`);
+            await client.end();
+          } catch (e) {
+            console.error("Connection failed:", e.message);
+            process.exit(1);
+          }
+          SCRIPT
+          node /tmp/check-db.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+
+      - name: Apply sync migration
+        run: |
+          cd packages/api
+          MIGRATION_NAME="${{ github.event.inputs.migration_name }}"
+          MIGRATION_PATH="prisma/migrations/${MIGRATION_NAME}/migration.sql"
+          
+          if [ ! -f "$MIGRATION_PATH" ]; then
+            echo "Migration not found: $MIGRATION_PATH"
+            exit 1
+          fi
+          
+          echo "Applying migration: $MIGRATION_NAME"
+          echo "File size: $(wc -c < "$MIGRATION_PATH") bytes"
+          
+          cat <<'SCRIPT' > /tmp/apply-migration.mjs
+          import pg from "pg";
+          import fs from "node:fs";
+          import path from "node:path";
+          
+          const { Client } = pg;
+          const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
+          const migrationName = process.env.MIGRATION_NAME;
+          const migrationPath = path.resolve(process.cwd(), "prisma/migrations", migrationName, "migration.sql");
+          
+          const client = new Client({
+            connectionString: url,
+            ssl: { rejectUnauthorized: false },
+            connectionTimeoutMillis: 30000,
+          });
+          
+          try {
+            await client.connect();
+            console.log("Connected to database");
+            
+            const sql = fs.readFileSync(migrationPath, "utf-8");
+            console.log(`Applying migration (${sql.length} bytes)...`);
+            
+            await client.query("BEGIN");
+            try {
+              await client.query(sql);
+              await client.query("COMMIT");
+              console.log("Migration applied successfully!");
+            } catch (e) {
+              await client.query("ROLLBACK");
+              throw e;
+            }
+            
+            // Check tables after
+            const { rows: tables } = await client.query(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+            );
+            console.log(`\nTables after: ${tables.length}`);
+            
+            // Check columns
+            const { rows: colRows } = await client.query(
+              "SELECT COUNT(*) as count FROM information_schema.columns WHERE table_schema='public'"
+            );
+            console.log(`Total columns: ${colRows[0].count}`);
+            
+            // Check indexes
+            const { rows: idxRows } = await client.query(
+              "SELECT COUNT(*) as count FROM pg_indexes WHERE schemaname = 'public'"
+            );
+            console.log(`Total indexes: ${idxRows[0].count}`);
+            
+            // Mark migration in _prisma_migrations
+            const { rows: existing } = await client.query(
+              "SELECT id FROM _prisma_migrations WHERE migration_name = $1",
+              [migrationName]
+            );
+            if (existing.length === 0) {
+              await client.query(
+                "INSERT INTO _prisma_migrations (id, migration_name, migration_key, finished_at, applied_steps_count) VALUES (gen_random_uuid()::text, $1, $1, now(), 0)",
+                [migrationName]
+              );
+              console.log(`\nMigration '${migrationName}' marked as applied in _prisma_migrations`);
+            } else {
+              console.log(`\nMigration '${migrationName}' already recorded in _prisma_migrations`);
+            }
+            
+            // Verify with a simple query on a Vellum table
+            try {
+              await client.query('SELECT 1 as test FROM "User" LIMIT 0');
+              console.log("\nVerification: User table exists ✓");
+            } catch (e) {
+              console.log("\nVerification: User table check failed -", e.message);
+            }
+            
+            await client.end();
+          } catch (e) {
+            console.error("\nMigration failed:", e.message);
+            console.error(e.stack);
+            process.exit(1);
+          }
+          SCRIPT
+          
+          MIGRATION_NAME="$MIGRATION_NAME" node /tmp/apply-migration.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+          MIGRATION_NAME: ${{ github.event.inputs.migration_name }}
