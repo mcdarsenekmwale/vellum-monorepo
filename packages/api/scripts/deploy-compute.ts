@@ -89,9 +89,6 @@ async function main() {
     console.error("========================================");
     console.error("");
     console.error(`  Error: ${result.error.message}`);
-    if (result.error.cause) {
-      console.error(`  Cause: ${result.error.cause}`);
-    }
     console.error("");
     process.exit(1);
   }
