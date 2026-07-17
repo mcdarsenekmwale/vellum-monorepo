@@ -46,6 +46,7 @@ async function main() {
     strategy,
     projectId,
     appName: "@vellum/api",
+    branch: "main",
     region: "us-east-1",
     envVars: {
       NODE_ENV: "production",
