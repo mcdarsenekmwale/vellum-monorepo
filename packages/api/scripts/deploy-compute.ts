@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { ComputeClient, CustomBuild, Ok } from "@prisma/compute-sdk";
+import { ComputeClient, NestjsBuild, Ok } from "@prisma/compute-sdk";
 import { createManagementApiClient } from "@prisma/management-api-sdk";
 
 async function main() {
@@ -30,7 +30,7 @@ async function main() {
   console.log("→ Checking existing apps...");
   const appsResult = await compute.listApps({ projectId });
   
-  let existingAppId: string | undefined;
+  const existingAppIds: string[] = [];
   
   if (appsResult.isOk()) {
     const apps = appsResult.value;
@@ -38,7 +38,7 @@ async function main() {
     for (const app of apps) {
       console.log(`  - ${app.name} (${app.id}) branch=${(app as any).branchId || 'unknown'}`);
       if (app.name === "@vellum/api") {
-        existingAppId = app.id;
+        existingAppIds.push(app.id);
         console.log(`  → Found existing app: ${app.id}`);
       }
     }
@@ -46,35 +46,29 @@ async function main() {
     console.log("  Could not list apps:", appsResult.error.message);
   }
 
-  // If app exists on a different branch, delete it first
-  if (existingAppId) {
-    console.log("\n→ Deleting existing app to redeploy...");
-    const deleteResult = await compute.deleteApp({ appId: existingAppId });
+  // Delete ALL existing @vellum/api apps to avoid branch conflicts
+  for (const appId of existingAppIds) {
+    console.log(`\n→ Deleting existing app ${appId}...`);
+    const deleteResult = await compute.deleteApp({ appId });
     if (deleteResult.isOk()) {
       console.log("  App deleted successfully");
-      existingAppId = undefined;
     } else {
       console.log("  Warning: Could not delete app:", deleteResult.error.message);
-      console.log("  Attempting to deploy using existing appId...");
     }
   }
 
   console.log("\n→ Building application...");
-  const strategy = new CustomBuild({
+  const strategy = new NestjsBuild({
     appPath: "packages/api",
-    entrypoint: "dist/src/main.js",
   });
 
   console.log("→ Deploying to Prisma Compute...");
   console.log(`  Project: ${projectId}`);
   console.log(`  Service: @vellum/api`);
   console.log(`  Region: us-east-1`);
-  if (existingAppId) {
-    console.log(`  Existing App ID: ${existingAppId}`);
-  }
   console.log("");
 
-  const deployOpts: any = {
+  const result = await compute.deploy({
     strategy,
     projectId,
     appName: "@vellum/api",
@@ -98,13 +92,7 @@ async function main() {
       onStatusChange: (status: string) => console.log(`  [deploy] Status: ${status}`),
       onRunning: (url: string) => console.log(`  [deploy] Running at ${url}`),
     },
-  };
-
-  if (existingAppId) {
-    deployOpts.appId = existingAppId;
-  }
-
-  const result = await compute.deploy(deployOpts);
+  });
 
   if (result.isOk()) {
     const { deploymentId, deploymentEndpointDomain, appEndpointDomain, promoted } = result.value;
