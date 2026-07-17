@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { ComputeClient, NestjsBuild, Ok } from "@prisma/compute-sdk";
+import { ComputeClient, CustomBuild, Ok } from "@prisma/compute-sdk";
 import { createManagementApiClient } from "@prisma/management-api-sdk";
 
 async function main() {
@@ -60,8 +60,9 @@ async function main() {
   }
 
   console.log("\n→ Building application...");
-  const strategy = new NestjsBuild({
+  const strategy = new CustomBuild({
     appPath: "packages/api",
+    entrypoint: "dist/src/main.js",
   });
 
   console.log("→ Deploying to Prisma Compute...");
