@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { ComputeClient, NestjsBuild, Ok, Err } from "@prisma/compute-sdk";
+import { ComputeClient, NestjsBuild, Ok } from "@prisma/compute-sdk";
 import { createManagementApiClient } from "@prisma/management-api-sdk";
 
 async function main() {

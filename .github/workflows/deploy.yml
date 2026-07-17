@@ -14,6 +14,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+      - uses: oven-sh/setup-bun@v2
       - run: npm ci
       - name: Deploy API to Prisma Compute
         working-directory: packages/api
