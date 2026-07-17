@@ -59,7 +59,7 @@ async function main() {
 
   console.log("\n→ Building application...");
   const strategy = new NestjsBuild({
-    appPath: "packages/api",
+    appPath: ".",  // working directory is already packages/api
   });
 
   console.log("→ Deploying to Prisma Compute...");
