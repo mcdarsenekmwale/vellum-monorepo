@@ -18,6 +18,9 @@
 10. [Deployment](#10-deployment)
 11. [Technical Analysis: Webhook System](#11-technical-analysis-webhook-system)
 12. [Technical Analysis: Bot User / AI Agent Integration](#12-technical-analysis-bot-user--ai-agent-integration)
+13. [Incoming Webhook — Complete Examples](#13-incoming-webhook--complete-examples)
+14. [Bot User Creation & Usage — Complete Examples](#14-bot-user-creation--usage--complete-examples)
+15. [Bot Automation Script Example](#15-bot-automation-script-example)
 
 ---
 
@@ -1663,6 +1666,654 @@ The platform has **foundational building blocks** but no integrated bot/AI agent
 
 ---
 
+## 13. Incoming Webhook — Complete Examples
+
+> Real-world examples based on the actual implementation in [webhooks.controller.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.controller.ts) and [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts).
+
+### 13.1 How It Works
+
+The incoming webhook flow uses the existing implementation:
+
+```text
+External System → POST /api/webhooks/content (with x-api-key header)
+    → Verify API key + scope check
+    → Log to WebhookLog table
+    → Route by event type (article.create, highlight.create, etc.)
+    → Create/update/delete content
+    → Return result
+```
+
+### 13.2 Step 1: Register a User Account
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "publisher@vellum.app",
+    "password": "SecurePass123!",
+    "handle": "vellumpublisher",
+    "name": "Vellum Publisher"
+  }'
+```
+
+Response:
+
+```json
+{
+  "user": {
+    "id": "abc-123",
+    "email": "publisher@vellum.app",
+    "handle": "vellumpublisher",
+    "name": "Vellum Publisher",
+    "role": "USER"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "550e8400-e29b-41d4-a716-446655440000",
+  "expiresIn": 900
+}
+```
+
+### 13.3 Step 2: Create an API Key with `content:create` Scope
+
+The API key is required by [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts) — it checks `apiKeyRecord.scopes.includes('content:create')`.
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/api-keys \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -d '{
+    "name": "Content Publishing Key",
+    "scopes": ["content:create"]
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "key-uuid-001",
+  "name": "Content Publishing Key",
+  "key": "sk-1721234567890-abc123def456ghi789jkl012",
+  "userId": "abc-123",
+  "scopes": ["content:create"],
+  "isActive": true,
+  "expiresAt": null,
+  "createdAt": "2026-07-18T10:30:00.000Z"
+}
+```
+
+> **Important:** Save the key value — it's shown only once.
+
+### 13.4 Step 3: Post an Article via Incoming Webhook
+
+Based on the actual `createArticleFromWebhook` logic in [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts):
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234567890-abc123def456ghi789jkl012" \
+  -d '{
+    "event": "article.create",
+    "data": {
+      "title": "The Future of AI Publishing",
+      "excerpt": "How AI is transforming the way we create and consume content.",
+      "body": [
+        "Artificial intelligence is reshaping content creation in unprecedented ways.",
+        "From automated research to AI-assisted writing, the possibilities are endless.",
+        "In this article, we explore the trends shaping the next decade of publishing."
+      ],
+      "cover": "https://images.example.com/ai-publishing-cover.jpg",
+      "category": "Technology",
+      "readMinutes": 5
+    }
+  }'
+```
+
+Response (201 Created):
+
+```json
+{
+  "id": "article-uuid-001",
+  "slug": "the-future-of-ai-publishing",
+  "title": "The Future of AI Publishing",
+  "excerpt": "How AI is transforming the way we create and consume content.",
+  "body": [
+    "Artificial intelligence is reshaping content creation in unprecedented ways.",
+    "From automated research to AI-assisted writing, the possibilities are endless.",
+    "In this article, we explore the trends shaping the next decade of publishing."
+  ],
+  "cover": "https://images.example.com/ai-publishing-cover.jpg",
+  "categoryId": "category-uuid-tech",
+  "authorId": "abc-123",
+  "isPublished": true,
+  "publishedAt": "2026-07-18T10:35:00.000Z",
+  "readMinutes": 5,
+  "views": 0,
+  "likesCount": 0,
+  "commentsCount": 0,
+  "createdAt": "2026-07-18T10:35:00.000Z",
+  "updatedAt": "2026-07-18T10:35:00.000Z"
+}
+```
+
+### 13.5 Step 4: Post a Highlight via Incoming Webhook
+
+Based on `createHighlightFromWebhook` in [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts):
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234567890-abc123def456ghi789jkl012" \
+  -d '{
+    "event": "highlight.create",
+    "data": {
+      "title": "AI Demo: Real-time Content Generation",
+      "videoUrl": "https://cdn.example.com/videos/ai-demo.mp4",
+      "thumbnailUrl": "https://cdn.example.com/thumbnails/ai-demo.jpg",
+      "description": "Watch AI generate a full article in under 30 seconds.",
+      "music": "Electronic Future Beat",
+      "aspectRatio": "9:16",
+      "duration": 45
+    }
+  }'
+```
+
+### 13.6 Step 5: Update an Article via Incoming Webhook
+
+Based on `updateArticleFromWebhook` in [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts):
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234567890-abc123def456ghi789jkl012" \
+  -d '{
+    "event": "article.update",
+    "data": {
+      "slug": "the-future-of-ai-publishing",
+      "title": "The Future of AI Publishing (2026 Edition)",
+      "excerpt": "Updated: How AI is transforming content creation in 2026.",
+      "body": [
+        "Updated content with latest 2026 research findings.",
+        "New sections on multimodal AI and content personalization."
+      ],
+      "cover": "https://images.example.com/ai-publishing-2026.jpg",
+      "readMinutes": 7
+    }
+  }'
+```
+
+### 13.7 Step 6: Delete an Article via Incoming Webhook
+
+Based on `deleteArticleFromWebhook` in [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts):
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234567890-abc123def456ghi789jkl012" \
+  -d '{
+    "event": "article.delete",
+    "data": {
+      "slug": "the-future-of-ai-publishing"
+    }
+  }'
+```
+
+### 13.8 Step 7: Check Webhook Delivery Logs
+
+```bash
+curl -X GET "https://your-api.ewr.prisma.build/api/webhooks/logs?event=article.create&limit=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+Response:
+
+```json
+[
+  {
+    "id": "log-uuid-001",
+    "webhookId": "system-content-webhook",
+    "event": "article.create",
+    "payload": {
+      "event": "article.create",
+      "data": { "title": "The Future of AI Publishing", "..." : "..." }
+    },
+    "statusCode": null,
+    "response": null,
+    "error": null,
+    "createdAt": "2026-07-18T10:35:00.000Z"
+  }
+]
+```
+
+### 13.9 Error Scenarios
+
+**Invalid API key:**
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: invalid-key" \
+  -d '{"event": "article.create", "data": {"title": "Test"}}'
+```
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid API key",
+  "timestamp": "2026-07-18T10:40:00.000Z",
+  "path": "/api/webhooks/content"
+}
+```
+
+**Insufficient scope:**
+
+```json
+{
+  "statusCode": 401,
+  "message": "Insufficient permissions",
+  "timestamp": "2026-07-18T10:41:00.000Z",
+  "path": "/api/webhooks/content"
+}
+```
+
+**Unknown event:**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Unknown event type",
+  "timestamp": "2026-07-18T10:42:00.000Z",
+  "path": "/api/webhooks/content"
+}
+```
+
+---
+
+## 14. Bot User Creation & Usage — Complete Examples
+
+> Real-world examples showing how to create a bot user, configure it as an AI agent, and use it to publish content automatically. Based on the actual implementation in [admin.controller.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/admin/admin.controller.ts) and [schema.prisma](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/prisma/schema.prisma).
+
+### 14.1 How It Works
+
+Bot users leverage the existing `User` model + `ApiKey` model + `AIAgent` model. The flow:
+
+```text
+1. Admin creates a bot user account (register via API)
+2. Admin promotes bot to CREATOR role (so it can post content)
+3. Admin creates an API key for the bot with content:create scope
+4. Admin creates an AIAgent config (tracks bot runs, model, status)
+5. AI agent uses the API key to post content via webhooks
+6. All actions are logged in WebhookLog + AuditLog
+```
+
+### 14.2 Step 1: Register the Bot User Account
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ai-assistant@vellum.bot",
+    "password": "BotSecurePass456!",
+    "handle": "aiassistant",
+    "name": "AI Assistant"
+  }'
+```
+
+Response:
+
+```json
+{
+  "user": {
+    "id": "bot-user-001",
+    "email": "ai-assistant@vellum.bot",
+    "handle": "aiassistant",
+    "name": "AI Assistant",
+    "role": "USER",
+    "isActive": true
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "550e8400-e29b-41d4-a716-446655440001",
+  "expiresIn": 900
+}
+```
+
+### 14.3 Step 2: Promote Bot to CREATOR Role (Admin)
+
+Using the admin endpoint in [admin.controller.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/admin/admin.controller.ts):
+
+```bash
+curl -X PUT https://your-api.ewr.prisma.build/api/admin/users/bot-user-001 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-jwt-token>" \
+  -d '{
+    "role": "CREATOR"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "bot-user-001",
+  "email": "ai-assistant@vellum.bot",
+  "handle": "aiassistant",
+  "name": "AI Assistant",
+  "role": "CREATOR",
+  "isActive": true,
+  "updatedAt": "2026-07-18T11:00:00.000Z"
+}
+```
+
+### 14.4 Step 3: Create an API Key for the Bot
+
+Using the bot's JWT token from Step 1:
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/api-keys \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <bot-jwt-token>" \
+  -d '{
+    "name": "AI Assistant Bot Key",
+    "scopes": ["content:create"]
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "key-uuid-bot-001",
+  "name": "AI Assistant Bot Key",
+  "key": "sk-1721234700000-botkey123xyz456abc789def012",
+  "userId": "bot-user-001",
+  "scopes": ["content:create"],
+  "isActive": true,
+  "expiresAt": null,
+  "createdAt": "2026-07-18T11:05:00.000Z"
+}
+```
+
+### 14.5 Step 4: Register the Bot as an AI Agent (Admin)
+
+Using the admin AIAgent endpoints. The `AIAgent` model is defined in [schema.prisma](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/prisma/schema.prisma).
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/admin/ai-agents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-jwt-token>" \
+  -d '{
+    "name": "Content Generator Bot",
+    "description": "Auto-generates daily tech news articles from external RSS feeds",
+    "model": "gpt-4",
+    "status": "idle",
+    "config": {
+      "botUserId": "bot-user-001",
+      "apiKeyId": "key-uuid-bot-001",
+      "schedule": "0 9 * * *",
+      "categories": ["Technology", "AI", "Science"],
+      "maxDailyPosts": 3,
+      "autoPublish": false,
+      "language": "en",
+      "tone": "informative",
+      "wordCount": { "min": 500, "max": 1500 }
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "agent-uuid-001",
+  "name": "Content Generator Bot",
+  "description": "Auto-generates daily tech news articles from external RSS feeds",
+  "model": "gpt-4",
+  "status": "idle",
+  "runs": 0,
+  "lastRunAt": null,
+  "config": {
+    "botUserId": "bot-user-001",
+    "apiKeyId": "key-uuid-bot-001",
+    "schedule": "0 9 * * *",
+    "categories": ["Technology", "AI", "Science"],
+    "maxDailyPosts": 3,
+    "autoPublish": false,
+    "language": "en",
+    "tone": "informative",
+    "wordCount": { "min": 500, "max": 1500 }
+  },
+  "createdAt": "2026-07-18T11:10:00.000Z",
+  "updatedAt": "2026-07-18T11:10:00.000Z"
+}
+```
+
+### 14.6 Step 5: Bot Publishes Content via Webhook
+
+Now the AI agent (running externally or in a cron job) uses the bot's API key to post articles:
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234700000-botkey123xyz456abc789def012" \
+  -d '{
+    "event": "article.create",
+    "data": {
+      "title": "GPT-5 Announced: What Developers Need to Know",
+      "excerpt": "OpenAI unveils GPT-5 with 10x context window and native multimodal reasoning.",
+      "body": [
+        "OpenAI today announced GPT-5, the latest iteration of its flagship language model.",
+        "The new model features a 1-million token context window, enabling processing of entire codebases and book-length documents.",
+        "Key improvements include native multimodal reasoning, reduced hallucination rates, and a 40% cost reduction compared to GPT-4.",
+        "Developers can access GPT-5 via the OpenAI API starting next week, with pricing at $0.01 per 1K input tokens."
+      ],
+      "cover": "https://images.example.com/gpt5-announcement.jpg",
+      "category": "Technology",
+      "readMinutes": 4
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "article-uuid-bot-001",
+  "slug": "gpt-5-announced-what-developers-need-to-know",
+  "title": "GPT-5 Announced: What Developers Need to Know",
+  "excerpt": "OpenAI unveils GPT-5 with 10x context window and native multimodal reasoning.",
+  "body": [
+    "OpenAI today announced GPT-5, the latest iteration of its flagship language model.",
+    "..."
+  ],
+  "authorId": "bot-user-001",
+  "isPublished": true,
+  "publishedAt": "2026-07-18T11:15:00.000Z",
+  "likesCount": 0,
+  "commentsCount": 0,
+  "views": 0,
+  "createdAt": "2026-07-18T11:15:00.000Z"
+}
+```
+
+### 14.7 Step 6: Bot Posts a Highlight (Video Content)
+
+```bash
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-1721234700000-botkey123xyz456abc789def012" \
+  -d '{
+    "event": "highlight.create",
+    "data": {
+      "title": "GPT-5 Demo: Generating a Full App in 60 Seconds",
+      "videoUrl": "https://cdn.example.com/videos/gpt5-demo.mp4",
+      "thumbnailUrl": "https://cdn.example.com/thumbnails/gpt5-demo.jpg",
+      "description": "Watch GPT-5 generate a complete React app from a single prompt.",
+      "music": "Tech Innovation Beat",
+      "aspectRatio": "9:16",
+      "duration": 60
+    }
+  }'
+```
+
+### 14.8 Step 7: Update the AI Agent Status After a Run
+
+```bash
+curl -X PUT https://your-api.ewr.prisma.build/api/admin/ai-agents/agent-uuid-001 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-jwt-token>" \
+  -d '{
+    "status": "idle",
+    "config": {
+      "botUserId": "bot-user-001",
+      "apiKeyId": "key-uuid-bot-001",
+      "schedule": "0 9 * * *",
+      "categories": ["Technology", "AI", "Science"],
+      "maxDailyPosts": 3,
+      "autoPublish": false,
+      "lastRunSummary": {
+        "articlesGenerated": 2,
+        "articlesPublished": 2,
+        "timestamp": "2026-07-18T11:15:00.000Z"
+      }
+    }
+  }'
+```
+
+### 14.9 Step 8: List All AI Agents (Admin Monitoring)
+
+```bash
+curl -X GET https://your-api.ewr.prisma.build/api/admin/ai-agents \
+  -H "Authorization: Bearer <admin-jwt-token>"
+```
+
+Response:
+
+```json
+[
+  {
+    "id": "agent-uuid-001",
+    "name": "Content Generator Bot",
+    "description": "Auto-generates daily tech news articles from external RSS feeds",
+    "model": "gpt-4",
+    "status": "idle",
+    "runs": 1,
+    "lastRunAt": "2026-07-18T11:15:00.000Z",
+    "config": { "..." : "..." },
+    "createdAt": "2026-07-18T11:10:00.000Z",
+    "updatedAt": "2026-07-18T11:16:00.000Z"
+  }
+]
+```
+
+### 14.10 Step 9: Disable the Bot (Revoke API Key)
+
+```bash
+# Revoke the bot's API key
+curl -X DELETE https://your-api.ewr.prisma.build/api/webhooks/api-keys/key-uuid-bot-001 \
+  -H "Authorization: Bearer <bot-jwt-token>"
+
+# Disable the AI agent config
+curl -X PUT https://your-api.ewr.prisma.build/api/admin/ai-agents/agent-uuid-001 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-jwt-token>" \
+  -d '{"status": "disabled"}'
+```
+
+---
+
+## 15. Bot Automation Script Example
+
+> A real Node.js script showing how an external AI agent would interact with the platform.
+
+### 15.1 Complete Bot Agent Script
+
+```javascript
+// bot-agent.js — External AI agent that posts content via webhooks
+const API_BASE = "https://your-api.ewr.prisma.build/api";
+const BOT_API_KEY = "sk-1721234700000-botkey123xyz456abc789def012";
+
+async function postArticle(article) {
+  const response = await fetch(`${API_BASE}/webhooks/content`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": BOT_API_KEY,
+    },
+    body: JSON.stringify({
+      event: "article.create",
+      data: {
+        title: article.title,
+        excerpt: article.excerpt,
+        body: article.body,          // Array of paragraph strings
+        cover: article.coverImage,
+        category: article.category,   // Must match existing Category name
+        readMinutes: article.readMinutes || 5,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Webhook failed: ${error.message}`);
+  }
+
+  return response.json();
+}
+
+// Example: AI generates an article and posts it
+async function runDailyPost() {
+  const article = await generateArticleWithAI({
+    topic: "Latest AI developments",
+    category: "Technology",
+    tone: "informative",
+  });
+
+  const result = await postArticle(article);
+  console.log(`Article published: ${result.slug}`);
+  console.log(`URL: https://vellum.app/article/${result.slug}`);
+}
+
+runDailyPost().catch(console.error);
+```
+
+### 15.2 Complete Flow Diagram
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                     ADMIN SETUP                              │
+│                                                             │
+│  1. Register bot user    POST /api/auth/register            │
+│  2. Promote to CREATOR   PUT  /api/admin/users/:id          │
+│  3. Create API key       POST /api/webhooks/api-keys        │
+│  4. Create AIAgent       POST /api/admin/ai-agents          │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   BOT AUTOMATION LOOP                        │
+│                                                             │
+│  External AI Agent (cron / event-triggered)                 │
+│     │                                                       │
+│     ├─ Generate content via LLM (GPT-4, Claude, etc.)       │
+│     │                                                       │
+│     ├─ POST /api/webhooks/content                           │
+│     │  Headers: x-api-key: sk-...                           │
+│     │  Body: { event: "article.create", data: {...} }       │
+│     │                                                       │
+│     │  → API key verified                                   │
+│     │  → Scope checked (content:create)                     │
+│     │  → Logged to WebhookLog                               │
+│     │  → Article created under bot user                     │
+│     │  → Published immediately                              │
+│     │                                                       │
+│     └─ Update agent status  PUT /api/admin/ai-agents/:id    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> All examples above use the actual endpoint paths, request/response shapes, and logic from the real implementation in [webhooks.controller.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.controller.ts), [webhooks.service.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/webhooks/webhooks.service.ts), and [admin.controller.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/src/modules/admin/admin.controller.ts).
+
+---
+
 ## Appendix: Useful Commands
 
 ```bash
@@ -1694,4 +2345,4 @@ npm run deploy:compute # Deploy to Prisma Compute (needs bun)
 
 ---
 
-*Generated for Vellum monorepo. Last updated: 2026-07-18*
+*Generated for Vellum monorepo. Last updated: 2026-07-18 (Sections 13–15 added: Webhook & Bot practical examples)*

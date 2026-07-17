@@ -124,6 +124,152 @@ npm run dev:mobile
 - See `packages/api/.env.example` for required variables
 - Security audits run automatically in CI
 
+## Webhooks & Bot Integration
+
+The platform supports incoming webhooks for content creation and bot user / AI agent integration. See [CODE_WIKI.md](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/CODE_WIKI.md) for full technical documentation (Sections 11–15).
+
+### Incoming Webhooks
+
+External systems can create, update, and delete articles and highlights via `POST /api/webhooks/content` with API key authentication.
+
+**Flow:**
+
+```text
+External System → POST /api/webhooks/content (x-api-key header)
+  → Verify API key + scope check
+  → Log to WebhookLog table
+  → Route by event type (article.create, highlight.create, etc.)
+  → Create/update/delete content
+```
+
+**Quick start — Post an article:**
+
+```bash
+# 1. Register a user account
+curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "publisher@vellum.app",
+    "password": "SecurePass123!",
+    "handle": "vellumpublisher",
+    "name": "Vellum Publisher"
+  }'
+
+# 2. Create an API key with content:create scope
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/api-keys \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <jwt-token>" \
+  -d '{"name": "Content Publishing Key", "scopes": ["content:create"]}'
+
+# 3. Post an article via webhook
+curl -X POST https://your-api.ewr.prisma.build/api/webhooks/content \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: sk-..." \
+  -d '{
+    "event": "article.create",
+    "data": {
+      "title": "The Future of AI Publishing",
+      "excerpt": "How AI is transforming content creation.",
+      "body": ["Paragraph 1...", "Paragraph 2..."],
+      "cover": "https://images.example.com/cover.jpg",
+      "category": "Technology",
+      "readMinutes": 5
+    }
+  }'
+```
+
+**Supported events:**
+
+| Event | Description |
+|-------|-------------|
+| `article.create` | Create a new article |
+| `article.update` | Update an existing article by slug |
+| `article.delete` | Delete an article by slug |
+| `highlight.create` | Create a new video highlight |
+
+**Error responses:**
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| 401 | `Invalid API key` | Missing or invalid `x-api-key` header |
+| 401 | `Insufficient permissions` | API key lacks `content:create` scope |
+| 400 | `Unknown event type` | Unsupported event in payload |
+
+### Bot User / AI Agent Integration
+
+Bot users can be created to automate content publishing via webhooks. The flow uses the existing `User` + `ApiKey` + `AIAgent` models.
+
+**Setup flow:**
+
+```text
+1. Register bot user account        POST /api/auth/register
+2. Promote bot to CREATOR role      PUT  /api/admin/users/:id
+3. Create API key for bot           POST /api/webhooks/api-keys
+4. Create AIAgent config            POST /api/admin/ai-agents
+5. Bot posts content via webhook    POST /api/webhooks/content
+6. Update agent status after run    PUT  /api/admin/ai-agents/:id
+```
+
+**Bot automation script (Node.js):**
+
+```javascript
+const API_BASE = "https://your-api.ewr.prisma.build/api";
+const BOT_API_KEY = "sk-...";
+
+async function postArticle(article) {
+  const response = await fetch(`${API_BASE}/webhooks/content`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": BOT_API_KEY,
+    },
+    body: JSON.stringify({
+      event: "article.create",
+      data: {
+        title: article.title,
+        excerpt: article.excerpt,
+        body: article.body,
+        cover: article.coverImage,
+        category: article.category,
+        readMinutes: article.readMinutes || 5,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Webhook failed: ${error.message}`);
+  }
+
+  return response.json();
+}
+```
+
+**Complete flow diagram:**
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                     ADMIN SETUP                              │
+│  1. Register bot user    POST /api/auth/register            │
+│  2. Promote to CREATOR   PUT  /api/admin/users/:id          │
+│  3. Create API key       POST /api/webhooks/api-keys        │
+│  4. Create AIAgent       POST /api/admin/ai-agents          │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   BOT AUTOMATION LOOP                        │
+│  External AI Agent (cron / event-triggered)                 │
+│     ├─ Generate content via LLM (GPT-4, Claude, etc.)       │
+│     ├─ POST /api/webhooks/content                           │
+│     │  → API key verified → Scope checked                   │
+│     │  → Logged to WebhookLog → Article created             │
+│     └─ Update agent status  PUT /api/admin/ai-agents/:id    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> **Note:** Replace `https://your-api.ewr.prisma.build` with the actual API URL. For complete step-by-step examples with request/response payloads, see [CODE_WIKI.md Sections 13–15](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/CODE_WIKI.md#13-incoming-webhook--complete-examples).
+
 ## License
 
 MIT
