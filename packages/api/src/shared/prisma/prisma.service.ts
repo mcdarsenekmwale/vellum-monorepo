@@ -7,7 +7,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(configService: ConfigService) {
-    const databaseUrl = configService.get<string>('DATABASE_URL');
+    // Prefer DATABASE_URL_POOLED (Prisma Compute/Accelerate) over DATABASE_URL
+    const databaseUrl = configService.get<string>('DATABASE_URL_POOLED')
+      || configService.get<string>('DATABASE_URL');
     const connectionLimit = configService.get<string>('PRISMA_CONNECTION_LIMIT', '5');
     const poolTimeout = configService.get<string>('PRISMA_POOL_TIMEOUT', '10');
     const connectionTimeout = configService.get<string>('PRISMA_CONNECTION_TIMEOUT', '5');
@@ -47,7 +49,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
     }
     this.logger.error('Prisma connection failed after all retries');
-    throw new Error('Failed to connect to database after multiple attempts');
+    this.logger.warn('Application will start without database connection. Some features may not work.');
   }
 
   async onModuleDestroy() {

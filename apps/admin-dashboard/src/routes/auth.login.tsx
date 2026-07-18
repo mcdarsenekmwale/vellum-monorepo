@@ -25,6 +25,7 @@ export const Route = createFileRoute("/auth/login")({
 });
 
 function LoginPage() {
+  const DEV = import.meta.env.DEV;
   const { login } = useAuth();
   const search = Route.useSearch();
   const navigate = useNavigate();
@@ -98,12 +99,14 @@ function LoginPage() {
             {loading ? <Loader2 className="size-4 animate-spin" /> : "Sign in"}
           </Button>
 
+          {DEV && (
           <p className="text-center text-[11px] text-muted-foreground">
             Demo mode — try <code className="font-mono">admin@vellum.com</code>,{" "}
             <code className="font-mono">moderator@vellum.com</code>,{" "}
             <code className="font-mono">creator@vellum.com</code>, etc. Password:{" "}
             <code className="font-mono">password123</code>.
           </p>
+        )}
         </form>
       </div>
     </div>

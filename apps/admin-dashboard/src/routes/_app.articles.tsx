@@ -55,6 +55,8 @@ function ArticlesPage() {
   const { can } = useAuth();
   const rows = data?.data ?? [];
 
+ 
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

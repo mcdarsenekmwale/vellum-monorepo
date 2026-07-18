@@ -13,6 +13,18 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+
+  const httpAdapter = app.getHttpAdapter();
+  const instance = httpAdapter.getInstance();
+  
+  instance.get('/debug-test', (req: any, res: any) => {
+    res.json({ 
+      status: 'ok', 
+      message: 'Express server is running',
+      timestamp: new Date().toISOString(),
+    });
   });
 
   const configService = app.get(ConfigService);
@@ -92,12 +104,16 @@ async function bootstrap() {
 
   await app.listen(port);
 
+  const server = app.getHttpServer();
+  const routeCount = (server as any)._events?.request?.router?.stack?.length || 0;
+  
   logger.log(`\n============================================================`);
   logger.log(`  Vellum API — ${nodeEnv.toUpperCase()} MODE`);
   logger.log(`  Server: http://localhost:${port}`);
   logger.log(`  API Docs: http://localhost:${port}/api/docs`);
   logger.log(`  Health: http://localhost:${port}/api/health`);
   logger.log(`  CORS origins: ${corsOrigins.length} configured`);
+  logger.log(`  Total routes: ${routeCount}`);
   logger.log(`============================================================\n`);
 }
 

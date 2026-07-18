@@ -109,19 +109,19 @@ export class ArticlesService {
     const limit = query.limit || 10;
     const skip = (page - 1) * limit;
 
-    let whereClause = `"isPublished" = true AND "deletedAt" IS NULL`;
+    let whereClause = `a."isPublished" = true AND a."deletedAt" IS NULL`;
     if (query.category) {
-      whereClause += ` AND "categoryId" IN (SELECT "id" FROM "Category" WHERE "slug" = '${query.category}')`;
+      whereClause += ` AND a."categoryId" IN (SELECT "id" FROM "Category" WHERE "slug" = '${query.category}')`;
     }
     if (query.featured !== undefined) {
-      whereClause += ` AND "featured" = ${query.featured}`;
+      whereClause += ` AND a."featured" = ${query.featured}`;
     }
 
-    let orderClause = `"createdAt" DESC`;
+    let orderClause = `a."createdAt" DESC`;
     if (query.sort === 'trending') {
-      orderClause = `"likesCount" DESC`;
+      orderClause = `a."likesCount" DESC`;
     } else if (query.sort === 'views') {
-      orderClause = `"views" DESC`;
+      orderClause = `a."views" DESC`;
     }
 
     try {

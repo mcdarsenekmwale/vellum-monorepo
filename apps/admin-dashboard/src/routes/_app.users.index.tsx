@@ -345,6 +345,9 @@ function UsersList() {
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="EDITOR">Editor</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="MODERATOR">Moderator</SelectItem>
+                  <SelectItem value="CREATOR">Creator</SelectItem>
+                  <SelectItem value="DEVELOPER">Developer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -416,6 +419,9 @@ function UsersList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="USER">User</SelectItem>
+                  <SelectItem value="MODERATOR">Moderator</SelectItem>
+                  <SelectItem value="CREATOR">Creator</SelectItem>
+                  <SelectItem value="DEVELOPER">Developer</SelectItem>
                   <SelectItem value="EDITOR">Editor</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>

@@ -30,7 +30,7 @@ async function main() {
   console.log("→ Checking existing apps...");
   const appsResult = await compute.listApps({ projectId });
   
-  const existingAppIds: string[] = [];
+  let existingAppId: string | null = null;
   
   if (appsResult.isOk()) {
     const apps = appsResult.value;
@@ -38,7 +38,7 @@ async function main() {
     for (const app of apps) {
       console.log(`  - ${app.name} (${app.id}) branch=${(app as any).branchId || 'unknown'}`);
       if (app.name === "@vellum/api") {
-        existingAppIds.push(app.id);
+        existingAppId = app.id;
         console.log(`  → Found existing app: ${app.id}`);
       }
     }
@@ -46,15 +46,8 @@ async function main() {
     console.log("  Could not list apps:", appsResult.error.message);
   }
 
-  // Delete ALL existing @vellum/api apps to avoid branch conflicts
-  for (const appId of existingAppIds) {
-    console.log(`\n→ Deleting existing app ${appId}...`);
-    const deleteResult = await compute.deleteApp({ appId });
-    if (deleteResult.isOk()) {
-      console.log("  App deleted successfully");
-    } else {
-      console.log("  Warning: Could not delete app:", deleteResult.error.message);
-    }
+  if (existingAppId) {
+    console.log(`\n→ Updating existing app ${existingAppId}...`);
   }
 
   console.log("\n→ Building application...");
@@ -71,12 +64,11 @@ async function main() {
   const result = await compute.deploy({
     strategy,
     projectId,
+    appId: existingAppId || undefined,
     appName: "@vellum/api",
     region: "us-east-1",
     envVars: {
       NODE_ENV: "production",
-      DATABASE_URL: process.env.DATABASE_URL || undefined,
-      DIRECT_URL: process.env.DIRECT_URL || undefined,
       JWT_SECRET: process.env.JWT_SECRET || undefined,
       CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
       BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS || undefined,
