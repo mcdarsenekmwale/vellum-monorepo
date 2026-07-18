@@ -7,6 +7,10 @@ export class WebhooksService {
   constructor(private prisma: PrismaService, private configService: ConfigService) {}
 
   async handleContentWebhook(body: any, apiKey: string) {
+    if (!apiKey) {
+      throw new UnauthorizedException('API key is required');
+    }
+
     const apiKeyRecord = await this.prisma.apiKey.findUnique({
       where: { key: apiKey },
       include: { user: true },
@@ -25,7 +29,7 @@ export class WebhooksService {
 
     await this.prisma.webhookLog.create({
       data: {
-        webhookId: 'system-content-webhook',
+        webhookId: null,
         event,
         payload: body,
       },
@@ -46,9 +50,37 @@ export class WebhooksService {
   }
 
   private async createArticleFromWebhook(data: any, authorId: string) {
-    const category = await this.prisma.category.findFirst({
-      where: { name: data.category },
+    let category = await this.prisma.category.findFirst({
+      where: {
+        OR: [
+          { name: data.category },
+          { slug: data.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-') },
+        ],
+      },
     });
+
+    if (!category && data.category) {
+      const slug = data.category
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 50);
+      try {
+        category = await this.prisma.category.create({
+          data: {
+            name: data.category,
+            slug,
+            tint: '#6366f1',
+          },
+        });
+      } catch {
+        category = await this.prisma.category.findFirst({ take: 1 });
+      }
+    }
+
+    if (!category) {
+      category = await this.prisma.category.findFirst({ take: 1 });
+    }
 
     const slug = data.title
       .toLowerCase()
@@ -60,20 +92,47 @@ export class WebhooksService {
       data: {
         slug,
         title: data.title,
-        excerpt: data.excerpt,
+        excerpt: data.excerpt || '',
         body: data.body || [],
         cover: data.cover,
         readMinutes: data.readMinutes || 5,
-        categoryId: category?.id || 'default',
+        categoryId: category?.id || (await this.ensureDefaultCategory()).id,
         authorId,
-        isPublished: true,
-        publishedAt: new Date(),
+        isPublished: data.isPublished !== false,
+        publishedAt: data.isPublished !== false ? new Date() : null,
+        featured: data.featured || false,
       },
     });
   }
 
+  private async ensureDefaultCategory() {
+    let category = await this.prisma.category.findFirst({
+      where: { slug: 'uncategorized' },
+    });
+    if (!category) {
+      category = await this.prisma.category.create({
+        data: {
+          name: 'Uncategorized',
+          slug: 'uncategorized',
+          tint: '#9ca3af',
+        },
+      });
+    }
+    return category;
+  }
+
   private async createHighlightFromWebhook(data: any, authorId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: authorId } });
+
+    let aspectRatio: number | undefined = undefined;
+    if (typeof data.aspectRatio === 'number') {
+      aspectRatio = data.aspectRatio;
+    } else if (typeof data.aspectRatio === 'string' && data.aspectRatio.includes(':')) {
+      const [w, h] = data.aspectRatio.split(':').map(Number);
+      if (!isNaN(w) && !isNaN(h) && h > 0) {
+        aspectRatio = w / h;
+      }
+    }
 
     return this.prisma.highlight.create({
       data: {
@@ -81,14 +140,14 @@ export class WebhooksService {
         cover: data.cover,
         videoUrl: data.videoUrl,
         thumbnailUrl: data.thumbnailUrl,
-        handle: data.handle || user.handle,
+        handle: data.handle || user?.handle || 'unknown',
         authorId,
         description: data.description,
         music: data.music,
-        aspectRatio: data.aspectRatio,
-        duration: data.duration,
-        isPublished: true,
-        publishedAt: new Date(),
+        aspectRatio,
+        duration: data.duration ? Number(data.duration) : null,
+        isPublished: data.isPublished !== false,
+        publishedAt: data.isPublished !== false ? new Date() : null,
       },
     });
   }

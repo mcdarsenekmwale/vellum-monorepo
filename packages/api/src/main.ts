@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
+import * as fs from 'fs';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
 
@@ -39,9 +40,11 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:', 'http:'],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'", 'http:', 'https:'],
+          workerSrc: ["'self'", 'blob:'],
         },
       },
     }),
@@ -73,7 +76,14 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  const swaggerUiPath = path.join(__dirname, '..', 'swagger-ui');
+  const customSwaggerUiPath = fs.existsSync(swaggerUiPath)
+    ? swaggerUiPath
+    : undefined;
+
+  SwaggerModule.setup('api/docs', app, document, {
+    customSwaggerUiPath,
+  });
 
   const port = configService.get('PORT', 3000);
   const nodeEnv = configService.get('NODE_ENV', 'development');

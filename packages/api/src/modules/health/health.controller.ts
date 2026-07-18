@@ -1,12 +1,16 @@
 import { Controller, Get, Injectable } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { CacheService } from '../../shared/cache/cache.service';
 
 @ApiTags('Health')
 @Controller('api/health')
 @Injectable()
 export class HealthController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Health check' })
@@ -19,13 +23,16 @@ export class HealthController {
   }
 
   @Get('ready')
-  @ApiOperation({ summary: 'Readiness check with database connectivity' })
+  @ApiOperation({ summary: 'Readiness check with database and cache connectivity' })
   @ApiResponse({ status: 200, description: 'Service is ready' })
   @ApiResponse({ status: 503, description: 'Service is not ready' })
   async readiness() {
     let dbStatus = 'unknown';
     let dbLatencyMs: number | null = null;
     let dbError: string | null = null;
+    let cacheStatus = 'unknown';
+    let cacheLatencyMs: number | null = null;
+    let cacheError: string | null = null;
 
     try {
       const start = Date.now();
@@ -37,13 +44,32 @@ export class HealthController {
       dbError = error?.message || 'Unknown database error';
     }
 
+    try {
+      const start = Date.now();
+      await this.cache.set('health:ping', { ts: Date.now() }, 10);
+      await this.cache.get('health:ping');
+      cacheLatencyMs = Date.now() - start;
+      cacheStatus = 'connected';
+    } catch (error: any) {
+      cacheStatus = 'disconnected';
+      cacheError = error?.message || 'Unknown cache error';
+    }
+
+    const cacheInfo = this.cache.getStatus();
+
+    const allReady = dbStatus === 'connected';
     return {
-      status: dbStatus === 'connected' ? 'ready' : 'degraded',
+      status: allReady ? 'ready' : 'degraded',
       timestamp: new Date().toISOString(),
       database: {
         status: dbStatus,
         latencyMs: dbLatencyMs,
         error: dbError,
+      },
+      cache: {
+        status: cacheStatus,
+        latencyMs: cacheLatencyMs,
+        error: cacheError,
       },
     };
   }

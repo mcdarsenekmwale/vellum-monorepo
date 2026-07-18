@@ -80,6 +80,7 @@ async function main() {
       JWT_SECRET: process.env.JWT_SECRET || undefined,
       CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
       BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS || undefined,
+      REDIS_URL: process.env.REDIS_URL || undefined,
       PORT: "3000",
     },
     portMapping: { http: 3000 },

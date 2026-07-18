@@ -15,11 +15,13 @@ export class ArticlesService {
       throw new BadRequestException('Category not found');
     }
 
-    const slug = dto.title
+    const baseSlug = dto.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .substring(0, 100);
+
+    let slug = baseSlug;
 
     const existingArticle = await this.prisma.article.findUnique({
       where: { slug },
@@ -124,18 +126,53 @@ export class ArticlesService {
 
     try {
       const articles = await this.prisma.$queryRawUnsafe(
-        `SELECT "id", "slug", "title", "excerpt", "body", "cover", "readMinutes", "categoryId", "authorId", 
-                "likesCount", "views", "featured", "isPublished", "publishedAt", "createdAt", "updatedAt", "deletedAt"
-         FROM "Article" WHERE ${whereClause} ORDER BY ${orderClause} OFFSET ${skip} LIMIT ${limit}`
-      );
+        `SELECT a."id", a."slug", a."title", a."excerpt", a."body", a."cover", a."readMinutes", a."categoryId", a."authorId", 
+                a."likesCount", a."views", a."featured", a."isPublished", a."publishedAt", a."createdAt", a."updatedAt", a."deletedAt",
+                u."id" as "author.id", u."name" as "author.name", u."handle" as "author.handle", u."avatar" as "author.avatar"
+         FROM "Article" a
+         LEFT JOIN "User" u ON a."authorId" = u."id"
+         WHERE ${whereClause} ORDER BY ${orderClause} OFFSET ${skip} LIMIT ${limit}`
+      ) as Array<{
+        id: string;
+        slug: string;
+        title: string;
+        excerpt: string;
+        body: string[];
+        cover: string;
+        readMinutes: number;
+        categoryId: string;
+        authorId: string;
+        likesCount: number;
+        views: number;
+        featured: boolean;
+        isPublished: boolean;
+        publishedAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        'author.id': string;
+        'author.name': string;
+        'author.handle': string;
+        'author.avatar': string | null;
+      }>;
 
       const totalResult = await this.prisma.$queryRawUnsafe(
         `SELECT COUNT(*) as count FROM "Article" WHERE ${whereClause}`
       );
       const total = parseInt(totalResult[0].count);
 
+      const formattedArticles = articles.map((article: any) => ({
+        ...article,
+        author: {
+          id: article['author.id'],
+          name: article['author.name'],
+          handle: article['author.handle'],
+          avatar: article['author.avatar'],
+        },
+      }));
+
       return {
-        data: articles,
+        data: formattedArticles,
         total,
         page,
         limit,
@@ -165,6 +202,11 @@ export class ArticlesService {
           orderBy,
           skip,
           take: limit,
+          include: {
+            author: {
+              select: { id: true, handle: true, name: true, avatar: true },
+            },
+          },
         }),
         this.prisma.article.count({ where }),
       ]);

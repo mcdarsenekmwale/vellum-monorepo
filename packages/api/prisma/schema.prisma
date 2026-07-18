@@ -303,15 +303,17 @@ model Webhook {
 }
 
 model WebhookLog {
-  id         String   @id @default(uuid())
-  webhookId  String
+  id         String    @id @default(uuid())
+  webhookId  String?
   event      String
   payload    Json
   statusCode Int?
   response   String?
   error      String?
-  createdAt  DateTime @default(now())
-  webhook    Webhook  @relation("WebhookLog", fields: [webhookId], references: [id])
+  createdAt  DateTime  @default(now())
+  webhook    Webhook?  @relation("WebhookLog", fields: [webhookId], references: [id])
+
+  @@index([webhookId])
 }
 
 model AuditLog {
