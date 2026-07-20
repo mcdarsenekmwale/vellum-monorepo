@@ -169,7 +169,7 @@ export default function FeedPage() {
             </TouchableOpacity>
           </Link>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-            <Link href={`/author/${featured.author?.id}`} asChild>
+            <Link href={`/author/${featured.author?.handle}`} asChild>
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Image source={{ uri: featured.author?.avatar || 'https://via.placeholder.com/36' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
                 <View>

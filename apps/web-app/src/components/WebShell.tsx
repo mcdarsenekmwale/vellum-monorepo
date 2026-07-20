@@ -260,11 +260,11 @@ export function WebShell({ children }: { children: ReactNode }) {
                   ))
                 : suggestedAuthors.map((a) => (
                     <Link
-                      key={a.id}
-                      to="/author/$id"
-                      params={{ id: a.id }}
-                      className="flex items-center gap-3 hover:opacity-80"
-                    >
+                        key={a.id}
+                        to="/author/$id"
+                        params={{ id: a.handle }}
+                        className="flex items-center gap-3 hover:opacity-80"
+                      >
                       <img
                         src={
                           a.avatar ||

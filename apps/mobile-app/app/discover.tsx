@@ -134,7 +134,7 @@ export default function DiscoverPage() {
             ) : (
               <View style={{ gap: 16 }}>
                 {searchResults?.people.map((p) => (
-                  <Link key={p.id} href={`/author/${p.id}`} asChild>
+                  <Link key={p.id} href={`/author/${p.handle}`} asChild>
                     <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <Image source={{ uri: p.avatar || 'https://via.placeholder.com/44' }} style={{ width: 44, height: 44, borderRadius: 22 }} />
                       <View style={{ flex: 1 }}>

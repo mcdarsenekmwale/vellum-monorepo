@@ -98,10 +98,10 @@ function DiscoverPage() {
                   {(results as any).users?.map((p: any) => (
                     <li key={p.id}>
                       <Link
-                        to="/author/$id"
-                        params={{ id: p.id }}
-                        className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
-                      >
+                          to="/author/$id"
+                          params={{ id: p.handle }}
+                          className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
+                        >
                         <img src={p.avatar || undefined} alt="" className="size-12 rounded-full object-cover shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold truncate">{p.handle}</div>

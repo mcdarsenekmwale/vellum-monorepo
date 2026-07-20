@@ -292,10 +292,10 @@ function FeaturedPost({ article }: { article: Article }) {
       {/* Author row */}
       <div className="flex items-center justify-between">
         <Link
-          to="/author/$id"
-          params={{ id: article.author?.id || article.authorId }}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-        >
+            to="/author/$id"
+            params={{ id: article.author?.handle || article.authorId }}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
           <img
             src={article.author?.avatar || undefined}
             alt=""
@@ -425,10 +425,10 @@ function ArticleCard({ article }: { article: Article }) {
       {/* Author + actions */}
       <div className="flex items-center justify-between">
         <Link
-          to="/author/$id"
-          params={{ id: article.author?.id || article.authorId }}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-        >
+            to="/author/$id"
+            params={{ id: article.author?.handle || article.authorId }}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
           <img
             src={article.author?.avatar || undefined}
             alt=""

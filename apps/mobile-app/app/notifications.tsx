@@ -114,7 +114,7 @@ export default function NotificationsPage() {
                 if (article) {
                   router.push(`/article/${article.slug}`);
                 } else if (actor) {
-                  router.push(`/author/${actor.id}`);
+                  router.push(`/author/${actor.handle}`);
                 }
               }}
               style={styles.notificationItem}
