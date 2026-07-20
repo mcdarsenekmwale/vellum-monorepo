@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { WebShell } from "@/components/WebShell";
+import ShimmerImage from "@/components/ShimmerImage";
 import { useSocial } from "@/lib/social-store";
 import { useArticle } from "@/hooks/useApi";
-import { ChevronLeft, Send, Heart, Bookmark, MessageCircle, Eye, Sparkles } from "lucide-react";
+import { ChevronLeft, Send, Heart, Bookmark, MessageCircle, Eye, Sparkles, Share2, Copy, Check } from "lucide-react";
 import type { Comment } from "@/lib/api";
 
 function formatRelativeTime(dateStr: string | undefined): string {
@@ -35,10 +36,12 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticleDetail() {
   const { slug } = Route.useParams();
   const { data: article, isLoading, error } = useArticle(slug);
-  const { commentsFor, addComment, isLiked, isSaved, toggleLike, toggleBookmark, markArticleViewed, refreshComments } = useSocial();
+  const { commentsFor, addComment, isLiked, isSaved, toggleLike, toggleBookmark, markArticleViewed, refreshComments, shareArticle } = useSocial();
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [showAiSummary, setShowAiSummary] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -51,6 +54,18 @@ function ArticleDetail() {
       markArticleViewed(slug);
     }
   }, [slug, markArticleViewed]);
+
+  useEffect(() => {
+    if (!showShareMenu) return;
+    const handleClickOutside = () => setShowShareMenu(false);
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showShareMenu]);
 
   const all = commentsFor(slug);
   const liked = isLiked(slug);
@@ -84,6 +99,52 @@ function ArticleDetail() {
     await addComment(slug, draft, replyTo?.id);
     setDraft("");
     setReplyTo(null);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const shareData = {
+      title: article?.title || "Vellum",
+      text: article?.excerpt || "",
+      url,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        if (slug) shareArticle(slug);
+      } catch {
+        // User cancelled
+      }
+    } else {
+      setShowShareMenu(!showShareMenu);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      if (slug) shareArticle(slug);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const shareOnTwitter = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(article?.title || "");
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, "_blank");
+    setShowShareMenu(false);
+    if (slug) shareArticle(slug);
+  };
+
+  const shareOnLinkedIn = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, "_blank");
+    setShowShareMenu(false);
+    if (slug) shareArticle(slug);
   };
 
   if (isLoading) {
@@ -135,10 +196,12 @@ function ArticleDetail() {
         {/* Hero cover with feature badge */}
         <div className="relative mb-8">
           <div className="overflow-hidden rounded-[2rem] bg-muted">
-            <img
+            <ShimmerImage
               src={article.cover || undefined}
               alt={article.title}
               className="size-full object-cover"
+              wrapperClassName="w-full"
+              aspectRatio="16/9"
             />
           </div>
           {article.featured && (
@@ -171,13 +234,15 @@ function ArticleDetail() {
         <div className="flex items-center justify-between pb-10 border-b border-border">
           <Link
             to="/author/$id"
-            params={{ id: article.author?.id || article.authorId }}
+            params={{ id: article.author?.handle || article.authorId }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            <img
+            <ShimmerImage
               src={article.author?.avatar || undefined}
               alt=""
               className="size-12 rounded-full object-cover"
+              wrapperClassName="size-12 rounded-full shrink-0"
+              aspectRatio="1/1"
             />
             <div>
               <p className="text-lg font-semibold">
@@ -211,6 +276,15 @@ function ArticleDetail() {
                 strokeWidth={1.8}
                 fill={saved ? "#d97706" : "none"}
                 color={saved ? "#d97706" : "currentColor"}
+              />
+            </button>
+            <button
+              onClick={handleShare}
+              className="hover:text-amber-600 transition-colors"
+            >
+              <Share2
+                className="size-6"
+                strokeWidth={1.8}
               />
             </button>
           </div>
@@ -249,6 +323,40 @@ function ArticleDetail() {
               <MessageCircle className="size-6" strokeWidth={1.8} />
               <span>{all.length} comments</span>
             </button>
+            <div className="relative">
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 text-base font-semibold text-muted-foreground hover:text-amber-600 transition-colors"
+              >
+                <Share2 className="size-6" strokeWidth={1.8} />
+                <span>Share</span>
+              </button>
+              {showShareMenu && (
+                <div className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-xl shadow-lg p-2 min-w-[180px] z-10">
+                  <button
+                    onClick={copyLink}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    {copied ? <Check className="size-4 text-green-600" /> : <Copy className="size-4" />}
+                    {copied ? "Copied!" : "Copy link"}
+                  </button>
+                  <button
+                    onClick={shareOnTwitter}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <Share2 className="size-4" />
+                    Share on Twitter
+                  </button>
+                  <button
+                    onClick={shareOnLinkedIn}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-muted transition-colors text-left"
+                  >
+                    <Share2 className="size-4" />
+                    Share on LinkedIn
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

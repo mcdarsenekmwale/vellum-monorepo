@@ -1,8 +1,8 @@
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSequence, withDelay } from 'react-native-reanimated';
-import { Play } from 'lucide-react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSequence, withDelay, withRepeat, interpolateColor } from 'react-native-reanimated';
+import { Play, ImageOff } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -66,6 +66,28 @@ const HighlightVideo = memo(function HighlightVideo({
   // Paused indicator animation
   const pausedOpacity = useSharedValue(0);
 
+  // Shimmer animation
+  const shimmerProgress = useSharedValue(0);
+
+  useEffect(() => {
+    if (isLoading) {
+      shimmerProgress.value = withRepeat(
+        withTiming(1, { duration: 1500 }),
+        -1,
+        false
+      );
+    }
+  }, [isLoading, shimmerProgress]);
+
+  const shimmerStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      shimmerProgress.value,
+      [0, 0.5, 1],
+      ['#1a1a1a', '#2a2a2a', '#1a1a1a']
+    );
+    return { backgroundColor };
+  });
+
   useEffect(() => {
     if (!isPlaying && showPausedIndicator) {
       pausedOpacity.value = withSequence(
@@ -95,10 +117,15 @@ const HighlightVideo = memo(function HighlightVideo({
 
   return (
     <View style={styles.mediaWrapper}>
-      {/* Loading indicator */}
+      {/* Shimmer background for loading */}
       {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
+        <Animated.View style={[styles.shimmerBackground, shimmerStyle]} />
+      )}
+
+      {/* Error state */}
+      {hasError && (
+        <View style={styles.errorContainer}>
+          <ImageOff size={48} color="#666" />
         </View>
       )}
 
@@ -106,14 +133,15 @@ const HighlightVideo = memo(function HighlightVideo({
       {videoUrl && player ? (
         <VideoView
           player={player}
-          style={[styles.videoView, mediaStyle]}
+          style={[styles.videoView, mediaStyle, { opacity: isLoading ? 0 : 1 }]}
           contentFit="cover"
           nativeControls={false}
+          onReadyForDisplay={handleLoad}
         />
       ) : (
         <Image
           source={{ uri: source }}
-          style={[styles.backgroundImage, mediaStyle]}
+          style={[styles.backgroundImage, mediaStyle, { opacity: isLoading ? 0 : 1 }]}
           resizeMode="cover"
           onLoad={handleLoad}
           onError={handleError}
@@ -127,7 +155,7 @@ const HighlightVideo = memo(function HighlightVideo({
       <View style={styles.gradientBottomInner} pointerEvents="none" />
 
       {/* Paused indicator */}
-      {showPausedIndicator && !videoUrl && (
+      {showPausedIndicator && !videoUrl && !hasError && (
         <Animated.View style={[styles.pausedIndicator, pausedStyle]} pointerEvents="none">
           <Play size={48} color="#ffffff" fill="#ffffff" strokeWidth={1.5} />
         </Animated.View>
@@ -152,6 +180,24 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#1a1a1a',
+  },
+  shimmerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  errorContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
   },
   videoView: {
     position: 'absolute',

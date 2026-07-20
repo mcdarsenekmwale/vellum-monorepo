@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Heart, Bookmark, MessageCircle, Share2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { WebShell } from "@/components/WebShell";
+import ShimmerImage from "@/components/ShimmerImage";
 import { useSocial } from "@/lib/social-store";
 import { useArticles, useHighlights, useStories, useAuthState } from "@/hooks/useApi";
 import { useMemo } from "react";
@@ -257,10 +258,12 @@ function FeaturedPost({ article }: { article: Article }) {
       {/* Hero image with Feature badge */}
       <Link to="/article/$slug" params={{ slug }} className="block">
         <div className="relative overflow-hidden rounded-[2rem] bg-muted mb-6">
-          <img
+          <ShimmerImage
             src={article.cover || undefined}
             alt={article.title}
-            className="size-full object-cover aspect-[4/5]"
+            className="size-full object-cover"
+            wrapperClassName="w-full aspect-[4/5]"
+            aspectRatio="4/5"
           />
           <div className="absolute top-6 left-6">
             <span className="inline-block bg-white text-foreground px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-sm">
@@ -296,10 +299,12 @@ function FeaturedPost({ article }: { article: Article }) {
             params={{ id: article.author?.handle || article.authorId }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-          <img
+          <ShimmerImage
             src={article.author?.avatar || undefined}
             alt=""
             className="size-12 rounded-full object-cover"
+            wrapperClassName="size-12 rounded-full shrink-0"
+            aspectRatio="1/1"
           />
           <div>
             <p className="text-base font-semibold">

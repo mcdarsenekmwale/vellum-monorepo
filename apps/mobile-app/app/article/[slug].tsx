@@ -30,6 +30,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useArticle, useSocialActions, useAuthState } from '../../hooks/useApi';
 import { apiClient } from '../../lib/api';
 import type { Comment } from '@vellum/api-client/types';
+import ShimmerImage from '../../components/ShimmerImage';
 
 const { width } = Dimensions.get('window');
 
@@ -207,10 +208,11 @@ export default function ArticlePage() {
         >
           {/* Hero Cover Image with Bottom Gradient Overlay */}
           <View style={styles.heroContainer}>
-            <Image
-              source={{ uri: article.cover || 'https://via.placeholder.com/400x500' }}
+            <ShimmerImage
+              source={article.cover}
               style={styles.heroImage}
               resizeMode="cover"
+              borderRadius={0}
             />
 
             {/* Bottom gradient overlay for text readability */}
@@ -225,9 +227,11 @@ export default function ArticlePage() {
 
           {/* Author Row */}
           <View style={styles.authorRow}>
-            <Image
-              source={{ uri: article.author?.avatar || 'https://via.placeholder.com/40' }}
+            <ShimmerImage
+              source={article.author?.avatar}
               style={styles.authorAvatar}
+              borderRadius={20}
+              aspectRatio={1}
             />
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{article.author?.name}</Text>

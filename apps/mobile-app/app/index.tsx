@@ -4,6 +4,7 @@ import { Heart, Bookmark, MessageCircle, Share2, Eye } from 'lucide-react-native
 import { useArticles, useHighlights, useStories, useSocialActions, useAuthState } from '../hooks/useApi';
 import { useMemo, useState } from 'react';
 import type { Story } from '@vellum/api-client/types';
+import ShimmerImage from '../components/ShimmerImage';
 
 const STORY_24H = 24 * 60 * 60 * 1000;
 
@@ -148,7 +149,12 @@ export default function FeedPage() {
           <Link href={`/article/${featured.slug}`} asChild>
             <TouchableOpacity>
               <View style={{ aspectRatio: 4/5, borderRadius: 16, overflow: 'hidden', marginBottom: 12, width: '100%' }}>
-                <Image source={{ uri: featured.cover || 'https://via.placeholder.com/400x500' }} style={{ width: '100%', height: '100%' }} />
+                <ShimmerImage
+                  source={featured.cover}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                  borderRadius={16}
+                />
                 <View style={{ position: 'absolute', top: 12, left: 12, backgroundColor: '#ffffff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
                   <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: '#000000' }}>Feature</Text>
                 </View>
@@ -171,7 +177,12 @@ export default function FeedPage() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <Link href={`/author/${featured.author?.handle}`} asChild>
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Image source={{ uri: featured.author?.avatar || 'https://via.placeholder.com/36' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                <ShimmerImage
+                  source={featured.author?.avatar}
+                  style={{ width: 36, height: 36 }}
+                  borderRadius={18}
+                  aspectRatio={1}
+                />
                 <View>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>{featured.author?.name}</Text>
                   <Text style={{ fontSize: 10, color: '#999999' }}>{formatRelativeTime(featured.publishedAt || featured.createdAt)}</Text>
