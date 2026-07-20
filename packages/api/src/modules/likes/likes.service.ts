@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { NotificationKind } from '@prisma/client';
 
 @Injectable()
 export class LikesService {
@@ -39,10 +40,43 @@ export class LikesService {
 
     if (articleSlug) {
       await this.prisma.article.update({ where: { slug: articleSlug }, data: { likesCount: { increment: 1 } } });
+      const article = await this.prisma.article.findUnique({ where: { slug: articleSlug } });
+      if (article && article.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: article.authorId,
+            actorId: userId,
+            kind: NotificationKind.LIKE,
+            articleSlug,
+          },
+        });
+      }
     } else if (highlightId) {
       await this.prisma.highlight.update({ where: { id: highlightId }, data: { likesCount: { increment: 1 } } });
+      const highlight = await this.prisma.highlight.findUnique({ where: { id: highlightId } });
+      if (highlight && highlight.authorId && highlight.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: highlight.authorId,
+            actorId: userId,
+            kind: NotificationKind.LIKE,
+            highlightId,
+          },
+        });
+      }
     } else if (commentId) {
       await this.prisma.comment.update({ where: { id: commentId }, data: { likesCount: { increment: 1 } } });
+      const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+      if (comment && comment.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: comment.authorId,
+            actorId: userId,
+            kind: NotificationKind.LIKE,
+            commentId,
+          },
+        });
+      }
     }
 
     return { liked: true };

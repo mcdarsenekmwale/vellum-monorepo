@@ -357,4 +357,25 @@ export class ArticlesService {
       take: limit,
     });
   }
+
+  async incrementShares(slug: string) {
+    const article = await this.prisma.article.findUnique({
+      where: { slug },
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    const updated = await this.prisma.article.update({
+      where: { slug },
+      data: { shares: { increment: 1 } },
+      select: { slug: true, shares: true },
+    });
+
+    return {
+      slug: updated.slug,
+      shares: updated.shares,
+    };
+  }
 }

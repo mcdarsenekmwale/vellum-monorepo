@@ -15,6 +15,7 @@ type SocialState = {
   comments: Record<string, ApiComment[]>;
   viewedStories: Record<string, number>;
   viewedArticles: Record<string, number>;
+  shares: Record<string, number>;
   profile: UserProfile | null;
 };
 
@@ -23,6 +24,7 @@ type SocialContextValue = SocialState & {
   isSaved: (slug: string) => boolean;
   toggleLike: (slug: string) => void;
   toggleBookmark: (slug: string) => void;
+  shareArticle: (slug: string) => void;
   addComment: (slug: string, body: string, parentId?: string) => Promise<void>;
   commentsFor: (slug: string) => ApiComment[];
   isStoryViewed: (storyId: string) => boolean;
@@ -54,6 +56,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     comments: {},
     viewedStories: {},
     viewedArticles: {},
+    shares: {},
     profile: null,
   });
 
@@ -114,6 +117,22 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         setState((prev) => ({ ...prev, bookmarks: { ...prev.bookmarks, [slug]: !prev.bookmarks[slug] } }));
       });
       return { ...s, bookmarks: newBookmarks };
+    });
+  }, []);
+
+  const shareArticle = useCallback((slug: string) => {
+    setState((s) => {
+      const current = s.shares[slug] || 0;
+      const newShares = { ...s.shares, [slug]: current + 1 };
+      // Fire and forget: increment share count on backend
+      apiClient.shareArticle(slug).catch(() => {
+        // Revert on error
+        setState((prev) => ({
+          ...prev,
+          shares: { ...prev.shares, [slug]: Math.max(0, (prev.shares[slug] || 1) - 1) },
+        }));
+      });
+      return { ...s, shares: newShares };
     });
   }, []);
 
@@ -186,6 +205,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       isSaved: (slug: string) => !!state.bookmarks[slug],
       toggleLike,
       toggleBookmark,
+      shareArticle,
       addComment,
       commentsFor,
       isStoryViewed,
@@ -195,7 +215,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       updateProfile,
       refreshComments,
     }),
-    [state, toggleLike, toggleBookmark, addComment, commentsFor, isStoryViewed, markStoryViewed, isArticleViewed, markArticleViewed, updateProfile, refreshComments],
+    [state, toggleLike, toggleBookmark, shareArticle, addComment, commentsFor, isStoryViewed, markStoryViewed, isArticleViewed, markArticleViewed, updateProfile, refreshComments],
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { NotificationKind } from '@prisma/client';
 
 @Injectable()
 export class FollowsService {
@@ -20,6 +21,15 @@ export class FollowsService {
     }
 
     await this.prisma.follow.create({ data: { followerId, followingId } });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: followingId,
+        actorId: followerId,
+        kind: NotificationKind.FOLLOW,
+      },
+    });
+
     return { following: true };
   }
 

@@ -217,6 +217,7 @@ export interface ReportStats {
   inProgress: number;
   resolved: number;
   dismissed: number;
+  autoActioned: number;
   byTargetType: { targetType: string; count: number }[];
   byReason: { reason: string; count: number }[];
   byPriority: { priority: string; count: number }[];
@@ -609,6 +610,10 @@ export async function getFollows(params?: { page?: number; limit?: number }): Pr
 // Reports
 export async function getReports(params?: { page?: number; limit?: number }): Promise<Paginated<Report>> {
   return api("/admin/reports", { query: params });
+}
+
+export async function getReportById(id: string): Promise<Report> {
+  return api(`/admin/reports/${id}`);
 }
 
 export async function updateReportStatus(id: string, status: string, note?: string): Promise<Report> {

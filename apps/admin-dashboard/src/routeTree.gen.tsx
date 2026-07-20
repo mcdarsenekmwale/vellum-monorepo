@@ -44,8 +44,10 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiRouteImport } from './routes/_app.ai'
 import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
 import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
+import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
+import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
 import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
 import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
 
@@ -223,6 +225,11 @@ const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppUsersRoute,
 } as any)
+const AppModerationIndexRoute = AppModerationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppModerationRoute,
+} as any)
 const AppAuditIndexRoute = AppAuditIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -232,6 +239,11 @@ const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
   getParentRoute: () => AppUsersRoute,
+} as any)
+const AppModerationReportIdRoute = AppModerationReportIdRouteImport.update({
+  id: '/$reportId',
+  path: '/$reportId',
+  getParentRoute: () => AppModerationRoute,
 } as any)
 const AppHelpArticleIdRoute = AppHelpArticleIdRouteImport.update({
   id: '/$articleId',
@@ -261,7 +273,7 @@ export interface FileRoutesByFullPath {
   '/highlights': typeof AppHighlightsRoute
   '/jobs': typeof AppJobsRoute
   '/media': typeof AppMediaRoute
-  '/moderation': typeof AppModerationRoute
+  '/moderation': typeof AppModerationRouteWithChildren
   '/music': typeof AppMusicRoute
   '/notifications': typeof AppNotificationsRoute
   '/permissions': typeof AppPermissionsRoute
@@ -280,8 +292,10 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
+  '/moderation/$reportId': typeof AppModerationReportIdRoute
   '/users/$userId': typeof AppUsersUserIdRoute
   '/audit/': typeof AppAuditIndexRoute
+  '/moderation/': typeof AppModerationIndexRoute
   '/users/': typeof AppUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -300,7 +314,6 @@ export interface FileRoutesByTo {
   '/highlights': typeof AppHighlightsRoute
   '/jobs': typeof AppJobsRoute
   '/media': typeof AppMediaRoute
-  '/moderation': typeof AppModerationRoute
   '/music': typeof AppMusicRoute
   '/notifications': typeof AppNotificationsRoute
   '/permissions': typeof AppPermissionsRoute
@@ -318,8 +331,10 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
+  '/moderation/$reportId': typeof AppModerationReportIdRoute
   '/users/$userId': typeof AppUsersUserIdRoute
   '/audit': typeof AppAuditIndexRoute
+  '/moderation': typeof AppModerationIndexRoute
   '/users': typeof AppUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -341,7 +356,7 @@ export interface FileRoutesById {
   '/_app/highlights': typeof AppHighlightsRoute
   '/_app/jobs': typeof AppJobsRoute
   '/_app/media': typeof AppMediaRoute
-  '/_app/moderation': typeof AppModerationRoute
+  '/_app/moderation': typeof AppModerationRouteWithChildren
   '/_app/music': typeof AppMusicRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/permissions': typeof AppPermissionsRoute
@@ -360,8 +375,10 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/_app/audit/$entryId': typeof AppAuditEntryIdRoute
   '/_app/help/$articleId': typeof AppHelpArticleIdRoute
+  '/_app/moderation/$reportId': typeof AppModerationReportIdRoute
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/_app/audit/': typeof AppAuditIndexRoute
+  '/_app/moderation/': typeof AppModerationIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -402,8 +419,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/audit/$entryId'
     | '/help/$articleId'
+    | '/moderation/$reportId'
     | '/users/$userId'
     | '/audit/'
+    | '/moderation/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -422,7 +441,6 @@ export interface FileRouteTypes {
     | '/highlights'
     | '/jobs'
     | '/media'
-    | '/moderation'
     | '/music'
     | '/notifications'
     | '/permissions'
@@ -440,8 +458,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/audit/$entryId'
     | '/help/$articleId'
+    | '/moderation/$reportId'
     | '/users/$userId'
     | '/audit'
+    | '/moderation'
     | '/users'
   id:
     | '__root__'
@@ -481,8 +501,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/_app/audit/$entryId'
     | '/_app/help/$articleId'
+    | '/_app/moderation/$reportId'
     | '/_app/users/$userId'
     | '/_app/audit/'
+    | '/_app/moderation/'
     | '/_app/users/'
   fileRoutesById: FileRoutesById
 }
@@ -739,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersIndexRouteImport
       parentRoute: typeof AppUsersRoute
     }
+    '/_app/moderation/': {
+      id: '/_app/moderation/'
+      path: '/'
+      fullPath: '/moderation/'
+      preLoaderRoute: typeof AppModerationIndexRouteImport
+      parentRoute: typeof AppModerationRoute
+    }
     '/_app/audit/': {
       id: '/_app/audit/'
       path: '/'
@@ -752,6 +781,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/$userId'
       preLoaderRoute: typeof AppUsersUserIdRouteImport
       parentRoute: typeof AppUsersRoute
+    }
+    '/_app/moderation/$reportId': {
+      id: '/_app/moderation/$reportId'
+      path: '/$reportId'
+      fullPath: '/moderation/$reportId'
+      preLoaderRoute: typeof AppModerationReportIdRouteImport
+      parentRoute: typeof AppModerationRoute
     }
     '/_app/help/$articleId': {
       id: '/_app/help/$articleId'
@@ -795,6 +831,20 @@ const AppHelpRouteChildren: AppHelpRouteChildren = {
 const AppHelpRouteWithChildren =
   AppHelpRoute._addFileChildren(AppHelpRouteChildren)
 
+interface AppModerationRouteChildren {
+  AppModerationReportIdRoute: typeof AppModerationReportIdRoute
+  AppModerationIndexRoute: typeof AppModerationIndexRoute
+}
+
+const AppModerationRouteChildren: AppModerationRouteChildren = {
+  AppModerationReportIdRoute: AppModerationReportIdRoute,
+  AppModerationIndexRoute: AppModerationIndexRoute,
+}
+
+const AppModerationRouteWithChildren = AppModerationRoute._addFileChildren(
+  AppModerationRouteChildren,
+)
+
 interface AppUsersRouteChildren {
   AppUsersUserIdRoute: typeof AppUsersUserIdRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
@@ -825,7 +875,7 @@ interface AppRouteChildren {
   AppHighlightsRoute: typeof AppHighlightsRoute
   AppJobsRoute: typeof AppJobsRoute
   AppMediaRoute: typeof AppMediaRoute
-  AppModerationRoute: typeof AppModerationRoute
+  AppModerationRoute: typeof AppModerationRouteWithChildren
   AppMusicRoute: typeof AppMusicRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppPermissionsRoute: typeof AppPermissionsRoute
@@ -859,7 +909,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHighlightsRoute: AppHighlightsRoute,
   AppJobsRoute: AppJobsRoute,
   AppMediaRoute: AppMediaRoute,
-  AppModerationRoute: AppModerationRoute,
+  AppModerationRoute: AppModerationRouteWithChildren,
   AppMusicRoute: AppMusicRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppPermissionsRoute: AppPermissionsRoute,

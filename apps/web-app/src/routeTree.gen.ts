@@ -30,6 +30,8 @@ import { Route as CategoryNameRouteImport } from './routes/category.$name'
 import { Route as AuthorIdRouteImport } from './routes/author.$id'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
 import { Route as StoryAuthorIdStoryIdRouteImport } from './routes/story.$authorId.$storyId'
+import { Route as AuthorIdFollowingRouteImport } from './routes/author.$id.following'
+import { Route as AuthorIdFollowersRouteImport } from './routes/author.$id.followers'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -136,6 +138,16 @@ const StoryAuthorIdStoryIdRoute = StoryAuthorIdStoryIdRouteImport.update({
   path: '/story/$authorId/$storyId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthorIdFollowingRoute = AuthorIdFollowingRouteImport.update({
+  id: '/following',
+  path: '/following',
+  getParentRoute: () => AuthorIdRoute,
+} as any)
+const AuthorIdFollowersRoute = AuthorIdFollowersRouteImport.update({
+  id: '/followers',
+  path: '/followers',
+  getParentRoute: () => AuthorIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -149,7 +161,7 @@ export interface FileRoutesByFullPath {
   '/saved': typeof SavedRoute
   '/settings': typeof SettingsRouteWithChildren
   '/article/$slug': typeof ArticleSlugRoute
-  '/author/$id': typeof AuthorIdRoute
+  '/author/$id': typeof AuthorIdRouteWithChildren
   '/category/$name': typeof CategoryNameRoute
   '/profile/edit': typeof ProfileEditRoute
   '/settings/about': typeof SettingsAboutRoute
@@ -158,6 +170,8 @@ export interface FileRoutesByFullPath {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/profile/': typeof ProfileIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/author/$id/followers': typeof AuthorIdFollowersRoute
+  '/author/$id/following': typeof AuthorIdFollowingRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRoutesByTo {
@@ -170,7 +184,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/saved': typeof SavedRoute
   '/article/$slug': typeof ArticleSlugRoute
-  '/author/$id': typeof AuthorIdRoute
+  '/author/$id': typeof AuthorIdRouteWithChildren
   '/category/$name': typeof CategoryNameRoute
   '/profile/edit': typeof ProfileEditRoute
   '/settings/about': typeof SettingsAboutRoute
@@ -179,6 +193,8 @@ export interface FileRoutesByTo {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/profile': typeof ProfileIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/author/$id/followers': typeof AuthorIdFollowersRoute
+  '/author/$id/following': typeof AuthorIdFollowingRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRoutesById {
@@ -194,7 +210,7 @@ export interface FileRoutesById {
   '/saved': typeof SavedRoute
   '/settings': typeof SettingsRouteWithChildren
   '/article/$slug': typeof ArticleSlugRoute
-  '/author/$id': typeof AuthorIdRoute
+  '/author/$id': typeof AuthorIdRouteWithChildren
   '/category/$name': typeof CategoryNameRoute
   '/profile/edit': typeof ProfileEditRoute
   '/settings/about': typeof SettingsAboutRoute
@@ -203,6 +219,8 @@ export interface FileRoutesById {
   '/settings/privacy': typeof SettingsPrivacyRoute
   '/profile/': typeof ProfileIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/author/$id/followers': typeof AuthorIdFollowersRoute
+  '/author/$id/following': typeof AuthorIdFollowingRoute
   '/story/$authorId/$storyId': typeof StoryAuthorIdStoryIdRoute
 }
 export interface FileRouteTypes {
@@ -228,6 +246,8 @@ export interface FileRouteTypes {
     | '/settings/privacy'
     | '/profile/'
     | '/settings/'
+    | '/author/$id/followers'
+    | '/author/$id/following'
     | '/story/$authorId/$storyId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -249,6 +269,8 @@ export interface FileRouteTypes {
     | '/settings/privacy'
     | '/profile'
     | '/settings'
+    | '/author/$id/followers'
+    | '/author/$id/following'
     | '/story/$authorId/$storyId'
   id:
     | '__root__'
@@ -272,6 +294,8 @@ export interface FileRouteTypes {
     | '/settings/privacy'
     | '/profile/'
     | '/settings/'
+    | '/author/$id/followers'
+    | '/author/$id/following'
     | '/story/$authorId/$storyId'
   fileRoutesById: FileRoutesById
 }
@@ -287,7 +311,7 @@ export interface RootRouteChildren {
   SavedRoute: typeof SavedRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   ArticleSlugRoute: typeof ArticleSlugRoute
-  AuthorIdRoute: typeof AuthorIdRoute
+  AuthorIdRoute: typeof AuthorIdRouteWithChildren
   CategoryNameRoute: typeof CategoryNameRoute
   StoryAuthorIdStoryIdRoute: typeof StoryAuthorIdStoryIdRoute
 }
@@ -441,6 +465,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoryAuthorIdStoryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/author/$id/following': {
+      id: '/author/$id/following'
+      path: '/following'
+      fullPath: '/author/$id/following'
+      preLoaderRoute: typeof AuthorIdFollowingRouteImport
+      parentRoute: typeof AuthorIdRoute
+    }
+    '/author/$id/followers': {
+      id: '/author/$id/followers'
+      path: '/followers'
+      fullPath: '/author/$id/followers'
+      preLoaderRoute: typeof AuthorIdFollowersRouteImport
+      parentRoute: typeof AuthorIdRoute
+    }
   }
 }
 
@@ -477,6 +515,20 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
   SettingsRouteChildren,
 )
 
+interface AuthorIdRouteChildren {
+  AuthorIdFollowersRoute: typeof AuthorIdFollowersRoute
+  AuthorIdFollowingRoute: typeof AuthorIdFollowingRoute
+}
+
+const AuthorIdRouteChildren: AuthorIdRouteChildren = {
+  AuthorIdFollowersRoute: AuthorIdFollowersRoute,
+  AuthorIdFollowingRoute: AuthorIdFollowingRoute,
+}
+
+const AuthorIdRouteWithChildren = AuthorIdRoute._addFileChildren(
+  AuthorIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ComposeRoute: ComposeRoute,
@@ -489,7 +541,7 @@ const rootRouteChildren: RootRouteChildren = {
   SavedRoute: SavedRoute,
   SettingsRoute: SettingsRouteWithChildren,
   ArticleSlugRoute: ArticleSlugRoute,
-  AuthorIdRoute: AuthorIdRoute,
+  AuthorIdRoute: AuthorIdRouteWithChildren,
   CategoryNameRoute: CategoryNameRoute,
   StoryAuthorIdStoryIdRoute: StoryAuthorIdStoryIdRoute,
 }

@@ -22,7 +22,7 @@ const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
 const PUBLIC_ROUTES = ['/login', '/register'];
 const TAB_ROUTES = ['/', '/index', '/discover', '/highlights', '/saved', '/profile'];
 
-function BackButton() {
+export function BackButton() {
   const router = useRouter();
   return (
     <TouchableOpacity
@@ -35,7 +35,7 @@ function BackButton() {
   );
 }
 
-function HeaderLogo() {
+export function HeaderLogo() {
   return (
     <Text
       style={{
@@ -52,7 +52,7 @@ function HeaderLogo() {
   );
 }
 
-function ProfileHeaderActions() {
+export function ProfileHeaderActions() {
   const router = useRouter();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 12 }}>
@@ -67,7 +67,7 @@ function ProfileHeaderActions() {
   );
 }
 
-function FeedHeaderActions() {
+export function FeedHeaderActions() {
   const router = useRouter();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 5 }}>
@@ -82,7 +82,7 @@ function FeedHeaderActions() {
   );
 }
 
-const CustomHeaderActions = () => {
+export const CustomHeaderActions = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -96,7 +96,7 @@ const CustomHeaderActions = () => {
   );
 };
 
-function CustomHeader({ title, left, right, titleAlign = 'center', customTitle, isMain = true }: { title?: string; left?: React.ReactNode; right?: React.ReactNode; titleAlign?: 'center' | 'left' | undefined; customTitle?: React.ReactNode; isMain?: boolean }) {
+export function CustomHeader({ title, left, right, titleAlign = 'center', customTitle, isMain = true }: { title?: string; left?: React.ReactNode; right?: React.ReactNode; titleAlign?: 'center' | 'left' | undefined; customTitle?: React.ReactNode; isMain?: boolean }) {
   return (
     <SafeAreaView style={{ backgroundColor: '#f7f4ee' }} edges={['top', 'left', 'right']}>
       <View style={{

@@ -76,6 +76,7 @@ model Article {
   authorId      String
   likesCount    Int       @default(0)
   views         Int       @default(0)
+  shares        Int       @default(0)
   featured      Boolean   @default(false)
   isPublished   Boolean   @default(false)
   publishedAt   DateTime?

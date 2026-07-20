@@ -87,4 +87,12 @@ export class ArticlesController {
   async deleteArticle(@Request() req: any, @Param('slug') slug: string) {
     return this.articlesService.deleteArticle(req.user.id, slug);
   }
+
+  @Post(':slug/share')
+  @ApiOperation({ summary: 'Increment share count for an article' })
+  @ApiResponse({ status: 200, description: 'Share count incremented' })
+  @ApiResponse({ status: 404, description: 'Article not found' })
+  async shareArticle(@Param('slug') slug: string) {
+    return this.articlesService.incrementShares(slug);
+  }
 }

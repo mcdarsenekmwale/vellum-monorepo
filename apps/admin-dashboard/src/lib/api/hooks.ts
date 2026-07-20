@@ -36,6 +36,7 @@ import {
   getUnreadNotificationCount,
   getFollows,
   getReports,
+  getReportById,
   updateReportStatus,
   deleteReport,
   getReportStats,
@@ -607,6 +608,14 @@ export function useReports(params: ListParams = {}) {
         pageSize: params.pageSize ?? 20,
       };
     },
+  });
+}
+
+export function useReport(id: string) {
+  return useQuery({
+    queryKey: ["reports", id],
+    queryFn: () => getReportById(id),
+    enabled: !!id,
   });
 }
 

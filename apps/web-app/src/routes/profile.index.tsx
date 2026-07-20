@@ -38,9 +38,9 @@ function ProfileIndexPage() {
   const currentProfile = user || profile;
 
   const stats = [
-    { label: "Posts", value: myArticles.length },
-    { label: "Followers", value: 0 },
-    { label: "Following", value: 0 },
+    { label: "Posts", value: myArticlesData?.total ?? myArticles.length, link: null },
+    { label: "Followers", value: (user as any)?.followerCount ?? 0, link: user ? `/author/${user.handle}/followers` : null },
+    { label: "Following", value: (user as any)?.followingCount ?? 0, link: user ? `/author/${user.handle}/following` : null },
   ];
 
   const isLoading = authLoading || likedLoading || bookmarkedLoading;
@@ -92,10 +92,17 @@ function ProfileIndexPage() {
               </div>
               <div className="flex gap-6 mb-4">
                 {stats.map((s) => (
-                  <div key={s.label} className="text-sm">
-                    <span className="font-semibold">{s.value.toLocaleString()}</span>{" "}
-                    <span className="text-muted-foreground">{s.label.toLowerCase()}</span>
-                  </div>
+                  s.link ? (
+                    <Link key={s.label} to={s.link} className="text-sm hover:opacity-70 transition-opacity">
+                      <span className="font-semibold">{s.value.toLocaleString()}</span>{" "}
+                      <span className="text-muted-foreground">{s.label.toLowerCase()}</span>
+                    </Link>
+                  ) : (
+                    <div key={s.label} className="text-sm">
+                      <span className="font-semibold">{s.value.toLocaleString()}</span>{" "}
+                      <span className="text-muted-foreground">{s.label.toLowerCase()}</span>
+                    </div>
+                  )
                 ))}
               </div>
               <div>

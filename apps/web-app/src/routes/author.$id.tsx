@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WebShell } from "@/components/WebShell";
-import { useUser, useArticlesByAuthor } from "@/hooks/useApi";
+import { useUser, useArticlesByAuthor, useSocialActions } from "@/hooks/useApi";
+import { apiClient } from "@/lib/api";
 import { ArrowLeft, MessageCircle, UserPlus, Check } from "lucide-react";
+import { LoginPrompt } from "@/components/LoginPrompt";
 
 function timeAgo(dateString?: string): string {
   if (!dateString) return "";
@@ -39,11 +41,52 @@ function AuthorPage() {
     isLoading: storiesLoading,
     error: storiesError,
   } = useArticlesByAuthor(id);
+  const { toggleFollow } = useSocialActions();
   const [following, setFollowing] = useState(false);
+  const [isCheckingFollow, setIsCheckingFollow] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const stories = storiesData?.data ?? [];
   const isLoading = authorLoading || storiesLoading;
   const error = authorError || storiesError;
+
+  useEffect(() => {
+    if (!author?.id) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const result = await apiClient.isFollowing(author.id);
+        if (!cancelled) setFollowing(result.following);
+      } catch {
+        // Not authenticated or error
+      } finally {
+        if (!cancelled) setIsCheckingFollow(false);
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [author?.id]);
+
+  const handleFollow = async () => {
+    if (!author?.id) return;
+    try {
+      const currentUser = await apiClient.getCurrentUser();
+      if (!currentUser) {
+        setShowLoginPrompt(true);
+        return;
+      }
+      const wasFollowing = following;
+      setFollowing(!wasFollowing);
+      const result = await toggleFollow(author.id);
+      if (result !== null) {
+        setFollowing(result);
+      } else {
+        setFollowing(wasFollowing);
+      }
+    } catch {
+      setShowLoginPrompt(true);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -114,42 +157,45 @@ function AuthorPage() {
               {/* Stats */}
               <div className="flex justify-center md:justify-start gap-8 mt-6">
                 <div>
-                  <p className="text-2xl font-bold">{stories.length}</p>
+                  <p className="text-2xl font-bold">{storiesData?.total ?? stories.length}</p>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest">
                     Stories
                   </p>
                 </div>
-                <div>
+                <Link
+                  to={`/author/${id}/followers`}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <p className="text-2xl font-bold">
-                    {stories
-                      .reduce((sum, s) => sum + (s.likesCount || 0), 0)
-                      .toLocaleString()}
+                    {(author as any)?.followerCount?.toLocaleString() ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Likes
+                    Followers
                   </p>
-                </div>
-                <div>
+                </Link>
+                <Link
+                  to={`/author/${id}/following`}
+                  className="hover:opacity-70 transition-opacity"
+                >
                   <p className="text-2xl font-bold">
-                    {stories
-                      .reduce((sum, s) => sum + (s.commentCount || 0), 0)
-                      .toLocaleString()}
+                    {(author as any)?.followingCount?.toLocaleString() ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Comments
+                    Following
                   </p>
-                </div>
+                </Link>
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-6">
                 <button
-                  onClick={() => setFollowing((f) => !f)}
+                  onClick={handleFollow}
+                  disabled={isCheckingFollow}
                   className={`inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
                     following
                       ? "bg-muted text-foreground"
                       : "bg-foreground text-background hover:opacity-90"
-                  }`}
+                  } ${isCheckingFollow ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {following ? (
                     <>
@@ -212,6 +258,7 @@ function AuthorPage() {
           )}
         </div>
       </div>
+      <LoginPrompt open={showLoginPrompt} onClose={() => setShowLoginPrompt(false)} />
     </WebShell>
   );
 }

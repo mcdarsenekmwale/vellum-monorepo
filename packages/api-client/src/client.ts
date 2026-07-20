@@ -309,6 +309,10 @@ export class ApiClient {
     return this.request(`/api/articles/${slug}`, { method: 'DELETE' });
   }
 
+  async shareArticle(slug: string): Promise<{ slug: string; shares: number }> {
+    return this.request(`/api/articles/${slug}/share`, { method: 'POST' });
+  }
+
   // Highlights endpoints
   async getHighlights(page = 1, limit = 10): Promise<PaginatedResponse<Highlight>> {
     return this.request<PaginatedResponse<Highlight>>('/api/highlights', {

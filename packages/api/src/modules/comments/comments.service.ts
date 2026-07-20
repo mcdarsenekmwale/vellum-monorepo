@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCommentDto } from './dto/comments.dto';
+import { NotificationKind } from '@prisma/client';
 
 @Injectable()
 export class CommentsService {
@@ -49,6 +50,51 @@ export class CommentsService {
         await this.prisma.highlight.update({
           where: { id: dto.highlightId },
           data: { commentsCount: commentCount },
+        });
+      }
+    }
+
+    if (dto.parentId) {
+      const parentComment = await this.prisma.comment.findUnique({ where: { id: dto.parentId } });
+      if (parentComment && parentComment.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: parentComment.authorId,
+            actorId: userId,
+            kind: NotificationKind.REPLY,
+            articleSlug: dto.articleSlug,
+            highlightId: dto.highlightId,
+            commentId: parentComment.id,
+            body: dto.body.slice(0, 200),
+          },
+        });
+      }
+    } else if (dto.articleSlug) {
+      const article = await this.prisma.article.findUnique({ where: { slug: dto.articleSlug } });
+      if (article && article.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: article.authorId,
+            actorId: userId,
+            kind: NotificationKind.COMMENT,
+            articleSlug: dto.articleSlug,
+            commentId: comment.id,
+            body: dto.body.slice(0, 200),
+          },
+        });
+      }
+    } else if (dto.highlightId) {
+      const highlight = await this.prisma.highlight.findUnique({ where: { id: dto.highlightId } });
+      if (highlight && highlight.authorId && highlight.authorId !== userId) {
+        await this.prisma.notification.create({
+          data: {
+            userId: highlight.authorId,
+            actorId: userId,
+            kind: NotificationKind.COMMENT,
+            highlightId: dto.highlightId,
+            commentId: comment.id,
+            body: dto.body.slice(0, 200),
+          },
         });
       }
     }
