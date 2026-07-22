@@ -11,12 +11,36 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ChevronDown,
+  X,
+  Check,
+  Tag,
+  FileText,
+  Clock,
+  Calendar,
+  BarChart3,
+  Send,
+  Bookmark,
+  Share2,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   usePosts,
   useCreateArticle,
@@ -26,9 +50,9 @@ import {
 } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth/context";
 import { useUsers, useCategories } from "@/lib/api/hooks";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -49,11 +73,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/posts")({
   head: () => ({ meta: [{ title: "Posts · Vellum Admin" }] }),
   component: PostsPage,
 });
+
+type CategoryFilter = "all" | string;
+type StatusFilter = "all" | "published" | "draft";
+type SortOption = "newest" | "oldest" | "mostViews" | "mostLikes" | "title";
 
 function PostsPage() {
   const { data, isLoading, error, refetch } = usePosts({ pageSize: 50 });
@@ -71,6 +108,10 @@ function PostsPage() {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
 
+  // Sheet states
+  const [selectedPost, setSelectedPost] = useState<Article | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
   const [formTitle, setFormTitle] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [formExcerpt, setFormExcerpt] = useState("");
@@ -80,6 +121,10 @@ function PostsPage() {
   const [formFeatured, setFormFeatured] = useState(false);
   const [formReadMinutes, setFormReadMinutes] = useState<number>(3);
   const [formCover, setFormCover] = useState("");
+
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const getCategoryName = (categoryId: string) => {
     return categories?.find((c) => c.id === categoryId)?.name ?? "Uncategorized";
@@ -105,12 +150,56 @@ function PostsPage() {
     return users?.data?.find((u) => u.id === authorId)?.avatar ?? null;
   };
 
+  const getAuthorHandle = (authorId: string) => {
+    return users?.data?.find((u) => u.id === authorId)?.handle ?? "";
+  };
+
   const getEngagementTrend = (c: Article) => {
     const rate = c.views > 0 ? (c.likesCount + c.commentsCount) / c.views : 0;
-    if (rate > 0.08) return { icon: TrendingUp, color: "text-emerald-500", label: "High" };
-    if (rate > 0.04) return { icon: Minus, color: "text-amber-500", label: "Avg" };
-    return { icon: TrendingDown, color: "text-rose-500", label: "Low" };
+    if (rate > 0.08) return { icon: TrendingUp, color: "text-emerald-500", label: "High", bgColor: "bg-emerald-500/10" };
+    if (rate > 0.04) return { icon: Minus, color: "text-amber-500", label: "Avg", bgColor: "bg-amber-500/10" };
+    return { icon: TrendingDown, color: "text-rose-500", label: "Low", bgColor: "bg-rose-500/10" };
   };
+
+  const filteredRows = useMemo(() => {
+    let result = rows;
+
+    if (categoryFilter !== "all") {
+      result = result.filter((article) => article.categoryId === categoryFilter);
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter((article) =>
+        statusFilter === "published" ? article.isPublished : !article.isPublished
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "mostViews":
+          return (b.views || 0) - (a.views || 0);
+        case "mostLikes":
+          return (b.likesCount || 0) - (a.likesCount || 0);
+        case "title":
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rows, categoryFilter, statusFilter, sortBy]);
+
+  const hasActiveFilters = categoryFilter !== "all" || statusFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setCategoryFilter("all");
+    setStatusFilter("all");
+  }, []);
 
   const resetCreateForm = () => {
     setFormTitle("");
@@ -149,6 +238,10 @@ function PostsPage() {
           setIsCreateOpen(false);
           resetCreateForm();
           refetch();
+          toast.success("Post created successfully");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to create post: " + (error?.message || "Unknown error"));
         },
       }
     );
@@ -195,6 +288,10 @@ function PostsPage() {
           setEditingArticle(null);
           resetCreateForm();
           refetch();
+          toast.success("Post updated successfully");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update post: " + (error?.message || "Unknown error"));
         },
       }
     );
@@ -212,6 +309,10 @@ function PostsPage() {
         setIsDeleteOpen(false);
         setDeletingArticle(null);
         refetch();
+        toast.success("Post deleted successfully");
+      },
+      onError: (error: any) => {
+        toast.error("Failed to delete post: " + (error?.message || "Unknown error"));
       },
     });
   };
@@ -225,9 +326,23 @@ function PostsPage() {
       {
         onSuccess: () => {
           refetch();
+          toast.success(article.isPublished ? "Post unpublished" : "Post published");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update post status: " + (error?.message || "Unknown error"));
         },
       }
     );
+  };
+
+  const openPostSheet = (post: Article) => {
+    setSelectedPost(post);
+    setIsSheetOpen(true);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   return (
@@ -236,7 +351,7 @@ function PostsPage() {
         title="Posts"
         description="Articles published across the platform."
         eyebrow="Content"
-        rows={rows}
+        rows={filteredRows}
         isLoading={isLoading}
         error={error}
         searchKeys={["title", "slug", "excerpt"]}
@@ -385,19 +500,119 @@ function PostsPage() {
         }
         filters={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Category
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Status
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              + Add filter
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <Tag className="size-3.5" />
+                  Category
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by category</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setCategoryFilter("all")}
+                  className={cn(categoryFilter === "all" && "bg-accent")}
+                >
+                  All categories
+                  {categoryFilter === "all" && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+                {categories?.map((c) => (
+                  <DropdownMenuItem
+                    key={c.id}
+                    onClick={() => setCategoryFilter(c.id)}
+                    className={cn(categoryFilter === c.id && "bg-accent")}
+                  >
+                    {c.name}
+                    {categoryFilter === c.id && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <FileText className="size-3.5" />
+                  Status
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["all", "published", "draft"] as const).map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={cn(statusFilter === status && "bg-accent")}
+                  >
+                    {status === "all" ? "All statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    {statusFilter === status && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <TrendingUp className="size-3.5" />
+                  Sort
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "mostViews", label: "Most views" },
+                  { value: "mostLikes", label: "Most likes" },
+                  { value: "title", label: "Title" },
+                ] as const).map(({ value, label }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => setSortBy(value as SortOption)}
+                    className={cn(sortBy === value && "bg-accent")}
+                  >
+                    {label}
+                    {sortBy === value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {hasActiveFilters && (
+              <>
+                <div className="h-6 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active filters:</span>
+                  {categoryFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setCategoryFilter("all")}>
+                      Category: {getCategoryName(categoryFilter)}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
+            )}
           </>
         }
         columns={[
@@ -406,12 +621,12 @@ function PostsPage() {
             header: "Post",
             cell: (c) => (
               <div className="flex items-start gap-3 min-w-0">
-                <div className="size-12 shrink-0 rounded-lg overflow-hidden bg-muted">
+                <div className="size-12 shrink-0 rounded-lg overflow-hidden bg-muted cursor-pointer group" onClick={() => openPostSheet(c)}>
                   {c.cover ? (
                     <img
                       src={c.cover}
-                      alt=""
-                      className="size-full object-cover"
+                      alt={c.title}
+                      className="size-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   ) : (
@@ -421,13 +636,12 @@ function PostsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <Link
-                    to="/posts/$postId"
-                    params={{ postId: c.id }}
-                    className="block truncate text-sm font-semibold hover:text-primary transition-colors"
+                  <button
+                    onClick={() => openPostSheet(c)}
+                    className="block truncate text-sm font-semibold hover:text-primary transition-colors text-left"
                   >
-                    {c.title}
-                  </Link>
+                    {c.title?.slice(0, 60)}
+                  </button>
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">
                       {getAuthorName(c.authorId)}
@@ -455,7 +669,7 @@ function PostsPage() {
             key: "status",
             header: "Status",
             cell: (c) => <StatusBadge status={c.isPublished ? "published" : "draft"} />,
-            className: "w-24  me-8",
+            className: "w-24",
           },
           {
             key: "engagement",
@@ -507,33 +721,18 @@ function PostsPage() {
             className: "hidden lg:table-cell w-28",
             headerClassName: "text-right",
           },
-          
         ]}
         renderRowActions={(c) => (
-          <div className="flex items-center justify-end gap-0.5 group-hover:opacity-100 transition-opacity ms-8">
-            <Button variant="ghost" size="icon" className="size-8 hover:text-primary" asChild>
-              <Link to="/posts/$postId" params={{ postId: c.id }}>
-                <ArrowUpRight className="size-4" />
-              </Link>
+          <div className="flex items-center justify-end gap-0.5 opacity-100 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="size-8 hover:text-primary" onClick={() => openPostSheet(c)}>
+              <ArrowUpRight className="size-4" />
             </Button>
             {can("posts", "write") && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="size-8 hover:text-primary"
-                onClick={() => togglePublish(c)}
-                title={c.isPublished ? "Unpublish" : "Publish"}
-                disabled={updateArticle.isPending}
-              >
-                <StatusBadge status={c.isPublished ? "published" : "draft"} size="sm" />
-              </Button>
-            )}
-            {can("posts", "write") && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 hover:text-primary"
-                onClick={() => openEdit(c)}
+                onClick={(e) => { e.stopPropagation(); openEdit(c); }}
                 aria-label="Edit"
               >
                 <Pencil className="size-4" />
@@ -544,7 +743,7 @@ function PostsPage() {
                 variant="ghost"
                 size="icon"
                 className="size-8 hover:text-destructive"
-                onClick={() => openDelete(c)}
+                onClick={(e) => { e.stopPropagation(); openDelete(c); }}
                 aria-label="Delete"
               >
                 <Trash2 className="size-4" />
@@ -552,10 +751,208 @@ function PostsPage() {
             )}
           </div>
         )}
-        onRowClick={(c) => {
-        }}
+        onRowClick={(c) => openPostSheet(c)}
       />
 
+      {/* Post Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:max-w-xl w-full md:max-w-2xl overflow-hidden p-0">
+          {selectedPost && (
+            <>
+              {/* Cover Image */}
+              <div className="relative h-56 shrink-0">
+                {selectedPost.cover ? (
+                  <img
+                    src={selectedPost.cover}
+                    alt={selectedPost.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <FileText className="size-12 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                <SheetClose asChild>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-4 right-4 size-8 rounded-full bg-background/80 backdrop-blur-sm"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </SheetClose>
+                <div className="absolute bottom-4 left-6 right-6">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "mb-2 text-[10px] font-medium border",
+                      getCategoryColor(selectedPost.categoryId)
+                    )}
+                  >
+                    {getCategoryName(selectedPost.categoryId)}
+                  </Badge>
+                  <h2 className="text-xl font-semibold leading-tight line-clamp-2">
+                    {selectedPost.title}
+                  </h2>
+                </div>
+              </div>
+
+              <ScrollArea className="flex-1 h-[calc(100vh-14rem)]">
+                <div className="p-6 space-y-6">
+                  {/* Author & Meta */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="size-10">
+                        <AvatarImage src={getAuthorAvatar(selectedPost.authorId) || ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                          {getAuthorName(selectedPost.authorId)[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="text-sm font-medium">{getAuthorName(selectedPost.authorId)}</div>
+                        <div className="text-xs text-muted-foreground">@{getAuthorHandle(selectedPost.authorId)}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={selectedPost.isPublished ? "published" : "draft"} />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-lg border bg-card p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <Eye className="size-3.5 text-muted-foreground" />
+                        <span className="text-lg font-semibold tabular-nums">{selectedPost.views.toLocaleString()}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Views</div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <Heart className="size-3.5 text-rose-500" />
+                        <span className="text-lg font-semibold tabular-nums">{selectedPost.likesCount.toLocaleString()}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Likes</div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <MessageSquare className="size-3.5 text-sky-500" />
+                        <span className="text-lg font-semibold tabular-nums">{selectedPost.commentsCount.toLocaleString()}</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Comments</div>
+                    </div>
+                  </div>
+
+                  {/* Engagement Rate */}
+                  {(() => {
+                    const rate = selectedPost.views > 0
+                      ? (((selectedPost.likesCount + selectedPost.commentsCount) / selectedPost.views) * 100).toFixed(1)
+                      : "0.0";
+                    const trend = getEngagementTrend(selectedPost);
+                    const TrendIcon = trend.icon;
+                    return (
+                      <div className="rounded-lg border bg-card p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="size-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Engagement Rate</span>
+                          </div>
+                          <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium", trend.bgColor, trend.color)}>
+                            <TrendIcon className="size-3" />
+                            {trend.label}
+                          </div>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <span className="text-3xl font-bold tabular-nums">{rate}%</span>
+                          <span className="text-xs text-muted-foreground mb-1">of total views</span>
+                        </div>
+                        <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-500", trend.color.replace("text-", "bg-"))}
+                            style={{ width: `${Math.min(parseFloat(rate) * 5, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <Separator />
+
+                  {/* Excerpt */}
+                  <div>
+                    <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <FileText className="size-3.5 text-muted-foreground" />
+                      Excerpt
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedPost.excerpt || "No excerpt provided."}
+                    </p>
+                  </div>
+
+                  {/* Meta Info */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="size-3.5 text-muted-foreground" />
+                      Timeline
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="size-3.5" />
+                        <span>Created {formatDistanceToNow(new Date(selectedPost.createdAt), { addSuffix: true })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="size-3.5" />
+                        <span>Updated {formatDistanceToNow(new Date(selectedPost.updatedAt), { addSuffix: true })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="size-3.5" />
+                        <span>{selectedPost.readMinutes} min read</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Tag className="size-3.5" />
+                        <span>Slug: {selectedPost.slug}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedPost.featured && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                      Featured Post
+                    </Badge>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Footer Actions */}
+              <SheetFooter className="border-t p-4 gap-2 shrink-0">
+                <div className="flex items-center gap-2 w-full">
+                  <Button variant="outline" size="sm" className="gap-1.5 flex-1" onClick={() => copyToClipboard(`${window.location.origin}/posts/${selectedPost.id}`)}>
+                    <Copy className="size-3.5" />
+                    Copy Link
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5 flex-1" asChild>
+                    <Link to="/posts/$postId" params={{ postId: selectedPost.id }}>
+                      <ExternalLink className="size-3.5" />
+                      View
+                    </Link>
+                  </Button>
+                  {can("posts", "write") && (
+                    <Button size="sm" className="gap-1.5 flex-1" onClick={() => { setIsSheetOpen(false); openEdit(selectedPost); }}>
+                      <Pencil className="size-3.5" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </SheetFooter>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -684,6 +1081,7 @@ function PostsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

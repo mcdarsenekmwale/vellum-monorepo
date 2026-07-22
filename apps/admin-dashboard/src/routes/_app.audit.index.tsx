@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Shield,
   ShieldCheck,
@@ -138,6 +138,16 @@ function AuditPage() {
     title: "",
     data: null,
   });
+
+  const hasActiveFilters = dateRange !== "30d" || actionFilter !== "all" || actorFilter !== "all" || statusFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setDateRange("30d");
+    setActionFilter("all");
+    setActorFilter("all");
+    setStatusFilter("all");
+    toast.success("Filters cleared");
+  }, []);
 
   const { data, isLoading, error } = useAuditLogs({ limit: 200 });
   const allRows: AuditLogEntry[] = data?.data ?? [];
@@ -321,6 +331,46 @@ function AuditPage() {
                 { id: "failure", label: "Failed only" },
               ]}
             />
+            {hasActiveFilters && (
+              <>
+                <div className="h-4 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active:</span>
+                  {dateRange !== "30d" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setDateRange("30d")}>
+                      Date: {dateRangeOptions.find((o) => o.id === dateRange)?.label}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {actionFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setActionFilter("all")}>
+                      Action: {actionFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {actorFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setActorFilter("all")}>
+                      Actor: {actors.find((a) => a.id === actorFilter)?.label}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         }
         columns={[

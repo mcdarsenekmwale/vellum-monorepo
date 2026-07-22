@@ -81,6 +81,8 @@ export type ListPageProps<T extends { id: string }> = {
   onSelectionChange?: (selected: Set<string>) => void;
   /** Bulk action buttons shown when rows are selected */
   bulkActions?: BulkAction[];
+
+  searchPlaceholder?: string;
 };
 
 export function ListPage<T extends { id: string }>(props: ListPageProps<T>) {
@@ -102,6 +104,7 @@ function ListPageInner<T extends { id: string }>({
   filters,
   emptyTitle = "Nothing to show yet",
   emptyDescription = "Try adjusting search or filters.",
+  searchPlaceholder = "Search...",
   pageSize = 15,
   isLoading,
   error: externalError,
@@ -243,7 +246,7 @@ function ListPageInner<T extends { id: string }>({
                   setQ(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search..."
+                placeholder={searchPlaceholder}
                 className="w-64 pl-9"
               />
             </div>

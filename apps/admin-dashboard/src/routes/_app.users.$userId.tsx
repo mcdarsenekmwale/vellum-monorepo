@@ -81,7 +81,7 @@ function UserDetail() {
 
       <div className="surface-card overflow-hidden">
         <div className="relative h-28 gradient-primary" />
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 px-6 pb-5 -mt-10">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 px-6 pb-5 -mt-7">
           <div className="flex min-w-0 items-end gap-4">
             <Avatar className="size-20 shrink-0 ring-4 ring-card">
               <AvatarImage src={resolveAvatar(user.avatar, user.handle)} />

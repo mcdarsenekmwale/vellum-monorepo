@@ -12,6 +12,12 @@ import {
   CheckCircle2,
   ArrowUpRight,
   Loader2,
+  ChevronDown,
+  X,
+  Check,
+  User,
+  FileText,
+  TrendingUp,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -39,8 +45,16 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/comments")({
   head: () => ({ meta: [{ title: "Comments · Vellum Admin" }] }),
@@ -55,7 +69,10 @@ function CommentsPage() {
   const deleteComment = useDeleteComment();
   const rows = data?.data ?? [];
 
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
+  const [articleFilter, setArticleFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingComment, setDeletingComment] = useState<Comment | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -81,10 +98,42 @@ function CommentsPage() {
   const flaggedComments = rows.filter((c) => c.status === "flagged").length;
   const hiddenComments = rows.filter((c) => c.status === "hidden").length;
 
-  const filteredRows =
-    selectedStatus === "all"
-      ? rows
-      : rows.filter((c) => (c.status ?? "visible") === selectedStatus);
+  const filteredRows = useMemo(() => {
+    let result = rows;
+
+    if (statusFilter !== "all") {
+      result = result.filter((c) => (c.status ?? "visible") === statusFilter);
+    }
+
+    if (authorFilter !== "all") {
+      result = result.filter((c) => c.authorId === authorFilter);
+    }
+
+    if (articleFilter !== "all") {
+      result = result.filter((c) => c.articleSlug === articleFilter);
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rows, statusFilter, authorFilter, articleFilter, sortBy]);
+
+  const hasActiveFilters = statusFilter !== "all" || authorFilter !== "all" || articleFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setStatusFilter("all");
+    setAuthorFilter("all");
+    setArticleFilter("all");
+  }, []);
 
   const openDeleteDialog = (comment: Comment) => {
     setDeletingComment(comment);
@@ -155,17 +204,17 @@ function CommentsPage() {
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setSelectedStatus(tab.key)}
+            onClick={() => setStatusFilter(tab.key)}
             className={cn(
               "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all",
-              selectedStatus === tab.key
+              statusFilter === tab.key
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
             )}
           >
             {tab.label}
             <Badge
-              variant={selectedStatus === tab.key ? "secondary" : "outline"}
+              variant={statusFilter === tab.key ? "secondary" : "outline"}
               className="h-5 px-1.5 text-[10px]"
             >
               {tab.count}
@@ -188,22 +237,135 @@ function CommentsPage() {
         enablePagination={true}
         emptyTitle="No comments found"
         emptyDescription={
-          selectedStatus === "all"
+          statusFilter === "all" && authorFilter === "all" && articleFilter === "all"
             ? "There are no comments yet. Check back later."
-            : `No ${selectedStatus} comments found. Try a different filter.`
+            : "No comments match your filters. Try adjusting them."
         }
         filters={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Author
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Article
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <User className="size-3.5" />
+                  Author
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by author</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setAuthorFilter("all")}
+                  className={cn(authorFilter === "all" && "bg-accent")}
+                >
+                  All authors
+                  {authorFilter === "all" && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+                {users?.data?.map((u) => (
+                  <DropdownMenuItem
+                    key={u.id}
+                    onClick={() => setAuthorFilter(u.id)}
+                    className={cn(authorFilter === u.id && "bg-accent")}
+                  >
+                    {u.name}
+                    {authorFilter === u.id && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <FileText className="size-3.5" />
+                  Article
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by article</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setArticleFilter("all")}
+                  className={cn(articleFilter === "all" && "bg-accent")}
+                >
+                  All articles
+                  {articleFilter === "all" && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+                {articles?.data?.map((a) => (
+                  <DropdownMenuItem
+                    key={a.id}
+                    onClick={() => setArticleFilter(a.slug)}
+                    className={cn(articleFilter === a.slug && "bg-accent")}
+                  >
+                    {a.title}
+                    {articleFilter === a.slug && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <TrendingUp className="size-3.5" />
+                  Sort
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                ] as const).map(({ value, label }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => setSortBy(value)}
+                    className={cn(sortBy === value && "bg-accent")}
+                  >
+                    {label}
+                    {sortBy === value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {hasActiveFilters && (
+              <>
+                <div className="h-6 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active filters:</span>
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {authorFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setAuthorFilter("all")}>
+                      Author: {getAuthorName(authorFilter)}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {articleFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setArticleFilter("all")}>
+                      Article: {getArticleTitle(articleFilter)}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
+            )}
           </>
         }
         columns={[

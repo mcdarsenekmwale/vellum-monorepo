@@ -70,7 +70,12 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.spec.json"
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
@@ -84,7 +89,10 @@
     "@prisma/compute-sdk": "^0.34.0",
     "@types/express": "^5.0.6",
     "@types/helmet": "^0.0.48",
+    "@types/jest": "^29.5.14",
     "@types/redis": "^4.0.10",
+    "@types/supertest": "^2.0.16",
+    "supertest": "^6.3.4",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

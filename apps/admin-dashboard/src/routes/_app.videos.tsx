@@ -11,6 +11,11 @@ import {
   Trash2,
   ArrowUpRight,
   Film,
+  ChevronDown,
+  X,
+  Check,
+  FileText,
+  TrendingUp,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -27,7 +32,7 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,11 +46,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/videos")({
   head: () => ({ meta: [{ title: "Videos · Vellum Admin" }] }),
   component: VideosPage,
 });
+
+type StatusFilter = "all" | "published" | "draft";
+type DurationFilter = "all" | "short" | "medium" | "long";
+type SortOption = "newest" | "oldest" | "mostViews" | "mostLikes" | "title";
 
 function VideosPage() {
   const { data, isLoading, error, refetch } = useVideos({ pageSize: 50 });
@@ -70,6 +88,10 @@ function VideosPage() {
   const [formDurationStr, setFormDurationStr] = useState("");
   const [formIsPublished, setFormIsPublished] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -86,6 +108,52 @@ function VideosPage() {
     setFormDurationStr("");
     setFormIsPublished(false);
   };
+
+  const filteredRows = useMemo(() => {
+    let result = rows;
+
+    if (statusFilter !== "all") {
+      result = result.filter((v) =>
+        statusFilter === "published" ? v.isPublished : !v.isPublished
+      );
+    }
+
+    if (durationFilter !== "all") {
+      result = result.filter((v) => {
+        const d = v.duration ?? 0;
+        if (durationFilter === "short") return d < 60;
+        if (durationFilter === "medium") return d >= 60 && d <= 300;
+        if (durationFilter === "long") return d > 300;
+        return true;
+      });
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "mostViews":
+          return (b.viewsCount || 0) - (a.viewsCount || 0);
+        case "mostLikes":
+          return (b.likesCount || 0) - (a.likesCount || 0);
+        case "title":
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rows, statusFilter, durationFilter, sortBy]);
+
+  const hasActiveFilters = statusFilter !== "all" || durationFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setStatusFilter("all");
+    setDurationFilter("all");
+  }, []);
 
   const handleCreate = () => {
     if (!formTitle.trim() || !formHandle.trim()) return;
@@ -105,6 +173,10 @@ function VideosPage() {
           setIsCreateOpen(false);
           resetCreateForm();
           refetch();
+          toast.success("Video uploaded successfully");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to upload video: " + (error?.message || "Unknown error"));
         },
       }
     );
@@ -143,6 +215,10 @@ function VideosPage() {
           setEditingVideo(null);
           resetCreateForm();
           refetch();
+          toast.success("Video updated successfully");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update video: " + (error?.message || "Unknown error"));
         },
       }
     );
@@ -160,6 +236,10 @@ function VideosPage() {
         setIsDeleteOpen(false);
         setDeletingVideo(null);
         refetch();
+        toast.success("Video deleted successfully");
+      },
+      onError: (error: any) => {
+        toast.error("Failed to delete video: " + (error?.message || "Unknown error"));
       },
     });
   };
@@ -173,6 +253,10 @@ function VideosPage() {
       {
         onSuccess: () => {
           refetch();
+          toast.success(video.isPublished ? "Video unpublished" : "Video published");
+        },
+        onError: (error: any) => {
+          toast.error("Failed to update video status: " + (error?.message || "Unknown error"));
         },
       }
     );
@@ -184,7 +268,7 @@ function VideosPage() {
         title="Videos"
         description="Highlight videos uploaded across the platform."
         eyebrow="Content"
-        rows={rows}
+        rows={filteredRows}
         isLoading={isLoading}
         error={error}
         searchKeys={["title", "handle", "description"]}
@@ -311,19 +395,117 @@ function VideosPage() {
         }
         filters={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Status
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Duration
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              + Add filter
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <FileText className="size-3.5" />
+                  Status
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["all", "published", "draft"] as const).map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={cn(statusFilter === status && "bg-accent")}
+                  >
+                    {status === "all" ? "All statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    {statusFilter === status && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <Clock className="size-3.5" />
+                  Duration
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by duration</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "all", label: "All durations" },
+                  { value: "short", label: "Short (< 1 min)" },
+                  { value: "medium", label: "Medium (1–5 min)" },
+                  { value: "long", label: "Long (> 5 min)" },
+                ] as const).map(({ value, label }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => setDurationFilter(value as DurationFilter)}
+                    className={cn(durationFilter === value && "bg-accent")}
+                  >
+                    {label}
+                    {durationFilter === value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <TrendingUp className="size-3.5" />
+                  Sort
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "mostViews", label: "Most views" },
+                  { value: "mostLikes", label: "Most likes" },
+                  { value: "title", label: "Title" },
+                ] as const).map(({ value, label }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => setSortBy(value as SortOption)}
+                    className={cn(sortBy === value && "bg-accent")}
+                  >
+                    {label}
+                    {sortBy === value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {hasActiveFilters && (
+              <>
+                <div className="h-6 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active filters:</span>
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {durationFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setDurationFilter("all")}>
+                      Duration: {durationFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
+            )}
           </>
         }
         columns={[
@@ -399,7 +581,7 @@ function VideosPage() {
                     {c.author?.name?.split(" ").map((w) => w[0]).join("").toUpperCase() ?? c.handle[0]?.toUpperCase() ?? "?"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm">{c.author?.name ?? c.handle}</span>
+                <span className="text-xs font-medium">{c.author?.name ?? c.handle}</span>
               </div>
             ),
           },
@@ -463,19 +645,7 @@ function VideosPage() {
               <Link to="/videos/$videoId" params={{ videoId: c.id }}>
                 <ArrowUpRight className="size-4" />
               </Link>
-            </Button>
-            {can("videos", "write") && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 hover:text-primary"
-                onClick={() => togglePublish(c)}
-                title={c.isPublished ? "Unpublish" : "Publish"}
-                disabled={updateHighlight.isPending}
-              >
-                <StatusBadge status={c.isPublished ? "published" : "draft"} size="sm" />
-              </Button>
-            )}
+            </Button> 
             {can("videos", "write") && (
               <Button
                 variant="ghost"

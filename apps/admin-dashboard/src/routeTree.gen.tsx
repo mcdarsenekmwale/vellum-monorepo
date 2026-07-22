@@ -46,10 +46,12 @@ import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertiseme
 import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
 import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
+import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
 import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
 import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
 import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
+import { Route as AppArticlesArticleIdRouteImport } from './routes/_app.articles.$articleId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -235,6 +237,11 @@ const AppAuditIndexRoute = AppAuditIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppAuditRoute,
 } as any)
+const AppArticlesIndexRoute = AppArticlesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppArticlesRoute,
+} as any)
 const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
@@ -255,6 +262,11 @@ const AppAuditEntryIdRoute = AppAuditEntryIdRouteImport.update({
   path: '/$entryId',
   getParentRoute: () => AppAuditRoute,
 } as any)
+const AppArticlesArticleIdRoute = AppArticlesArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => AppArticlesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -262,7 +274,7 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AppAiRoute
   '/analytics': typeof AppAnalyticsRoute
   '/api': typeof AppApiRoute
-  '/articles': typeof AppArticlesRoute
+  '/articles': typeof AppArticlesRouteWithChildren
   '/audit': typeof AppAuditRouteWithChildren
   '/categories': typeof AppCategoriesRoute
   '/comments': typeof AppCommentsRoute
@@ -290,10 +302,12 @@ export interface FileRoutesByFullPath {
   '/videos': typeof AppVideosRoute
   '/webhooks': typeof AppWebhooksRoute
   '/auth/login': typeof AuthLoginRoute
+  '/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
   '/users/$userId': typeof AppUsersUserIdRoute
+  '/articles/': typeof AppArticlesIndexRoute
   '/audit/': typeof AppAuditIndexRoute
   '/moderation/': typeof AppModerationIndexRoute
   '/users/': typeof AppUsersIndexRoute
@@ -304,7 +318,6 @@ export interface FileRoutesByTo {
   '/ai': typeof AppAiRoute
   '/analytics': typeof AppAnalyticsRoute
   '/api': typeof AppApiRoute
-  '/articles': typeof AppArticlesRoute
   '/categories': typeof AppCategoriesRoute
   '/comments': typeof AppCommentsRoute
   '/dashboard': typeof AppDashboardRoute
@@ -329,10 +342,12 @@ export interface FileRoutesByTo {
   '/videos': typeof AppVideosRoute
   '/webhooks': typeof AppWebhooksRoute
   '/auth/login': typeof AuthLoginRoute
+  '/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
   '/users/$userId': typeof AppUsersUserIdRoute
+  '/articles': typeof AppArticlesIndexRoute
   '/audit': typeof AppAuditIndexRoute
   '/moderation': typeof AppModerationIndexRoute
   '/users': typeof AppUsersIndexRoute
@@ -345,7 +360,7 @@ export interface FileRoutesById {
   '/_app/ai': typeof AppAiRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/api': typeof AppApiRoute
-  '/_app/articles': typeof AppArticlesRoute
+  '/_app/articles': typeof AppArticlesRouteWithChildren
   '/_app/audit': typeof AppAuditRouteWithChildren
   '/_app/categories': typeof AppCategoriesRoute
   '/_app/comments': typeof AppCommentsRoute
@@ -373,10 +388,12 @@ export interface FileRoutesById {
   '/_app/videos': typeof AppVideosRoute
   '/_app/webhooks': typeof AppWebhooksRoute
   '/auth/login': typeof AuthLoginRoute
+  '/_app/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/_app/audit/$entryId': typeof AppAuditEntryIdRoute
   '/_app/help/$articleId': typeof AppHelpArticleIdRoute
   '/_app/moderation/$reportId': typeof AppModerationReportIdRoute
   '/_app/users/$userId': typeof AppUsersUserIdRoute
+  '/_app/articles/': typeof AppArticlesIndexRoute
   '/_app/audit/': typeof AppAuditIndexRoute
   '/_app/moderation/': typeof AppModerationIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
@@ -417,10 +434,12 @@ export interface FileRouteTypes {
     | '/videos'
     | '/webhooks'
     | '/auth/login'
+    | '/articles/$articleId'
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
     | '/users/$userId'
+    | '/articles/'
     | '/audit/'
     | '/moderation/'
     | '/users/'
@@ -431,7 +450,6 @@ export interface FileRouteTypes {
     | '/ai'
     | '/analytics'
     | '/api'
-    | '/articles'
     | '/categories'
     | '/comments'
     | '/dashboard'
@@ -456,10 +474,12 @@ export interface FileRouteTypes {
     | '/videos'
     | '/webhooks'
     | '/auth/login'
+    | '/articles/$articleId'
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
     | '/users/$userId'
+    | '/articles'
     | '/audit'
     | '/moderation'
     | '/users'
@@ -499,10 +519,12 @@ export interface FileRouteTypes {
     | '/_app/videos'
     | '/_app/webhooks'
     | '/auth/login'
+    | '/_app/articles/$articleId'
     | '/_app/audit/$entryId'
     | '/_app/help/$articleId'
     | '/_app/moderation/$reportId'
     | '/_app/users/$userId'
+    | '/_app/articles/'
     | '/_app/audit/'
     | '/_app/moderation/'
     | '/_app/users/'
@@ -775,6 +797,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditIndexRouteImport
       parentRoute: typeof AppAuditRoute
     }
+    '/_app/articles/': {
+      id: '/_app/articles/'
+      path: '/'
+      fullPath: '/articles/'
+      preLoaderRoute: typeof AppArticlesIndexRouteImport
+      parentRoute: typeof AppArticlesRoute
+    }
     '/_app/users/$userId': {
       id: '/_app/users/$userId'
       path: '/$userId'
@@ -803,8 +832,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditEntryIdRouteImport
       parentRoute: typeof AppAuditRoute
     }
+    '/_app/articles/$articleId': {
+      id: '/_app/articles/$articleId'
+      path: '/$articleId'
+      fullPath: '/articles/$articleId'
+      preLoaderRoute: typeof AppArticlesArticleIdRouteImport
+      parentRoute: typeof AppArticlesRoute
+    }
   }
 }
+
+interface AppArticlesRouteChildren {
+  AppArticlesArticleIdRoute: typeof AppArticlesArticleIdRoute
+  AppArticlesIndexRoute: typeof AppArticlesIndexRoute
+}
+
+const AppArticlesRouteChildren: AppArticlesRouteChildren = {
+  AppArticlesArticleIdRoute: AppArticlesArticleIdRoute,
+  AppArticlesIndexRoute: AppArticlesIndexRoute,
+}
+
+const AppArticlesRouteWithChildren = AppArticlesRoute._addFileChildren(
+  AppArticlesRouteChildren,
+)
 
 interface AppAuditRouteChildren {
   AppAuditEntryIdRoute: typeof AppAuditEntryIdRoute
@@ -864,7 +914,7 @@ interface AppRouteChildren {
   AppAiRoute: typeof AppAiRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppApiRoute: typeof AppApiRoute
-  AppArticlesRoute: typeof AppArticlesRoute
+  AppArticlesRoute: typeof AppArticlesRouteWithChildren
   AppAuditRoute: typeof AppAuditRouteWithChildren
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCommentsRoute: typeof AppCommentsRoute
@@ -898,7 +948,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAiRoute: AppAiRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppApiRoute: AppApiRoute,
-  AppArticlesRoute: AppArticlesRoute,
+  AppArticlesRoute: AppArticlesRouteWithChildren,
   AppAuditRoute: AppAuditRouteWithChildren,
   AppCategoriesRoute: AppCategoriesRoute,
   AppCommentsRoute: AppCommentsRoute,

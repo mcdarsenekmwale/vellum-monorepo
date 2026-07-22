@@ -402,15 +402,18 @@ model FeatureFlag {
 }
 
 model SystemSetting {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  category  String   @default("general") // "general" | "branding" | "auth" | "security" | "uploads" | "notifications" | "email" | "api" | "integrations" | "appearance" | "localization"
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  category    String   @default("general")
+  description String   @default("")
+  version     Int      @default(1)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
   @@index([key])
   @@index([category])
+  @@index([version])
 }
 
 model Advertisement {

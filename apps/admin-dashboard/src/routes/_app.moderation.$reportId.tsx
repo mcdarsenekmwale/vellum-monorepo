@@ -140,8 +140,21 @@ function ReportDetailPage() {
   };
 
   const handleViewContent = () => {
-    navigate({ to: `/${report.targetType}s/${report.targetId}` as any });
+  const targetType = report.targetType.toLowerCase();
+  const validRoutes: Record<string, string> = {
+    article: "/articles",
+    user: "/users",
+    comment: "/comments",
+    post: "/posts",
   };
+  const baseRoute = validRoutes[targetType];
+  if (baseRoute) {
+    const detailRoute = baseRoute.includes("/") ? `${baseRoute}/$articleId` : `${baseRoute}/$id`;
+    navigate({ to: detailRoute as any, params: { id: report.targetId, articleId: report.targetId } } as any);
+  } else {
+    toast.info(`Cannot navigate to ${targetType} target`);
+  }
+};
 
   return (
     <div className="space-y-6">

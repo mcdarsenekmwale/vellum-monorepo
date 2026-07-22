@@ -10,6 +10,9 @@ import {
   MoreHorizontal,
   Mail,
   Ban,
+  Check,
+  X,
+  ChevronDown,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,10 +24,12 @@ import { useAuth } from "@/lib/auth/context";
 import { avatarUrl } from "@/lib/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useState, useMemo, useCallback } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -34,11 +39,66 @@ export const Route = createFileRoute("/_app/followers")({
   component: FollowersPage,
 });
 
+type DirectionFilter = "all" | "followers" | "following";
+type MutualFilter = "all" | "mutual" | "not-mutual";
+type SortOption = "newest" | "oldest";
+
 function FollowersPage() {
   const { data, isLoading, error } = useFollows({ pageSize: 50 });
   const { data: usersData } = useUsers();
-  const { can } = useAuth();
+  const { can, user: currentUser } = useAuth();
   const rows = data?.data ?? [];
+
+  const [directionFilter, setDirectionFilter] = useState<DirectionFilter>("all");
+  const [mutualFilter, setMutualFilter] = useState<MutualFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  // Check if follow is mutual
+  const isMutual = useCallback((record: FollowRecord) => {
+    return rows.some(
+      (r) => r.followerId === record.followingId && r.followingId === record.followerId
+    );
+  }, [rows]);
+
+  // Filtering and sorting
+  const filteredRows = useMemo(() => {
+    let result = [...rows];
+
+    if (directionFilter !== "all" && currentUser) {
+      if (directionFilter === "followers") {
+        result = result.filter((r) => r.followingId === currentUser.id);
+      } else if (directionFilter === "following") {
+        result = result.filter((r) => r.followerId === currentUser.id);
+      }
+    }
+
+    if (mutualFilter !== "all") {
+      result = result.filter((r) =>
+        mutualFilter === "mutual" ? isMutual(r) : !isMutual(r)
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rows, directionFilter, mutualFilter, sortBy, currentUser, isMutual]);
+
+  const hasActiveFilters = directionFilter !== "all" || mutualFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setDirectionFilter("all");
+    setMutualFilter("all");
+    setSortBy("newest");
+  }, []);
 
   // Calculate follow stats
   const totalFollows = rows.length;
@@ -55,19 +115,12 @@ function FollowersPage() {
     return usersData?.data?.find((u) => u.id === userId);
   };
 
-  // Check if follow is mutual
-  const isMutual = (record: FollowRecord) => {
-    return rows.some(
-      (r) => r.followerId === record.followingId && r.followingId === record.followerId
-    );
-  };
-
   return (
     <ListPage<FollowRecord>
       title="Follow graph"
       description="Who follows whom across the platform."
       eyebrow="Community"
-      rows={rows}
+      rows={filteredRows}
       isLoading={isLoading}
       error={error}
       searchKeys={["followerId", "followingId"]}
@@ -76,21 +129,119 @@ function FollowersPage() {
       enableExport={true}
       enablePagination={true}
       filters={
-        <>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <span className="text-muted-foreground">◎</span>
-            Direction
-            <span className="rotate-90 text-xs">›</span>
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <span className="text-muted-foreground">◎</span>
-            Mutual
-            <span className="rotate-90 text-xs">›</span>
-          </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            + Add filter
-          </Button>
-        </>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Direction Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={directionFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                <Users className="size-3.5" />
+                Direction
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Filter by direction</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(["all", "followers", "following"] as const).map((dir) => (
+                <DropdownMenuItem
+                  key={dir}
+                  onClick={() => setDirectionFilter(dir)}
+                  className={cn(directionFilter === dir && "bg-accent")}
+                >
+                  {dir === "all" ? "All directions" : dir.charAt(0).toUpperCase() + dir.slice(1)}
+                  {directionFilter === dir && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mutual Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={mutualFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                <GitBranch className="size-3.5" />
+                Mutual
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Filter by mutual status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {([
+                { value: "all", label: "All" },
+                { value: "mutual", label: "Mutual" },
+                { value: "not-mutual", label: "Not mutual" },
+              ] as const).map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => setMutualFilter(option.value)}
+                  className={cn(mutualFilter === option.value && "bg-accent")}
+                >
+                  {option.label}
+                  {mutualFilter === option.value && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Sort */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                <TrendingUp className="size-3.5" />
+                Sort
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {([
+                { value: "newest", label: "Newest first" },
+                { value: "oldest", label: "Oldest first" },
+              ] as const).map(({ value, label }) => (
+                <DropdownMenuItem
+                  key={value}
+                  onClick={() => setSortBy(value)}
+                  className={cn(sortBy === value && "bg-accent")}
+                >
+                  {label}
+                  {sortBy === value && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Active filter badges */}
+          {hasActiveFilters && (
+            <>
+              <div className="h-6 w-px bg-border" />
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Active filters:</span>
+                {directionFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setDirectionFilter("all")}>
+                    Direction: {directionFilter}
+                    <X className="size-3" />
+                  </Badge>
+                )}
+                {mutualFilter !== "all" && (
+                  <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setMutualFilter("all")}>
+                    Mutual: {mutualFilter === "not-mutual" ? "Not mutual" : mutualFilter}
+                    <X className="size-3" />
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={clearFilters}
+                >
+                  Clear all
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       }
       columns={[
         {

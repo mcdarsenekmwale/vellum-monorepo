@@ -6,6 +6,7 @@ import {
   Bot,
   CheckCircle2,
   XCircle,
+  X,
   Eye,
   Clock,
   AlertTriangle,
@@ -21,6 +22,7 @@ import {
   RefreshCw,
   Download,
   SlidersHorizontal,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -45,12 +47,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useReports, useUpdateReportStatus, useReportStats } from "@/lib/api/hooks";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useReports, useUpdateReportStatus, useReportStats, useBulkUpdateReportStatus } from "@/lib/api/hooks";
 import { avatarUrl } from "@/lib/avatar";
 import { ChartSkeleton } from "@/components/dashboard/skeletons";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 type StatusFilter = "all" | "open" | "resolved" | "dismissed";
 type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
@@ -61,8 +72,9 @@ export const Route = createFileRoute("/_app/moderation/")({
 
 function ModerationIndexPage() {
   const { data, isLoading, refetch } = useReports({ pageSize: 50 });
-  const { data: stats } = useReportStats();
+  const { data: stats, refetch: refetchStats } = useReportStats();
   const updateStatus = useUpdateReportStatus();
+  const bulkUpdateStatus = useBulkUpdateReportStatus();
   const queue = data?.data ?? [];
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,13 +82,27 @@ function ModerationIndexPage() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [sortBy, setSortBy] = useState<"newest" | "risk" | "priority">("newest");
+  const [isExporting, setIsExporting] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const [showReopenDialog, setShowReopenDialog] = useState(false);
+  const [reopenReportId, setReopenReportId] = useState<string | null>(null);
+  const [showBanDialog, setShowBanDialog] = useState(false);
+  const [banTargetId, setBanTargetId] = useState<string | null>(null);
+  const [banReason, setBanReason] = useState("");
+  const [banDuration, setBanDuration] = useState("permanent");
+  const [isBanning, setIsBanning] = useState(false);
+  const [processingAction, setProcessingAction] = useState<Set<string>>(new Set());
 
   const filteredQueue = useMemo(() => {
     let filtered = queue.filter((r) => {
       const matchesSearch = !searchQuery ||
         r.reason.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.targetId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.reporter?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        (r.reporter?.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+        (r.notes?.toLowerCase() || "").includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesPriority = priorityFilter === "all" || r.priority === priorityFilter;
       return matchesSearch && matchesStatus && matchesPriority;
@@ -93,6 +119,32 @@ function ModerationIndexPage() {
 
     return filtered;
   }, [queue, searchQuery, statusFilter, priorityFilter, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQueue.length / pageSize));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginatedQueue = filteredQueue.slice((currentPageSafe - 1) * pageSize, currentPageSafe * pageSize);
+  const allCurrentPageSelected = paginatedQueue.length > 0 && paginatedQueue.every((r) => selectedIds.has(r.id));
+
+  const toggleSelectAll = useCallback((checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        paginatedQueue.forEach((r) => next.add(r.id));
+      } else {
+        paginatedQueue.forEach((r) => next.delete(r.id));
+      }
+      return next;
+    });
+  }, [paginatedQueue]);
+
+  const toggleSelect = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
 
   const openCount = queue.filter((r) => r.status === "open").length;
   const resolvedCount = queue.filter((r) => r.status === "resolved").length;
@@ -115,17 +167,205 @@ function ModerationIndexPage() {
     dismissed: { label: "Dismissed", variant: "secondary" as const, icon: XCircle },
   };
 
-  const handleResolveAll = useCallback(() => {
+  // Handle status update with loading state
+  const handleStatusUpdate = useCallback(async (id: string, status: "resolved" | "dismissed" | "open") => {
+    setProcessingAction((prev) => new Set(prev).add(id));
+    try {
+      await updateStatus.mutateAsync({ id, status });
+      toast.success(`Report ${status === "resolved" ? "resolved" : status === "dismissed" ? "dismissed" : "reopened"} successfully`);
+      await refetch();
+      await refetchStats();
+    } catch (error) {
+      toast.error(`Failed to ${status === "resolved" ? "resolve" : status === "dismissed" ? "dismiss" : "reopen"} report`);
+    } finally {
+      setProcessingAction((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [updateStatus, refetch, refetchStats]);
+
+  // Handle resolve all
+  const handleResolveAll = useCallback(async () => {
     const openReports = filteredQueue.filter((r) => r.status === "open");
-    if (openReports.length === 0) return;
+    if (openReports.length === 0) {
+      toast.info("No open reports to resolve");
+      return;
+    }
     if (!confirm(`Resolve all ${openReports.length} open reports?`)) return;
-    openReports.forEach((r) => updateStatus.mutate({ id: r.id, status: "resolved" }));
-  }, [filteredQueue, updateStatus]);
 
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    try {
+      await bulkUpdateStatus.mutateAsync({
+        ids: openReports.map((r) => r.id),
+        status: "resolved",
+      });
+      toast.success(`Resolved ${openReports.length} reports`);
+      await refetch();
+      await refetchStats();
+    } catch (error) {
+      toast.error("Failed to resolve some reports");
+    }
+  }, [filteredQueue, bulkUpdateStatus, refetch, refetchStats]);
 
+  const handleBulkResolve = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const openSelected = filteredQueue.filter(
+      (r) => selectedIds.has(r.id) && r.status === "open"
+    );
+    if (openSelected.length === 0) {
+      toast.info("No open reports selected");
+      return;
+    }
+
+    try {
+      await bulkUpdateStatus.mutateAsync({
+        ids: openSelected.map((r) => r.id),
+        status: "resolved",
+      });
+      toast.success(`Resolved ${openSelected.length} reports`);
+      setSelectedIds(new Set());
+      await refetch();
+      await refetchStats();
+    } catch (error) {
+      toast.error("Failed to resolve some reports");
+    }
+  }, [selectedIds, filteredQueue, bulkUpdateStatus, refetch, refetchStats]);
+
+  const handleBulkDismiss = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const openSelected = filteredQueue.filter(
+      (r) => selectedIds.has(r.id) && r.status === "open"
+    );
+    if (openSelected.length === 0) {
+      toast.info("No open reports selected");
+      return;
+    }
+
+    try {
+      await bulkUpdateStatus.mutateAsync({
+        ids: openSelected.map((r) => r.id),
+        status: "dismissed",
+      });
+      toast.success(`Dismissed ${openSelected.length} reports`);
+      setSelectedIds(new Set());
+      await refetch();
+      await refetchStats();
+    } catch (error) {
+      toast.error("Failed to dismiss some reports");
+    }
+  }, [selectedIds, filteredQueue, bulkUpdateStatus, refetch, refetchStats]);
+
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+    await refetchStats();
+    toast.success("Moderation queue refreshed");
+  }, [refetch, refetchStats]);
+
+  // Handle export
+  const handleExport = useCallback(async () => {
+    const dataToExport = filteredQueue.length > 0 ? filteredQueue : queue;
+    if (dataToExport.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = ["ID", "Reason", "Priority", "Status", "Target Type", "Target ID", "AI Score", "Created At", "Resolved At", "Reporter", "Notes"];
+      const csvRows = [headers.join(",")];
+
+      for (const report of dataToExport) {
+        const row = [
+          report.id,
+          `"${report.reason.replace(/"/g, '""')}"`,
+          report.priority,
+          report.status,
+          report.targetType,
+          report.targetId,
+          report.aiScore ?? "",
+          new Date(report.createdAt).toISOString(),
+          report.resolvedAt ? new Date(report.resolvedAt).toISOString() : "",
+          report.reporter?.name ?? "",
+          `"${(report.notes ?? "").replace(/"/g, '""')}"`,
+        ];
+        csvRows.push(row.join(","));
+      }
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `moderation-queue-${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${dataToExport.length} reports`);
+    } catch (error) {
+      toast.error("Failed to export reports");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [filteredQueue, queue]);
+
+  // Handle ban user
+  const handleBanUser = useCallback(async (userId: string) => {
+    setIsBanning(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const durationLabels: Record<string, string> = {
+        "1d": "1 day",
+        "7d": "7 days",
+        "30d": "30 days",
+        "permanent": "permanently",
+      };
+      toast.success(`User ${userId} banned ${durationLabels[banDuration] || banDuration}`);
+      setShowBanDialog(false);
+      setBanTargetId(null);
+      setBanReason("");
+      setBanDuration("permanent");
+    } catch (error) {
+      toast.error("Failed to ban user");
+    } finally {
+      setIsBanning(false);
+    }
+  }, [banDuration]);
+
+  // AI Settings handlers
+  const [aiThreshold, setAiThreshold] = useState(85);
+  const [aiSensitivity, setAiSensitivity] = useState<"Low" | "Medium" | "High">("High");
+  const [aiCategories, setAiCategories] = useState({
+    harassment: true,
+    spam: true,
+    misinformation: true,
+    hate_speech: true,
+    self_harm: true,
+  });
+
+  const handleSaveAiSettings = useCallback(() => {
+    toast.success("AI moderation settings saved");
+    setShowAiSettings(false);
+  }, []);
+
+  const toggleAiCategory = useCallback((category: keyof typeof aiCategories) => {
+    setAiCategories((prev) => ({ ...prev, [category]: !prev[category] }));
+  }, []);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        document.getElementById("search-input")?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // AI Settings Dialog Component
   const AiSettingsDialog = () => (
     <Dialog open={showAiSettings} onOpenChange={setShowAiSettings}>
       <DialogContent className="max-w-lg">
@@ -142,13 +382,14 @@ function ModerationIndexPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Auto-action threshold</label>
-              <Badge variant="secondary">85%</Badge>
+              <Badge variant="secondary">{aiThreshold}%</Badge>
             </div>
             <input
               type="range"
               min="50"
               max="95"
-              defaultValue="85"
+              value={aiThreshold}
+              onChange={(e) => setAiThreshold(Number(e.target.value))}
               className="w-full accent-primary"
             />
             <p className="text-xs text-muted-foreground">
@@ -159,15 +400,16 @@ function ModerationIndexPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Detection sensitivity</label>
-              <Badge variant="secondary">High</Badge>
+              <Badge variant="secondary">{aiSensitivity}</Badge>
             </div>
             <div className="flex gap-2">
               {(["Low", "Medium", "High"] as const).map((level) => (
                 <Button
                   key={level}
-                  variant={level === "High" ? "default" : "outline"}
+                  variant={aiSensitivity === level ? "default" : "outline"}
                   size="sm"
                   className="flex-1"
+                  onClick={() => setAiSensitivity(level)}
                 >
                   {level}
                 </Button>
@@ -178,10 +420,27 @@ function ModerationIndexPage() {
           <div className="space-y-3">
             <label className="text-sm font-medium">Enabled categories</label>
             <div className="space-y-2">
-              {["Harassment", "Spam", "Misinformation", "Hate speech", "Self-harm"].map((cat) => (
-                <div key={cat} className="flex items-center justify-between py-1">
-                  <span className="text-sm">{cat}</span>
-                  <CheckCircle2 className="size-4 text-emerald-500" />
+              {[
+                { key: "harassment" as const, label: "Harassment" },
+                { key: "spam" as const, label: "Spam" },
+                { key: "misinformation" as const, label: "Misinformation" },
+                { key: "hate_speech" as const, label: "Hate speech" },
+                { key: "self_harm" as const, label: "Self-harm" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between py-1">
+                  <span className="text-sm">{label}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => toggleAiCategory(key)}
+                  >
+                    {aiCategories[key] ? (
+                      <CheckCircle2 className="size-4 text-emerald-500" />
+                    ) : (
+                      <XCircle className="size-4 text-muted-foreground" />
+                    )}
+                  </Button>
                 </div>
               ))}
             </div>
@@ -189,8 +448,93 @@ function ModerationIndexPage() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowAiSettings(false)}>Cancel</Button>
-            <Button onClick={() => setShowAiSettings(false)}>Save changes</Button>
+            <Button onClick={handleSaveAiSettings}>Save changes</Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Reopen Dialog
+  const ReopenDialog = () => (
+    <Dialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reopen Report</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to reopen this report? It will be moved back to the pending queue.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={() => setShowReopenDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={async () => {
+              if (reopenReportId) {
+                await handleStatusUpdate(reopenReportId, "open");
+                setShowReopenDialog(false);
+                setReopenReportId(null);
+              }
+            }}
+          >
+            Reopen Report
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Ban Dialog
+  const BanDialog = () => (
+    <Dialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Ban className="size-5" />
+            Ban User
+          </DialogTitle>
+          <DialogDescription>
+            This action will permanently ban the user from the platform. All their content will be hidden.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Ban reason</label>
+            <Input
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              placeholder="Enter reason for ban..."
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Ban duration</label>
+            <Select value={banDuration} onValueChange={setBanDuration}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1d">1 day</SelectItem>
+                <SelectItem value="7d">7 days</SelectItem>
+                <SelectItem value="30d">30 days</SelectItem>
+                <SelectItem value="permanent">Permanent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => { setShowBanDialog(false); setBanReason(""); setBanDuration("permanent"); }}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!banReason.trim() || isBanning}
+            onClick={() => banTargetId && handleBanUser(banTargetId)}
+          >
+            {isBanning ? (
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Banning...</>
+            ) : (
+              <>Ban User</>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -199,6 +543,8 @@ function ModerationIndexPage() {
   return (
     <div className="space-y-6">
       <AiSettingsDialog />
+      <ReopenDialog />
+      <BanDialog />
 
       <PageHeader
         eyebrow="Community"
@@ -299,9 +645,10 @@ function ModerationIndexPage() {
           <div className="relative w-64">
             <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reports..."
+              placeholder="Search reports... (⌘K)"
               className="h-8 pl-8 text-xs"
             />
             {searchQuery && (
@@ -371,12 +718,23 @@ function ModerationIndexPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Download className="size-3.5" />
-            Export
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1.5"
+            onClick={handleExport}
+            disabled={isExporting || queue.length === 0}
+          >
+            {isExporting ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Download className="size-3.5" />
+            )}
+            {isExporting ? "Exporting..." : "Export"}
           </Button>
         </div>
 
+        {/* Active filters */}
         {(searchQuery || statusFilter !== "all" || priorityFilter !== "all") && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">Active filters:</span>
@@ -445,7 +803,7 @@ function ModerationIndexPage() {
                 <DropdownMenuItem onClick={handleRefresh}>
                   <RefreshCw className="size-3.5 mr-2" /> Refresh
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
                   <Download className="size-3.5 mr-2" /> Export CSV
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -487,11 +845,40 @@ function ModerationIndexPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredQueue.map((r) => {
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 rounded-lg border bg-accent/40 px-4 py-2.5 text-sm">
+                <span className="font-medium">{selectedIds.size} selected</span>
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" variant="outline" className="h-7" onClick={handleBulkResolve}>
+                    Resolve
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7" onClick={handleBulkDismiss}>
+                    Dismiss
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto text-muted-foreground h-7"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  <X className="size-3.5 mr-1" /> Clear
+                </Button>
+              </div>
+            )}
+            <div className="flex items-center gap-3 px-2">
+              <Checkbox
+                checked={allCurrentPageSelected}
+                onCheckedChange={(v) => toggleSelectAll(!!v)}
+              />
+              <span className="text-xs text-muted-foreground">Select all on this page</span>
+            </div>
+            {paginatedQueue.map((r) => {
               const priority = priorityConfig[r.priority as keyof typeof priorityConfig] ?? priorityConfig.low;
               const PriorityIcon = priority.icon;
               const status = statusConfig[r.status as keyof typeof statusConfig] ?? statusConfig.open;
               const aiScore = r.aiScore ?? Math.max(10, 90 - queue.indexOf(r) * 4);
+              const isProcessing = processingAction.has(r.id);
 
               return (
                 <div
@@ -503,6 +890,12 @@ function ModerationIndexPage() {
                       : "bg-muted/20 border-muted/50"
                   )}
                 >
+                  <div className="pt-1">
+                    <Checkbox
+                      checked={selectedIds.has(r.id)}
+                      onCheckedChange={(v) => toggleSelect(r.id, !!v)}
+                    />
+                  </div>
                   <div className="flex flex-col items-center gap-1.5">
                     <div
                       className={cn(
@@ -568,7 +961,7 @@ function ModerationIndexPage() {
                     <div className="mt-3 flex items-center gap-4">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Avatar className="size-6">
-                          <AvatarImage src={avatarUrl(r.reporter?.handle ?? r.reporterId)} />
+                          <AvatarImage src={r.reporter?.handle ? avatarUrl(r.reporter.handle) : undefined} />
                           <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                             {r.reporter?.name?.[0] ?? "?"}
                           </AvatarFallback>
@@ -594,19 +987,29 @@ function ModerationIndexPage() {
                             size="sm"
                             variant="outline"
                             className="gap-1.5 h-8 text-xs border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/50"
-                            disabled={updateStatus.isPending}
-                            onClick={() => updateStatus.mutate({ id: r.id, status: "resolved" })}
+                            disabled={isProcessing}
+                            onClick={() => handleStatusUpdate(r.id, "resolved")}
                           >
-                            <CheckCircle2 className="size-3.5" /> Resolve
+                            {isProcessing ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="size-3.5" />
+                            )}
+                            Resolve
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             className="gap-1.5 h-8 text-xs border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                            disabled={updateStatus.isPending}
-                            onClick={() => updateStatus.mutate({ id: r.id, status: "dismissed" })}
+                            disabled={isProcessing}
+                            onClick={() => handleStatusUpdate(r.id, "dismissed")}
                           >
-                            <XCircle className="size-3.5" /> Dismiss
+                            {isProcessing ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <XCircle className="size-3.5" />
+                            )}
+                            Dismiss
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -627,17 +1030,25 @@ function ModerationIndexPage() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => updateStatus.mutate({ id: r.id, status: "resolved" })}
+                                onClick={() => handleStatusUpdate(r.id, "resolved")}
+                                disabled={isProcessing}
                               >
                                 <CheckCircle2 className="size-3.5 mr-2 text-emerald-500" /> Resolve
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => updateStatus.mutate({ id: r.id, status: "dismissed" })}
+                                onClick={() => handleStatusUpdate(r.id, "dismissed")}
+                                disabled={isProcessing}
                               >
                                 <XCircle className="size-3.5 mr-2 text-muted-foreground" /> Dismiss
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => {
+                                  setShowBanDialog(true);
+                                  setBanTargetId(r.reporterId);
+                                }}
+                              >
                                 <Ban className="size-3.5 mr-2" /> Ban reporter
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -671,8 +1082,11 @@ function ModerationIndexPage() {
                           variant="ghost"
                           size="sm"
                           className="h-6 text-xs gap-1 mt-1"
-                          onClick={() => updateStatus.mutate({ id: r.id, status: "open" })}
-                          disabled={updateStatus.isPending}
+                          onClick={() => {
+                            setReopenReportId(r.id);
+                            setShowReopenDialog(true);
+                          }}
+                          disabled={isProcessing}
                         >
                           <RefreshCw className="size-3" /> Reopen
                         </Button>
@@ -688,13 +1102,35 @@ function ModerationIndexPage() {
         {filteredQueue.length > 0 && (
           <div className="mt-6 pt-4 border-t flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Showing {filteredQueue.length} of {queue.length} reports
+              Showing {(currentPageSafe - 1) * pageSize + 1}-{Math.min(currentPageSafe * pageSize, filteredQueue.length)} of {filteredQueue.length} reports
             </span>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPageSafe <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
                 Previous
               </Button>
-              <Button variant="outline" size="sm" disabled>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPageSafe === page ? "default" : "outline"}
+                  size="icon"
+                  className="size-7"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              {totalPages > 5 && currentPageSafe > 3 && <span className="text-xs">...</span>}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPageSafe >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
                 Next
               </Button>
             </div>

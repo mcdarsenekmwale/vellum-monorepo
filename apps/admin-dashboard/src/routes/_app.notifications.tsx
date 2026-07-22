@@ -14,6 +14,9 @@ import {
   Filter,
   RefreshCw,
   Loader2,
+  Check,
+  X,
+  ChevronDown,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -31,7 +34,7 @@ import {
 } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -47,6 +50,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -65,6 +69,10 @@ export const Route = createFileRoute("/_app/notifications")({
   head: () => ({ meta: [{ title: "Notifications · Vellum Admin" }] }),
   component: NotificationsPage,
 });
+
+type ChannelFilter = "all" | "email" | "push" | "in-app" | "sms";
+type StatusFilter = "all" | "read" | "unread";
+type SortOption = "newest" | "oldest";
 
 function NotificationsPage() {
   const { data, isLoading, error, refetch } = useAdminNotifications({ pageSize: 50 });
@@ -89,16 +97,58 @@ function NotificationsPage() {
   const [composeTitle, setComposeTitle] = useState("");
   const [composeBody, setComposeBody] = useState("");
 
-  // Filter rows based on active tab
-  const filteredRows = rows.filter((n) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "unread") return !n.read;
-    if (activeTab === "read") return n.read;
-    if (activeTab === "push") return n.kind === "push";
-    if (activeTab === "email") return n.kind === "email";
-    if (activeTab === "sms") return n.kind === "sms";
-    return true;
-  });
+  // Dropdown filter states
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  // Filter rows based on active tab and dropdown filters
+  const filteredRows = useMemo(() => {
+    let result = [...rows];
+
+    // Tab filters
+    if (activeTab !== "all") {
+      if (activeTab === "unread") result = result.filter((n) => !n.read);
+      else if (activeTab === "read") result = result.filter((n) => n.read);
+      else if (activeTab === "push") result = result.filter((n) => n.kind === "push");
+      else if (activeTab === "email") result = result.filter((n) => n.kind === "email");
+      else if (activeTab === "sms") result = result.filter((n) => n.kind === "sms");
+    }
+
+    // Dropdown filters
+    if (channelFilter !== "all") {
+      const kind = channelFilter === "in-app" ? "in_app" : channelFilter;
+      result = result.filter((n) => n.kind === kind);
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter((n) =>
+        statusFilter === "read" ? n.read : !n.read
+      );
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rows, activeTab, channelFilter, statusFilter, sortBy]);
+
+  const hasActiveDropdownFilters = channelFilter !== "all" || statusFilter !== "all";
+
+  const clearFilters = useCallback(() => {
+    setChannelFilter("all");
+    setStatusFilter("all");
+    setSortBy("newest");
+  }, []);
 
   // Stats
   const totalCount = rows.length;
@@ -379,17 +429,94 @@ function NotificationsPage() {
         enableExport={true}
         enablePagination={true}
         filters={
-          <>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Filter className="size-3.5" />
-              Channel
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Clock className="size-3.5" />
-              Date range
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Channel Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={channelFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                  <Filter className="size-3.5" />
+                  Channel
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by channel</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "all", label: "All channels" },
+                  { value: "email", label: "Email" },
+                  { value: "push", label: "Push" },
+                  { value: "in-app", label: "In-App" },
+                ] as const).map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setChannelFilter(option.value)}
+                    className={cn(channelFilter === option.value && "bg-accent")}
+                  >
+                    {option.label}
+                    {channelFilter === option.value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={statusFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                  <CheckCircle2 className="size-3.5" />
+                  Status
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "all", label: "All statuses" },
+                  { value: "read", label: "Read" },
+                  { value: "unread", label: "Unread" },
+                ] as const).map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setStatusFilter(option.value)}
+                    className={cn(statusFilter === option.value && "bg-accent")}
+                  >
+                    {option.label}
+                    {statusFilter === option.value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Sort */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <Clock className="size-3.5" />
+                  Sort
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                ] as const).map(({ value, label }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onClick={() => setSortBy(value)}
+                    className={cn(sortBy === value && "bg-accent")}
+                  >
+                    {label}
+                    {sortBy === value && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
@@ -406,7 +533,37 @@ function NotificationsPage() {
                 Mark all read
               </Button>
             )}
-          </>
+
+            {/* Active filter badges */}
+            {hasActiveDropdownFilters && (
+              <>
+                <div className="h-6 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active filters:</span>
+                  {channelFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setChannelFilter("all")}>
+                      Channel: {channelFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         }
         columns={[
           {

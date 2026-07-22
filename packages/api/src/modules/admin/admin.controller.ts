@@ -522,11 +522,11 @@ export class AdminController {
   }
 
   @Put('settings')
-  @ApiOperation({ summary: 'Upsert a system setting' })
-  @ApiResponse({ status: 200, description: 'System setting updated' })
+  @ApiOperation({ summary: 'Update a system setting' })
+  @ApiResponse({ status: 200, description: 'Setting updated' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async updateSystemSetting(@Body() body: { key: string; value: string }) {
-    return this.adminService.updateSystemSetting(body.key, body.value);
+  async updateSystemSetting(@Body() body: { key: string; value: string; category?: string }) {
+    return this.adminService.updateSystemSetting(body.key, body.value, body.category);
   }
 
   @Get('storage')
@@ -559,6 +559,14 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   async resetSettings() {
     return this.adminService.resetSettings();
+  }
+
+  @Post('settings/seed')
+  @ApiOperation({ summary: 'Seed default system settings if none exist' })
+  @ApiResponse({ status: 200, description: 'Settings seeded' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async seedSettings() {
+    return this.adminService.seedSettings();
   }
 
   @Get('jobs')

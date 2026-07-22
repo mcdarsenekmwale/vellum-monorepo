@@ -28,6 +28,8 @@ import {
   Minus,
   Download,
   Mail,
+  Check,
+  X,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -49,6 +51,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -77,13 +80,10 @@ export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
 });
 
-type FilterState = {
-  status: string | null;
-  priority: string | null;
-  targetType: string | null;
-  aiRisk: "high" | "medium" | "low" | null;
-  dateRange: "today" | "week" | "month" | "all" | null;
-};
+type StatusFilter = "all" | "pending" | "resolved" | "dismissed";
+type PriorityFilter = "all" | "low" | "medium" | "high" | "critical";
+type TargetTypeFilter = "all" | "article" | "comment" | "user" | "highlight";
+type SortOption = "newest" | "oldest" | "priority";
 
 function ReportsPage() {
   const navigate = useNavigate();
@@ -103,13 +103,10 @@ function ReportsPage() {
   const [moderationNote, setModerationNote] = useState("");
   const [detailReportId, setDetailReportId] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState<FilterState>({
-    status: null,
-    priority: null,
-    targetType: null,
-    aiRisk: null,
-    dateRange: null,
-  });
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<TargetTypeFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   // ─── Stats ───────────────────────────────────────────────────────────
   const openCount = rows.filter((r) => r.status === "open").length;
@@ -127,42 +124,50 @@ function ReportsPage() {
   const filteredRows = useMemo(() => {
     let result = [...rows];
 
-    if (filters.status) result = result.filter((r) => r.status === filters.status);
-    if (filters.priority) result = result.filter((r) => r.priority === filters.priority);
-    if (filters.targetType) result = result.filter((r) => r.targetType === filters.targetType);
-    if (filters.aiRisk) {
-      result = result.filter((r) => {
-        const score = r.aiScore ?? 0;
-        if (filters.aiRisk === "high") return score >= 80;
-        if (filters.aiRisk === "medium") return score >= 50 && score < 80;
-        return score < 50;
-      });
+    if (statusFilter !== "all") {
+      if (statusFilter === "pending") {
+        result = result.filter((r) => r.status === "open" || r.status === "under_review");
+      } else {
+        result = result.filter((r) => r.status === statusFilter);
+      }
     }
-    if (filters.dateRange) {
-      const now = new Date();
-      result = result.filter((r) => {
-        const date = new Date(r.createdAt);
-        const diff = now.getTime() - date.getTime();
-        if (filters.dateRange === "today") return diff < 24 * 60 * 60 * 1000;
-        if (filters.dateRange === "week") return diff < 7 * 24 * 60 * 60 * 1000;
-        if (filters.dateRange === "month") return diff < 30 * 24 * 60 * 60 * 1000;
-        return true;
-      });
+
+    if (priorityFilter !== "all") {
+      result = result.filter((r) => r.priority === priorityFilter);
     }
+
+    if (targetTypeFilter !== "all") {
+      result = result.filter((r) => r.targetType === targetTypeFilter);
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "priority": {
+          const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+          return (
+            (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) -
+            (priorityOrder[a.priority as keyof typeof priorityOrder] || 0)
+          );
+        }
+        default:
+          return 0;
+      }
+    });
 
     return result;
-  }, [rows, filters]);
+  }, [rows, statusFilter, priorityFilter, targetTypeFilter, sortBy]);
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasActiveFilters = statusFilter !== "all" || priorityFilter !== "all" || targetTypeFilter !== "all";
 
   const clearFilters = useCallback(() => {
-    setFilters({
-      status: null,
-      priority: null,
-      targetType: null,
-      aiRisk: null,
-      dateRange: null,
-    });
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setTargetTypeFilter("all");
+    setSortBy("newest");
     setSelectedRows(new Set());
   }, []);
 
@@ -425,123 +430,144 @@ function ReportsPage() {
         }
         filters={
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Status Filters */}
-            <Button
-              variant={filters.status === "open" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setFilters((f) => ({ ...f, status: f.status === "open" ? null : "open" }))}
-            >
-              <Clock className="size-3.5" />
-              Open
-              {openCount > 0 && (
-                <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
-                  {openCount}
-                </Badge>
-              )}
-            </Button>
-            <Button
-              variant={filters.status === "under_review" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() =>
-                setFilters((f) => ({ ...f, status: f.status === "under_review" ? null : "under_review" }))
-              }
-            >
-              <Eye className="size-3.5" />
-              Review
-              {underReviewCount > 0 && (
-                <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
-                  {underReviewCount}
-                </Badge>
-              )}
-            </Button>
-            <Button
-              variant={filters.status === "resolved" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setFilters((f) => ({ ...f, status: f.status === "resolved" ? null : "resolved" }))}
-            >
-              <CheckCircle2 className="size-3.5" />
-              Resolved
-            </Button>
-
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Priority Filter */}
-            <Button
-              variant={filters.priority === "critical" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() =>
-                setFilters((f) => ({ ...f, priority: f.priority === "critical" ? null : "critical" }))
-              }
-            >
-              <AlertTriangle className="size-3.5" />
-              Critical
-            </Button>
-
-            {/* Target Type */}
+            {/* Status Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant={filters.targetType ? "default" : "outline"} size="sm" className="gap-1.5">
+                <Button variant={statusFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                  <Clock className="size-3.5" />
+                  Status
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["all", "pending", "resolved", "dismissed"] as const).map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={cn(statusFilter === status && "bg-accent")}
+                  >
+                    {status === "all" ? "All statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    {statusFilter === status && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Priority Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={priorityFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
+                  <AlertTriangle className="size-3.5" />
+                  Priority
+                  <ChevronDown className="size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by priority</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["all", "low", "medium", "high", "critical"] as const).map((priority) => (
+                  <DropdownMenuItem
+                    key={priority}
+                    onClick={() => setPriorityFilter(priority)}
+                    className={cn(priorityFilter === priority && "bg-accent")}
+                  >
+                    {priority === "all" ? "All priorities" : priority.charAt(0).toUpperCase() + priority.slice(1)}
+                    {priorityFilter === priority && <Check className="ml-2 size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Target Type Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant={targetTypeFilter !== "all" ? "default" : "outline"} size="sm" className="gap-1.5 h-8">
                   <Flag className="size-3.5" />
                   Type
                   <ChevronDown className="size-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {["article", "comment", "user", "reel"].map((type) => (
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filter by type</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["all", "article", "comment", "user", "highlight"] as const).map((type) => (
                   <DropdownMenuItem
                     key={type}
-                    onClick={() => setFilters((f) => ({ ...f, targetType: f.targetType === type ? null : type }))}
-                    className="capitalize gap-2"
+                    onClick={() => setTargetTypeFilter(type)}
+                    className={cn(targetTypeFilter === type && "bg-accent", "capitalize")}
                   >
-                    {filters.targetType === type && <CheckCircle2 className="size-3.5" />}
-                    {type}
+                    {type === "all" ? "All types" : type}
+                    {targetTypeFilter === type && <Check className="ml-2 size-3.5" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* AI Risk Filter */}
+            {/* Sort */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant={filters.aiRisk ? "default" : "outline"} size="sm" className="gap-1.5">
-                  <Sparkles className="size-3.5" />
-                  AI Risk
+                <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                  <TrendingUp className="size-3.5" />
+                  Sort
                   <ChevronDown className="size-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {[
-                  { value: "high", label: "High Risk (80%+)", color: "text-destructive" },
-                  { value: "medium", label: "Medium Risk (50-79%)", color: "text-amber-500" },
-                  { value: "low", label: "Low Risk (<50%)", color: "text-emerald-500" },
-                ].map((risk) => (
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {([
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "priority", label: "Priority" },
+                ] as const).map(({ value, label }) => (
                   <DropdownMenuItem
-                    key={risk.value}
-                    onClick={() =>
-                      setFilters((f) => ({
-                        ...f,
-                        aiRisk: f.aiRisk === risk.value ? null : (risk.value as any),
-                      }))
-                    }
-                    className="gap-2"
+                    key={value}
+                    onClick={() => setSortBy(value)}
+                    className={cn(sortBy === value && "bg-accent")}
                   >
-                    {filters.aiRisk === risk.value && <CheckCircle2 className="size-3.5" />}
-                    <span className={risk.color}>{risk.label}</span>
+                    {label}
+                    {sortBy === value && <Check className="ml-2 size-3.5" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Clear Filters */}
-            {activeFilterCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5" onClick={clearFilters}>
-                <XCircle className="size-3.5" />
-                Clear {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}
-              </Button>
+            {/* Active filter badges */}
+            {hasActiveFilters && (
+              <>
+                <div className="h-6 w-px bg-border" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active filters:</span>
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                      Status: {statusFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {priorityFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setPriorityFilter("all")}>
+                      Priority: {priorityFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  {targetTypeFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setTargetTypeFilter("all")}>
+                      Type: {targetTypeFilter}
+                      <X className="size-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         }

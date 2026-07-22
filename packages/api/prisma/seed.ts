@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { SETTINGS_DEFINITIONS } from '../src/modules/admin/settings-definitions';
 
 const prisma = new PrismaClient();
 
@@ -393,6 +394,27 @@ async function main() {
   }
 
   console.log('Seed data created successfully!');
+
+  // ─── Seed System Settings ───
+  console.log('Seeding system settings...');
+  for (const def of SETTINGS_DEFINITIONS) {
+    await prisma.systemSetting.upsert({
+      where: { key: def.key },
+      update: {
+        value: def.value,
+        category: def.category,
+        description: def.description,
+      },
+      create: {
+        key: def.key,
+        value: def.value,
+        category: def.category,
+        description: def.description,
+        version: 1,
+      },
+    });
+  }
+  console.log(`Seeded ${SETTINGS_DEFINITIONS.length} system settings`);
 }
 
 main()

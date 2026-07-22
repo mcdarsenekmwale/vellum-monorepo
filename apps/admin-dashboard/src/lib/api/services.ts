@@ -17,6 +17,7 @@ export interface DashboardStats {
 // ─── Users ──────────────────────────────────────────────────────────────────
 
 export interface User {
+  lastLoginAt: any;
   id: string;
   email: string;
   handle: string;
@@ -251,11 +252,12 @@ export interface FeatureFlag {
 // ─── System Settings ────────────────────────────────────────────────────────
 
 export interface SystemSetting {
-  description: string | undefined;
   id: string;
   key: string;
   value: string;
   category: string;
+  description?: string;
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -761,12 +763,23 @@ export async function deleteFeatureFlag(id: string): Promise<void> {
 }
 
 // System Settings
-export async function getSystemSettings(): Promise<SystemSetting[]> {
+export async function getSystemSettings(): Promise<Record<string, SystemSetting[]>> {
   return api("/admin/settings");
 }
 
-export async function updateSystemSetting(key: string, value: string): Promise<SystemSetting> {
-  return api("/admin/settings", { method: "PUT", body: JSON.stringify({ key, value }) });
+export async function updateSystemSetting(
+  key: string,
+  value: string,
+  category?: string,
+): Promise<SystemSetting> {
+  return api("/admin/settings", {
+    method: "PUT",
+    body: JSON.stringify({ key, value, category }),
+  });
+}
+
+export async function seedSystemSettings(): Promise<{ message: string; seeded: number }> {
+  return api("/admin/settings/seed", { method: "POST" });
 }
 
 // Analytics

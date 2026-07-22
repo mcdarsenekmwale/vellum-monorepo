@@ -1,21 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Save,
   RotateCcw,
   Trash2,
   AlertTriangle,
-  Globe,
   Palette,
   Shield,
   Bell,
   Mail,
   Upload,
-  Key,
   Plug,
   Database,
   Monitor,
-  Type,
   Image,
   Fingerprint,
   Lock,
@@ -24,6 +21,22 @@ import {
   Cloud,
   Check,
   ChevronRight,
+  Sparkles,
+  Sun,
+  Moon,
+  MonitorSmartphone,
+  LayoutTemplate,
+  CreditCard,
+  BarChart3,
+  X,
+  Plus,
+  Eye,
+  EyeOff,
+  Copy,
+  Diff,
+  Undo2,
+  AlertCircle,
+  WifiOff,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -43,10 +56,74 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useSystemSettings, useUpdateSystemSetting, useDeleteWorkspace, useResetSettings } from "@/lib/api/hooks";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSystemSettings, useUpdateSystemSetting, useSeedSettings, useDeleteWorkspace, useResetSettings } from "@/lib/api/hooks";
 import type { SystemSetting } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+
+/* ─── Types ─── */
+
+type ColorPalette = {
+  id: string;
+  name: string;
+  colors: string[];
+  isDefault?: boolean;
+};
+
+type BrandFont = {
+  id: string;
+  name: string;
+  family: string;
+  category: string;
+  isDefault?: boolean;
+};
+
+/* ─── Color Palette Presets ─── */
+
+const COLOR_PRESETS = [
+  { name: "Vellum", primary: "#d4653a", secondary: "#1a1a1a", accent: "#f7f4ee" },
+  { name: "Ocean", primary: "#0ea5e9", secondary: "#0f172a", accent: "#f0f9ff" },
+  { name: "Forest", primary: "#10b981", secondary: "#064e3b", accent: "#ecfdf5" },
+  { name: "Berry", primary: "#e11d48", secondary: "#881337", accent: "#fff1f2" },
+  { name: "Midnight", primary: "#6366f1", secondary: "#1e1b4b", accent: "#eef2ff" },
+  { name: "Amber", primary: "#f59e0b", secondary: "#78350f", accent: "#fffbeb" },
+  { name: "Slate", primary: "#64748b", secondary: "#0f172a", accent: "#f8fafc" },
+  { name: "Custom", primary: "", secondary: "", accent: "" },
+];
+
+// Branding fonts
+const BRAND_FONTS: BrandFont[] = [
+  { id: "inter", name: "Inter", family: "Inter", category: "Sans-serif", isDefault: true },
+  { id: "roboto", name: "Roboto", family: "Roboto", category: "Sans-serif" },
+  { id: "poppins", name: "Poppins", family: "Poppins", category: "Sans-serif" },
+  { id: "playfair", name: "Playfair Display", family: "Playfair Display", category: "Serif" },
+  { id: "merriweather", name: "Merriweather", family: "Merriweather", category: "Serif" },
+  { id: "montserrat", name: "Montserrat", family: "Montserrat", category: "Sans-serif" },
+  { id: "open-sans", name: "Open Sans", family: "Open Sans", category: "Sans-serif" },
+  { id: "lato", name: "Lato", family: "Lato", category: "Sans-serif" },
+  { id: "raleway", name: "Raleway", family: "Raleway", category: "Sans-serif" },
+  { id: "source-code", name: "Source Code Pro", family: "Source Code Pro", category: "Monospace" },
+];
+
+const LAYOUTS = [
+  { id: "default", name: "Default", description: "Standard layout with sidebar" },
+  { id: "compact", name: "Compact", description: "Dense layout for power users" },
+  { id: "spacious", name: "Spacious", description: "Extra padding and breathing room" },
+];
 
 /* ─── Tab Configuration ─── */
 
@@ -143,6 +220,20 @@ const TABS: TabConfig[] = [
     category: "backups",
     description: "Schedule, retention, and manual snapshots.",
   },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    category: "analytics",
+    description: "Tracking, reporting, and data retention.",
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    icon: CreditCard,
+    category: "billing",
+    description: "Plans, usage limits, and invoicing.",
+  },
 ];
 
 /* ─── Helpers ─── */
@@ -164,13 +255,266 @@ function formatSettingKey(key: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function inferInputType(value: string): "text" | "number" | "boolean" | "textarea" | "url" | "email" {
+function inferInputType(value: string): "text" | "number" | "boolean" | "textarea" | "url" | "email" | "select" | "multiselect" | "color" {
   if (isBooleanSetting(value)) return "boolean";
   if (isNumberSetting(value)) return "number";
+  if (value.startsWith("#") && (value.length === 7 || value.length === 4)) return "color";
+  if (value.includes(",")) return "multiselect";
   if (value.includes("@")) return "email";
   if (value.startsWith("http")) return "url";
   if (value.length > 120) return "textarea";
+  if (["active", "inactive", "enabled", "disabled", "light", "dark", "system"].includes(value.toLowerCase())) return "select";
   return "text";
+}
+
+/* ─── Settings Change Tracking Hook ─── */
+
+type SaveResult = {
+  key: string;
+  success: boolean;
+  error?: string;
+};
+
+function useSettingsSection(settings: SystemSetting[]) {
+  const updateSetting = useUpdateSystemSetting();
+
+  const [originalValues, setOriginalValues] = useState<Record<string, string>>({});
+  const [currentValues, setCurrentValues] = useState<Record<string, string>>({});
+  const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync with incoming settings data
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    for (const s of settings) {
+      map[s.key] = s.value;
+    }
+    setOriginalValues(map);
+    setCurrentValues((prev) => {
+      // Preserve any pending changes that haven't been saved
+      const merged = { ...map };
+      for (const [k, v] of Object.entries(prev)) {
+        if (map[k] !== undefined && map[k] !== v) {
+          merged[k] = v; // keep user's unsaved change
+        }
+      }
+      return merged;
+    });
+    setSaveErrors({});
+  }, [settings]);
+
+  const changes = useMemo(() => {
+    const result: Array<{ key: string; label: string; original: string; current: string; type: string }> = [];
+    for (const [key, current] of Object.entries(currentValues)) {
+      const orig = originalValues[key];
+      if (orig !== undefined && orig !== current) {
+        const setting = settings.find((s) => s.key === key);
+        result.push({
+          key,
+          label: formatSettingKey(key),
+          original: orig,
+          current,
+          type: setting?.category ?? "general",
+        });
+      }
+    }
+    return result;
+  }, [currentValues, originalValues, settings]);
+
+  const hasChanges = changes.length > 0;
+
+  const updateValue = useCallback((key: string, value: string) => {
+    setCurrentValues((prev) => ({ ...prev, [key]: value }));
+    setSaveErrors((prev) => {
+      const n = { ...prev };
+      delete n[key];
+      return n;
+    });
+    setSavedKeys((prev) => {
+      const n = new Set(prev);
+      n.delete(key);
+      return n;
+    });
+  }, []);
+
+  const getValue = useCallback(
+    (key: string, fallback = "") => {
+      if (currentValues[key] !== undefined) return currentValues[key];
+      const s = settings.find((x) => x.key === key);
+      return s?.value ?? fallback;
+    },
+    [currentValues, settings]
+  );
+
+  const reset = useCallback(() => {
+    setCurrentValues({ ...originalValues });
+    setSaveErrors({});
+    setSavedKeys(new Set());
+  }, [originalValues]);
+
+  const saveChanges = useCallback(
+    async (changesToSave?: Array<{ key: string; value: string }>): Promise<SaveResult[]> => {
+      const entries = changesToSave ?? changes.map((c) => ({ key: c.key, value: c.current }));
+      if (entries.length === 0) return [];
+
+      setIsSaving(true);
+      setSaveErrors({});
+      const results: SaveResult[] = [];
+      const newOriginals = { ...originalValues };
+      const newlySaved = new Set<string>();
+
+      for (const { key, value } of entries) {
+        try {
+          await updateSetting.mutateAsync({ key, value });
+          newOriginals[key] = value;
+          newlySaved.add(key);
+          results.push({ key, success: true });
+        } catch (err: any) {
+          const msg = err?.message ?? err?.response?.data?.message ?? "Save failed";
+          results.push({ key, success: false, error: msg });
+        }
+      }
+
+      setOriginalValues(newOriginals);
+      setCurrentValues((prev) => {
+        const next = { ...prev };
+        for (const r of results) {
+          if (r.success) {
+            next[r.key] = newOriginals[r.key];
+          }
+        }
+        return next;
+      });
+      setSavedKeys(newlySaved);
+      setSaveErrors(
+        results.reduce((acc, r) => {
+          if (!r.success && r.error) acc[r.key] = r.error;
+          return acc;
+        }, {} as Record<string, string>)
+      );
+      setIsSaving(false);
+      return results;
+    },
+    [changes, originalValues, updateSetting]
+  );
+
+  return {
+    changes,
+    hasChanges,
+    isSaving: isSaving || updateSetting.isPending,
+    updateValue,
+    getValue,
+    reset,
+    saveChanges,
+    saveErrors,
+    savedKeys,
+  };
+}
+
+/* ─── Confirmation Dialog ─── */
+
+function SettingsConfirmDialog({
+  open,
+  onOpenChange,
+  changes,
+  onConfirm,
+  onCancel,
+  isSaving,
+  saveErrors,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  changes: Array<{ key: string; label: string; original: string; current: string; type: string }>;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isSaving: boolean;
+  saveErrors: Record<string, string>;
+}) {
+  const hasErrors = Object.keys(saveErrors).length > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Diff className="size-5" />
+            Review changes
+          </DialogTitle>
+          <DialogDescription className="text-sm">
+            {hasErrors
+              ? "Some settings could not be saved. Review the errors below."
+              : `You are about to save ${changes.length} setting${changes.length !== 1 ? "s" : ""}. Review your changes before confirming.`}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {changes.map((change) => {
+            const error = saveErrors[change.key];
+            const isBoolean = change.original === "true" || change.original === "false";
+
+            return (
+              <div
+                key={change.key}
+                className={cn(
+                  "rounded-lg border p-3 space-y-2",
+                  error && "border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{change.label}</span>
+                  <Badge variant="outline" className="text-[9px]">
+                    {change.type}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center text-sm">
+                  <div className="rounded bg-muted px-2 py-1.5 text-xs text-muted-foreground truncate">
+                    {isBoolean ? (change.original === "true" ? "Enabled" : "Disabled") : change.original || "(empty)"}
+                  </div>
+                  <ChevronRight className="size-3 text-muted-foreground shrink-0" />
+                  <div className={cn(
+                    "rounded px-2 py-1.5 text-xs font-medium truncate",
+                    error
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                      : "bg-primary/10 text-primary"
+                  )}>
+                    {isBoolean ? (change.current === "true" ? "Enabled" : "Disabled") : change.current || "(empty)"}
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
+                    <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+            <Undo2 className="size-3.5 mr-1.5" />
+            {hasErrors ? "Close" : "Cancel"}
+          </Button>
+          {!hasErrors && (
+            <Button onClick={onConfirm} disabled={isSaving}>
+              <Save className="size-3.5 mr-1.5" />
+              {isSaving ? "Saving..." : `Save ${changes.length} change${changes.length !== 1 ? "s" : ""}`}
+            </Button>
+          )}
+          {hasErrors && (
+            <Button variant="outline" onClick={onConfirm} disabled={isSaving}>
+              <RotateCcw className="size-3.5 mr-1.5" />
+              Retry failed
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 /* ─── Route ─── */
@@ -195,12 +539,20 @@ function SettingsPage() {
         eyebrow="System"
         title="Settings"
         description="Manage workspace configuration and platform behavior."
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1">
+              <Database className="size-3" />
+              {Object.keys(settingsByCategory).length} categories
+            </Badge>
+          </div>
+        }
       />
 
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"
       >
         {/* Sidebar Navigation */}
         <aside className="space-y-4">
@@ -250,23 +602,15 @@ function SettingsPage() {
 
           {/* Quick Info Card */}
           <div className="rounded-lg border bg-card p-4 text-card-foreground">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
               <Database className="size-3.5" />
               Workspace Info
             </div>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Name</span>
-                <span className="font-medium">{(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.name")?.value ?? "Vellum Admin"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Language</span>
-                <span className="font-medium">{(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.language")?.value ?? "English"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Timezone</span>
-                <span className="font-medium">{(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.timezone")?.value ?? "UTC"}</span>
-              </div>
+            <div className="space-y-2 text-sm">
+              <InfoRow label="Name" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.name")?.value ?? "Vellum Admin"} />
+              <InfoRow label="Language" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.language")?.value ?? "English"} />
+              <InfoRow label="Timezone" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.timezone")?.value ?? "UTC"} />
+              <InfoRow label="Theme" value={(settingsByCategory["appearance"] ?? []).find((s) => s.key === "theme.default")?.value ?? "System"} />
             </div>
           </div>
         </aside>
@@ -287,6 +631,7 @@ function SettingsPage() {
 
             return (
               <TabsContent key={tab.id} value={tab.id} className="mt-0 space-y-6">
+
                 {isLoading ? (
                   <SettingsSkeleton />
                 ) : hasSettings ? (
@@ -298,14 +643,655 @@ function SettingsPage() {
                   <EmptyCategoryState label={tab.label} />
                 )}
 
+                {/* Branding-specific sections */}
+                {tab.id === "branding" && <BrandingPanel settings={categorySettings} />}
+                {tab.id === "appearance" && <AppearancePanel settings={categorySettings} />}
+                {tab.id === "security" && <SecurityPanel settings={categorySettings} />}
+
                 {/* Danger Zone — only on General */}
                 {tab.id === "general" && <DangerZone />}
+
               </TabsContent>
             );
           })}
         </main>
       </Tabs>
     </div>
+  );
+}
+
+/* ─── Info Row ─── */
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="font-medium text-xs truncate max-w-[120px]">{value}</span>
+    </div>
+  );
+}
+
+/* ─── Branding Panel ─── */
+
+function BrandingPanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showCSSPreview, setShowCSSPreview] = useState(false);
+
+  const primary = section.getValue("branding.primary_color", "#d4653a");
+  const secondary = section.getValue("branding.secondary_color", "#1a1a1a");
+  const accent = section.getValue("branding.accent_color", "#f7f4ee");
+  const logoUrl = section.getValue("branding.logo_url", "");
+  const faviconUrl = section.getValue("branding.favicon_url", "");
+  const customCSS = section.getValue("branding.custom_css", "/* Brand customizations */\n.brand-primary { color: #d4653a; }\n.brand-secondary { color: #1a1a1a; }");
+
+  const currentPreset = COLOR_PRESETS.find(
+    (p) => p.primary === primary && p.secondary === secondary && p.accent === accent
+  );
+  const selectedPreset = currentPreset?.name ?? "Custom";
+
+  const applyPreset = (name: string) => {
+    const p = COLOR_PRESETS.find((cp) => cp.name === name);
+    if (p && name !== "Custom") {
+      section.updateValue("branding.primary_color", p.primary);
+      section.updateValue("branding.secondary_color", p.secondary);
+      section.updateValue("branding.accent_color", p.accent);
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} branding setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    toast.info("Branding settings reset to last saved values");
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        {/* Color Palette Section */}
+        <SectionCard
+          title="Color palette"
+          description="Choose a preset or define custom brand colors."
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+              {COLOR_PRESETS.map((preset) => (
+                <button
+                  key={preset.name}
+                  onClick={() => applyPreset(preset.name)}
+                  className={cn(
+                    "group relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all",
+                    selectedPreset === preset.name
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/30"
+                  )}
+                >
+                  <div className="flex gap-0.5 rounded-lg overflow-hidden size-10">
+                    <div className="flex-1" style={{ backgroundColor: preset.primary || "#ccc" }} />
+                    <div className="flex-1" style={{ backgroundColor: preset.secondary || "#ccc" }} />
+                    <div className="flex-1" style={{ backgroundColor: preset.accent || "#ccc" }} />
+                  </div>
+                  <span className="text-[10px] font-medium">{preset.name}</span>
+                  {selectedPreset === preset.name && (
+                    <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="size-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {selectedPreset === "Custom" && (
+              <div className="grid gap-4 sm:grid-cols-3">
+                <ColorInput
+                  label="Primary"
+                  value={primary}
+                  onChange={(v) => section.updateValue("branding.primary_color", v)}
+                />
+                <ColorInput
+                  label="Secondary"
+                  value={secondary}
+                  onChange={(v) => section.updateValue("branding.secondary_color", v)}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={accent}
+                  onChange={(v) => section.updateValue("branding.accent_color", v)}
+                />
+              </div>
+            )}
+
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preview</span>
+                <Badge variant="outline" className="text-[9px]">Live</Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="h-10 px-4 rounded-md flex items-center text-sm font-medium text-white shadow-sm" style={{ backgroundColor: primary }}>Primary Button</div>
+                <div className="h-10 px-4 rounded-md flex items-center text-sm font-medium text-white shadow-sm" style={{ backgroundColor: secondary }}>Secondary</div>
+                <div className="h-10 px-4 rounded-md flex items-center text-sm font-medium border shadow-sm" style={{ backgroundColor: accent, borderColor: secondary, color: secondary }}>Accent Surface</div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Logo & assets" description="Upload your workspace logo and favicon.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Logo URL</Label>
+              <Input
+                value={logoUrl}
+                onChange={(e) => section.updateValue("branding.logo_url", e.target.value)}
+                placeholder="https://cdn.example.com/logo.svg"
+              />
+              {logoUrl && (
+                <div className="mt-2 p-3 rounded-lg border bg-muted/30 flex items-center justify-center h-16">
+                  <img src={logoUrl} alt="Logo preview" className="max-h-full max-w-[120px] object-contain" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Favicon URL</Label>
+              <Input
+                value={faviconUrl}
+                onChange={(e) => section.updateValue("branding.favicon_url", e.target.value)}
+                placeholder="https://cdn.example.com/favicon.ico"
+              />
+              {faviconUrl && (
+                <div className="mt-2 p-3 rounded-lg border bg-muted/30 flex items-center justify-center h-16">
+                  <img src={faviconUrl} alt="Favicon preview" className="size-8 object-contain" />
+                </div>
+              )}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Custom CSS"
+          description="Override styles with your own CSS. Changes apply instantly."
+          action={
+            <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setShowCSSPreview(!showCSSPreview)}>
+              {showCSSPreview ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              {showCSSPreview ? "Hide" : "Preview"}
+            </Button>
+          }
+        >
+          <div className="space-y-4">
+            <textarea
+              rows={8}
+              value={customCSS}
+              onChange={(e) => section.updateValue("branding.custom_css", e.target.value)}
+              placeholder=":root { --custom-prop: #value; }"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            {showCSSPreview && (
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Preview</div>
+                <style dangerouslySetInnerHTML={{ __html: customCSS }} />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="brand-primary text-sm font-medium">Brand Primary Text</div>
+                    <div className="brand-secondary text-sm font-medium">Brand Secondary Text</div>
+                  </div>
+                  <button className="custom-button text-sm font-medium">Custom Button</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} disabled={section.isSaving || !section.hasChanges}>
+              <RotateCcw className="size-4 mr-2" />
+              Reset
+            </Button>
+            <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
+              <Save className="size-4 mr-2" />
+              {section.isSaving ? "Saving..." : "Save Branding"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
+  );
+}
+
+/* ─── Color Input Component ─── */
+
+function ColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <div className="flex items-center gap-2">
+        <div
+          className="size-8 rounded-md border shrink-0"
+          style={{ backgroundColor: value || "#ccc" }}
+        />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="font-mono text-sm"
+          placeholder="#000000"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Appearance Panel ─── */
+
+function AppearancePanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const theme = section.getValue("theme.default", "system");
+  const density = section.getValue("theme.density", "comfortable");
+  const layout = section.getValue("theme.layout", "default");
+  const selectedFont = section.getValue("theme.font_family", "inter");
+  const animations = section.getValue("theme.animations", "true") === "true";
+  const reducedMotion = section.getValue("theme.reduced_motion", "false") === "true";
+  const currentFont = BRAND_FONTS.find((f) => f.id === selectedFont);
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} appearance setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    toast.info("Appearance settings reset to last saved values");
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        <SectionCard title="Interface Options" description="Additional interface preferences.">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg p-2 hover:bg-accent/30 transition-colors">
+              <div>
+                <div className="text-sm font-medium">Enable animations</div>
+                <div className="text-xs text-muted-foreground">Smooth transitions and animations</div>
+              </div>
+              <Switch
+                checked={animations}
+                onCheckedChange={(v) => section.updateValue("theme.animations", v ? "true" : "false")}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg p-2 hover:bg-accent/30 transition-colors">
+              <div>
+                <div className="text-sm font-medium">Reduced motion</div>
+                <div className="text-xs text-muted-foreground">Minimize animations for accessibility</div>
+              </div>
+              <Switch
+                checked={reducedMotion}
+                onCheckedChange={(v) => section.updateValue("theme.reduced_motion", v ? "true" : "false")}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Theme" description="Choose the default appearance for all users.">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: "light", label: "Light", icon: Sun },
+              { id: "dark", label: "Dark", icon: Moon },
+              { id: "system", label: "System", icon: MonitorSmartphone },
+            ].map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => section.updateValue("theme.default", t.id)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all",
+                    theme === t.id ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                  )}
+                >
+                  <Icon className={cn("size-6", theme === t.id ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-sm font-medium">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Density" description="Control the spacing and compactness of the interface.">
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: "compact", label: "Compact", desc: "Tight spacing" },
+              { id: "comfortable", label: "Comfortable", desc: "Balanced" },
+              { id: "spacious", label: "Spacious", desc: "Relaxed" },
+            ].map((d) => (
+              <button
+                key={d.id}
+                onClick={() => section.updateValue("theme.density", d.id)}
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-xl border-2 p-4 transition-all",
+                  density === d.id ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                )}
+              >
+                <LayoutTemplate className={cn("size-5 mb-1", density === d.id ? "text-primary" : "text-muted-foreground")} />
+                <span className="text-sm font-medium">{d.label}</span>
+                <span className="text-[11px] text-muted-foreground">{d.desc}</span>
+              </button>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Layout" description="Control the layout of the interface.">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Layout</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {LAYOUTS.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => section.updateValue("theme.layout", l.id)}
+                    className={cn(
+                      "rounded-lg border-2 p-3 text-left transition-all",
+                      layout === l.id ? "border-primary bg-accent" : "border-border hover:bg-accent/50"
+                    )}
+                  >
+                    <div className="text-sm font-medium">{l.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{l.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Typography" description="Select the default typeface.">
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Primary Font</Label>
+                <Select value={selectedFont} onValueChange={(v) => section.updateValue("theme.font_family", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BRAND_FONTS.map((font) => (
+                      <SelectItem key={font.id} value={font.id}>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontFamily: font.family }}>{font.name}</span>
+                          <Badge variant="outline" className="text-[9px]">{font.category}</Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <p className="text-2xl font-medium" style={{ fontFamily: currentFont?.family }}>
+                The quick brown fox jumps over the lazy dog.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">Preview of {currentFont?.name ?? selectedFont} at 24px.</p>
+            </div>
+          </div>
+        </SectionCard>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} disabled={section.isSaving || !section.hasChanges}>
+              <RotateCcw className="size-4 mr-2" />
+              Reset
+            </Button>
+            <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
+              <Save className="size-4 mr-2" />
+              {section.isSaving ? "Saving..." : "Save Appearance"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
+  );
+}
+
+/* ─── Security Panel ─── */
+
+function SecurityPanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [newIp, setNewIp] = useState("");
+
+  const passwordMinLength = section.getValue("security.min_password_length", "8");
+  const sessionTimeout = section.getValue("auth.session_timeout", "3600");
+  const allowedIpsRaw = section.getValue("security.allowed_ips", "");
+  const allowedIps = allowedIpsRaw ? allowedIpsRaw.split(",").filter(Boolean) : [];
+
+  const addIp = () => {
+    if (newIp && !allowedIps.includes(newIp)) {
+      const updated = [...allowedIps, newIp];
+      section.updateValue("security.allowed_ips", updated.join(","));
+      setNewIp("");
+    }
+  };
+
+  const removeIp = (ip: string) => {
+    const updated = allowedIps.filter((i) => i !== ip);
+    section.updateValue("security.allowed_ips", updated.join(","));
+  };
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} security setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    setNewIp("");
+    toast.info("Security settings reset to last saved values");
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        <SectionCard title="Password policy" description="Configure minimum requirements for user passwords.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Minimum length</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={passwordMinLength}
+                  onChange={(e) => section.updateValue("security.min_password_length", e.target.value)}
+                  min={6}
+                  max={128}
+                />
+                <span className="text-sm text-muted-foreground shrink-0">characters</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Session timeout</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={sessionTimeout}
+                  onChange={(e) => section.updateValue("auth.session_timeout", e.target.value)}
+                  min={60}
+                  max={86400}
+                />
+                <span className="text-sm text-muted-foreground shrink-0">seconds</span>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="IP allowlist" description="Restrict access to specific IP addresses. Leave empty to allow all.">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Input
+                value={newIp}
+                onChange={(e) => setNewIp(e.target.value)}
+                placeholder="192.168.1.1 or 10.0.0.0/8"
+                onKeyDown={(e) => e.key === "Enter" && addIp()}
+              />
+              <Button variant="outline" size="sm" onClick={addIp}>
+                <Plus className="size-4" />
+              </Button>
+            </div>
+            {allowedIps.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {allowedIps.map((ip) => (
+                  <Badge key={ip} variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+                    {ip}
+                    <button onClick={() => removeIp(ip)} className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5">
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No IP restrictions configured.</p>
+            )}
+          </div>
+        </SectionCard>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} disabled={section.isSaving || !section.hasChanges}>
+              <RotateCcw className="size-4 mr-2" />
+              Reset
+            </Button>
+            <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
+              <Save className="size-4 mr-2" />
+              {section.isSaving ? "Saving..." : "Save Security"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
   );
 }
 
@@ -318,61 +1304,48 @@ function CategorySettingsPanel({
   category: string;
   settings: SystemSetting[];
 }) {
-  const updateSetting = useUpdateSystemSetting();
-  const [localValues, setLocalValues] = useState<Record<string, string>>({});
-  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const getValue = useCallback(
-    (key: string, fallback: string) => {
-      if (localValues[key] !== undefined) return localValues[key];
-      const setting = settings.find((s) => s.key === key);
-      return setting?.value ?? fallback;
-    },
-    [localValues, settings]
-  );
-
-  const handleChange = (key: string, value: string) => {
-    setLocalValues((prev) => ({ ...prev, [key]: value }));
-    setSavedKeys((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
   };
 
-  const handleSave = () => {
-    const entries = Object.entries(localValues);
-    if (entries.length === 0) return;
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
 
-    let index = 0;
-    const newlySaved = new Set<string>();
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+      // Keep dialog open to show errors
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+      // Keep dialog open for retry
+    }
+  };
 
-    const saveNext = () => {
-      if (index >= entries.length) {
-        setSavedKeys(newlySaved);
-        setLocalValues({});
-        return;
-      }
-      const [key, value] = entries[index];
-      index++;
-      newlySaved.add(key);
-      updateSetting.mutate({ key, value }, { onSuccess: saveNext });
-    };
-    saveNext();
+  const handleCancel = () => {
+    setConfirmOpen(false);
+    // Clear errors when closing a successful or cancelled dialog
+    if (Object.keys(section.saveErrors).length === 0) {
+      // already clean
+    }
   };
 
   const handleReset = () => {
-    setLocalValues({});
-    setSavedKeys(new Set());
+    section.reset();
+    toast.info("Changes reset to last saved values");
   };
-
-  const isSaving = updateSetting.isPending;
-  const hasChanges = Object.keys(localValues).length > 0;
 
   // Group by inferred input type
   const grouped = settings.reduce(
     (acc, s) => {
-      const type = inferInputType(s.value);
+      const type = inferInputType(section.getValue(s.key, s.value));
       acc[type].push(s);
       return acc;
     },
@@ -383,25 +1356,105 @@ function CategorySettingsPanel({
       textarea: [] as SystemSetting[],
       url: [] as SystemSetting[],
       email: [] as SystemSetting[],
+      select: [] as SystemSetting[],
+      multiselect: [] as SystemSetting[],
+      color: [] as SystemSetting[],
     }
   );
 
+  const hasLocalChange = (key: string) => section.changes.some((c) => c.key === key);
+
   return (
-    <SectionCard
-      title={`${category} configuration`}
-      description="Edit values below. Changes are staged until you save."
-    >
-      <div className="space-y-6">
-        {/* Text / URL / Email fields */}
-        {(grouped.text.length > 0 ||
-          grouped.url.length > 0 ||
-          grouped.email.length > 0) && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[...grouped.text, ...grouped.url, ...grouped.email].map(
-              (setting) => {
-                const type = inferInputType(setting.value);
-                const isSaved = savedKeys.has(setting.key);
-                const hasLocalChange = localValues[setting.key] !== undefined;
+    <>
+      <SectionCard
+        title={`${category} configuration`}
+        description="Edit values below. Changes are staged until you save."
+      >
+        <div className="space-y-6">
+          {/* Color fields */}
+          {grouped.color.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {grouped.color.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const changed = hasLocalChange(setting.key);
+                const err = section.saveErrors[setting.key];
+
+                return (
+                  <Field
+                    key={setting.key}
+                    label={formatSettingKey(setting.key)}
+                    hint={setting.description}
+                    saved={isSaved && !changed}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="size-8 rounded-md border shrink-0"
+                        style={{ backgroundColor: section.getValue(setting.key, "") || "#ccc" }}
+                      />
+                      <Input
+                        value={section.getValue(setting.key, "")}
+                        onChange={(e) => section.updateValue(setting.key, e.target.value)}
+                        disabled={section.isSaving}
+                        className={cn(
+                          "font-mono text-sm",
+                          changed && "border-primary/50 ring-1 ring-primary/20",
+                          err && "border-red-300 ring-1 ring-red-200"
+                        )}
+                      />
+                    </div>
+                    {err && (
+                      <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                    )}
+                  </Field>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Select fields */}
+          {grouped.select.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {grouped.select.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const changed = hasLocalChange(setting.key);
+                const options = ["active", "inactive", "enabled", "disabled", "light", "dark", "system"];
+
+                return (
+                  <Field
+                    key={setting.key}
+                    label={formatSettingKey(setting.key)}
+                    hint={setting.description}
+                    saved={isSaved && !changed}
+                  >
+                    <Select
+                      value={section.getValue(setting.key, "")}
+                      onValueChange={(v) => section.updateValue(setting.key, v)}
+                      disabled={section.isSaving}
+                    >
+                      <SelectTrigger className={cn(changed && "border-primary/50 ring-1 ring-primary/20")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options.map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Multiselect fields */}
+          {grouped.multiselect.length > 0 && (
+            <div className="space-y-4">
+              {grouped.multiselect.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const values = section.getValue(setting.key, "").split(",").filter(Boolean);
+                const options = ["culture", "design", "environment", "music", "architecture", "technology"];
 
                 return (
                   <Field
@@ -410,184 +1463,293 @@ function CategorySettingsPanel({
                     hint={setting.description}
                     saved={isSaved}
                   >
-                    <Input
-                      type={type === "email" ? "email" : "text"}
-                      value={getValue(setting.key, "")}
-                      onChange={(e) =>
-                        handleChange(setting.key, e.target.value)
-                      }
-                      disabled={isSaving}
-                      className={cn(
-                        hasLocalChange && "border-primary/50 ring-1 ring-primary/20"
-                      )}
-                    />
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {values.map((val) => (
+                          <Badge
+                            key={val}
+                            variant="secondary"
+                            className="gap-1 pl-2 pr-1 py-1"
+                          >
+                            {val.trim()}
+                            <button
+                              onClick={() => {
+                                const newValues = values.filter((v) => v.trim() !== val.trim());
+                                section.updateValue(setting.key, newValues.join(","));
+                              }}
+                              className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5">
+                            <Plus className="size-3.5" />
+                            Add option
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          {options
+                            .filter((opt) => !values.includes(opt))
+                            .map((opt) => (
+                              <DropdownMenuItem
+                                key={opt}
+                                onClick={() => {
+                                  const newValues = [...values, opt];
+                                  section.updateValue(setting.key, newValues.join(","));
+                                }}
+                              >
+                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                              </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </Field>
                 );
-              }
-            )}
-          </div>
-        )}
+              })}
+            </div>
+          )}
 
-        {/* Textarea fields */}
-        {grouped.textarea.length > 0 && (
-          <div className="space-y-4">
-            {grouped.textarea.map((setting) => {
-              const isSaved = savedKeys.has(setting.key);
-              const hasLocalChange = localValues[setting.key] !== undefined;
+          {/* Text / URL / Email fields */}
+          {(grouped.text.length > 0 ||
+            grouped.url.length > 0 ||
+            grouped.email.length > 0) && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[...grouped.text, ...grouped.url, ...grouped.email].map(
+                  (setting) => {
+                    const type = inferInputType(section.getValue(setting.key, setting.value));
+                    const isSaved = section.savedKeys.has(setting.key);
+                    const changed = hasLocalChange(setting.key);
+                    const err = section.saveErrors[setting.key];
 
-              return (
-                <Field
-                  key={setting.key}
-                  label={formatSettingKey(setting.key)}
-                  hint={setting.description}
-                  saved={isSaved}
-                  className="sm:col-span-2"
-                >
-                  <textarea
-                    value={getValue(setting.key, "")}
-                    onChange={(e) => handleChange(setting.key, e.target.value)}
-                    disabled={isSaving}
-                    rows={3}
-                    className={cn(
-                      "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                      hasLocalChange && "border-primary/50 ring-1 ring-primary/20"
-                    )}
-                  />
-                </Field>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Number fields */}
-        {grouped.number.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {grouped.number.map((setting) => {
-              const isSaved = savedKeys.has(setting.key);
-              const hasLocalChange = localValues[setting.key] !== undefined;
-
-              return (
-                <Field
-                  key={setting.key}
-                  label={formatSettingKey(setting.key)}
-                  hint={setting.description}
-                  saved={isSaved}
-                >
-                  <Input
-                    type="number"
-                    value={getValue(setting.key, "")}
-                    onChange={(e) =>
-                      handleChange(setting.key, e.target.value)
-                    }
-                    disabled={isSaving}
-                    className={cn(
-                      hasLocalChange && "border-primary/50 ring-1 ring-primary/20"
-                    )}
-                  />
-                </Field>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Boolean toggles */}
-        {grouped.boolean.length > 0 && (
-          <div className="space-y-1">
-            {grouped.boolean.map((setting) => {
-              const isSaved = savedKeys.has(setting.key);
-              const hasLocalChange = localValues[setting.key] !== undefined;
-
-              return (
-                <div
-                  key={setting.key}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg px-3 py-3 transition-colors",
-                    hasLocalChange && "bg-accent/30"
-                  )}
-                >
-                  <div className="space-y-0.5 pr-4">
-                    <div className="text-sm font-medium">
-                      {formatSettingKey(setting.key)}
-                    </div>
-                    {setting.description && (
-                      <div className="text-xs text-muted-foreground leading-relaxed">
-                        {setting.description}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isSaved && (
-                      <Check className="size-3.5 text-emerald-500" />
-                    )}
-                    <Switch
-                      checked={
-                        getValue(setting.key, "false") === "true"
-                      }
-                      onCheckedChange={(v) =>
-                        handleChange(
-                          setting.key,
-                          v ? "true" : "false"
-                        )
-                      }
-                      disabled={isSaving}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* No settings fallback */}
-        {settings.length === 0 && (
-          <EmptyCategoryState label={category} />
-        )}
-
-        {/* Footer Actions */}
-        {settings.length > 0 && (
-          <>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {hasChanges ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full bg-amber-500" />
-                    {Object.keys(localValues).length} unsaved change
-                    {Object.keys(localValues).length !== 1 ? "s" : ""}
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full bg-emerald-500" />
-                    All changes saved
-                  </span>
+                    return (
+                      <Field
+                        key={setting.key}
+                        label={formatSettingKey(setting.key)}
+                        hint={setting.description}
+                        saved={isSaved && !changed}
+                      >
+                        <Input
+                          type={type === "email" ? "email" : "text"}
+                          value={section.getValue(setting.key, "")}
+                          onChange={(e) =>
+                            section.updateValue(setting.key, e.target.value)
+                          }
+                          disabled={section.isSaving}
+                          className={cn(
+                            changed && "border-primary/50 ring-1 ring-primary/20",
+                            err && "border-red-300 ring-1 ring-red-200"
+                          )}
+                        />
+                        {err && (
+                          <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                        )}
+                      </Field>
+                    );
+                  }
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  disabled={isSaving || !hasChanges}
-                  className="gap-1.5"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving || !hasChanges}
-                  className="gap-1.5"
-                >
-                  <Save className="size-3.5" />
-                  {isSaving ? "Saving..." : "Save changes"}
-                </Button>
-              </div>
+            )}
+
+          {/* Textarea fields */}
+          {grouped.textarea.length > 0 && (
+            <div className="space-y-4">
+              {grouped.textarea.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const changed = hasLocalChange(setting.key);
+                const err = section.saveErrors[setting.key];
+
+                return (
+                  <Field
+                    key={setting.key}
+                    label={formatSettingKey(setting.key)}
+                    hint={setting.description}
+                    saved={isSaved && !changed}
+                    className="sm:col-span-2"
+                  >
+                    <textarea
+                      value={section.getValue(setting.key, "")}
+                      onChange={(e) => section.updateValue(setting.key, e.target.value)}
+                      disabled={section.isSaving}
+                      rows={3}
+                      className={cn(
+                        "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                        changed && "border-primary/50 ring-1 ring-primary/20",
+                        err && "border-red-300 ring-1 ring-red-200"
+                      )}
+                    />
+                    {err && (
+                      <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                    )}
+                  </Field>
+                );
+              })}
             </div>
-          </>
-        )}
-      </div>
-    </SectionCard>
+          )}
+
+          {/* Number fields */}
+          {grouped.number.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {grouped.number.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const changed = hasLocalChange(setting.key);
+                const err = section.saveErrors[setting.key];
+
+                return (
+                  <Field
+                    key={setting.key}
+                    label={formatSettingKey(setting.key)}
+                    hint={setting.description}
+                    saved={isSaved && !changed}
+                  >
+                    <Input
+                      type="number"
+                      value={section.getValue(setting.key, "")}
+                      onChange={(e) =>
+                        section.updateValue(setting.key, e.target.value)
+                      }
+                      disabled={section.isSaving}
+                      className={cn(
+                        changed && "border-primary/50 ring-1 ring-primary/20",
+                        err && "border-red-300 ring-1 ring-red-200"
+                      )}
+                    />
+                    {err && (
+                      <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                    )}
+                  </Field>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Boolean toggles */}
+          {grouped.boolean.length > 0 && (
+            <div className="space-y-1">
+              {grouped.boolean.map((setting) => {
+                const isSaved = section.savedKeys.has(setting.key);
+                const changed = hasLocalChange(setting.key);
+                const err = section.saveErrors[setting.key];
+
+                return (
+                  <div
+                    key={setting.key}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg px-3 py-3 transition-colors",
+                      changed && "bg-accent/30",
+                      err && "bg-red-50 dark:bg-red-950/20"
+                    )}
+                  >
+                    <div className="space-y-0.5 pr-4">
+                      <div className="text-sm font-medium">
+                        {formatSettingKey(setting.key)}
+                      </div>
+                      {setting.description && (
+                        <div className="text-xs text-muted-foreground leading-relaxed">
+                          {setting.description}
+                        </div>
+                      )}
+                      {err && (
+                        <div className="flex items-center gap-1 text-xs text-red-500 mt-0.5">
+                          <AlertCircle className="size-3" />
+                          {err}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isSaved && !changed && (
+                        <Check className="size-3.5 text-emerald-500" />
+                      )}
+                      <Switch
+                        checked={
+                          section.getValue(setting.key, "false") === "true"
+                        }
+                        onCheckedChange={(v) =>
+                          section.updateValue(
+                            setting.key,
+                            v ? "true" : "false"
+                          )
+                        }
+                        disabled={section.isSaving}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* No settings fallback */}
+          {settings.length === 0 && (
+            <EmptyCategoryState label={category} />
+          )}
+
+          {/* Footer Actions */}
+          {settings.length > 0 && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
+                  {section.hasChanges ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-amber-500" />
+                      {section.changes.length} unsaved change
+                      {section.changes.length !== 1 ? "s" : ""}
+                    </span>
+                  ) : Object.keys(section.saveErrors).length > 0 ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-red-500" />
+                      {Object.keys(section.saveErrors).length} save error
+                      {Object.keys(section.saveErrors).length !== 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                      All changes saved
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    disabled={section.isSaving || (!section.hasChanges && Object.keys(section.saveErrors).length === 0)}
+                    className="gap-1.5"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    Reset
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveClick}
+                    disabled={section.isSaving || !section.hasChanges}
+                    className="gap-1.5"
+                  >
+                    <Save className="size-3.5" />
+                    {section.isSaving ? "Saving..." : "Save changes"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </SectionCard>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={handleCancel}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
   );
 }
 
@@ -596,9 +1758,11 @@ function CategorySettingsPanel({
 function DangerZone() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [seedDialogOpen, setSeedDialogOpen] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState("");
   const deleteWorkspace = useDeleteWorkspace();
   const resetSettings = useResetSettings();
+  const seedSettings = useSeedSettings();
   const navigate = window.location.assign;
 
   const handleDeleteConfirm = () => {
@@ -622,6 +1786,18 @@ function DangerZone() {
       },
       onError: () => {
         toast.error("Failed to reset settings");
+      },
+    });
+  };
+
+  const handleSeedConfirm = () => {
+    seedSettings.mutate(undefined, {
+      onSuccess: (result) => {
+        toast.success(result.message);
+        setSeedDialogOpen(false);
+      },
+      onError: () => {
+        toast.error("Failed to seed settings");
       },
     });
   };
@@ -676,6 +1852,28 @@ function DangerZone() {
           >
             <RotateCcw className="size-3.5 mr-1.5" />
             Reset
+          </Button>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 rounded-lg border border-border p-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="size-4 text-muted-foreground" />
+              Seed default settings
+            </div>
+            <div className="text-xs text-muted-foreground leading-relaxed max-w-md">
+              Populate the database with the full set of platform default
+              settings. No-op if settings already exist; safe to re-run.
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setSeedDialogOpen(true)}
+          >
+            <Sparkles className="size-3.5 mr-1.5" />
+            Seed
           </Button>
         </div>
       </div>
@@ -751,6 +1949,34 @@ function DangerZone() {
               disabled={resetSettings.isPending}
             >
               {resetSettings.isPending ? "Resetting..." : "Reset settings"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Seed Settings Dialog */}
+      <Dialog open={seedDialogOpen} onOpenChange={setSeedDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="size-5" />
+              Seed default settings
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              This populates the database with the full set of platform default
+              settings. If settings already exist, the operation is a no-op and
+              existing values are preserved. Safe to re-run.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSeedDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSeedConfirm}
+              disabled={seedSettings.isPending}
+            >
+              {seedSettings.isPending ? "Seeding..." : "Seed settings"}
             </Button>
           </DialogFooter>
         </DialogContent>

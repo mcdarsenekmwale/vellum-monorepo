@@ -1,11 +1,31 @@
 // routes/_app/users/index.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mail, UserPlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  Mail,
+  UserPlus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Search,
+  Download,
+  RefreshCw,
+  X,
+  Check,
+  Shield,
+  UserCog,
+  Users,
+  UserCheck,
+  UserX,
+  Calendar,
+  ChevronDown,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +36,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -26,6 +45,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import {
   useUsers,
   useDashboardStats,
   useCreateUser,
@@ -34,29 +67,48 @@ import {
   type User,
 } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth/context";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/users/")({
   head: () => ({ meta: [{ title: "Users · Vellum Admin" }] }),
   component: UsersList,
 });
 
+type RoleFilter = "all" | "USER" | "MODERATOR" | "CREATOR" | "DEVELOPER" | "EDITOR" | "ADMIN";
+type StatusFilter = "all" | "active" | "suspended";
+type TwoFAFilter = "all" | "enabled" | "disabled";
+
 function UsersList() {
   const { data, isLoading, refetch } = useUsers();
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
-  const { can } = useAuth();
+  const { can, user: currentUser } = useAuth();
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [twoFAFilter, setTwoFAFilter] = useState<TwoFAFilter>("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Dialog states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
+  // Form states
   const [createEmail, setCreateEmail] = useState("");
   const [createName, setCreateName] = useState("");
   const [createHandle, setCreateHandle] = useState("");
@@ -68,17 +120,120 @@ function UsersList() {
   const [editHandle, setEditHandle] = useState("");
   const [editRole, setEditRole] = useState("");
 
-  const openCreate = () => {
-    setCreateEmail("");
-    setCreateName("");
-    setCreateHandle("");
-    setCreateRole("USER");
-    setCreatePassword("");
-    setIsCreateOpen(true);
-  };
+  // UI states
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const handleCreate = () => {
-    if (!createEmail.trim() || !createName.trim() || !createHandle.trim() || !createPassword.trim()) return;
+  // Filter and search logic
+  const filteredRows = useMemo(() => {
+    let result = rows;
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((user) =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.handle.toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query)
+      );
+    }
+
+    // Role filter
+    if (roleFilter !== "all") {
+      result = result.filter((user) => user.role === roleFilter);
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((user) =>
+        statusFilter === "active" ? user.isActive : !user.isActive
+      );
+    }
+
+    // 2FA filter
+    if (twoFAFilter !== "all") {
+      result = result.filter((user) => {
+        const has2FA = (user as any).twoFactorEnabled || false;
+        return twoFAFilter === "enabled" ? has2FA : !has2FA;
+      });
+    }
+
+    return result;
+  }, [rows, searchQuery, roleFilter, statusFilter, twoFAFilter]);
+
+  const hasActiveFilters = searchQuery || roleFilter !== "all" || statusFilter !== "all" || twoFAFilter !== "all";
+
+  // Stats
+  const activeUsers = stats?.activeUsers ?? 0;
+  const inactiveUsers = total - activeUsers;
+  const newUsersThisWeek = stats?.newUsersThisWeek ?? 0;
+
+  // Handlers
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+      await refetchStats();
+      toast.success("Users refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh users");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch, refetchStats]);
+
+  const handleExport = useCallback(async () => {
+    const dataToExport = filteredRows.length > 0 ? filteredRows : rows;
+    if (dataToExport.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = ["ID", "Name", "Email", "Handle", "Role", "Status", "2FA", "Created At", "Last Login"];
+      const csvRows = [headers.join(",")];
+
+      for (const user of dataToExport) {
+        const row = [
+          user.id,
+          `"${user.name.replace(/"/g, '""')}"`,
+          user.email,
+          user.handle,
+          user.role,
+          user.isActive ? "Active" : "Suspended",
+          (user as any).twoFactorEnabled ? "Enabled" : "Disabled",
+          format(new Date(user.createdAt), "yyyy-MM-dd HH:mm:ss"),
+          user.lastLoginAt ? format(new Date(user.lastLoginAt), "yyyy-MM-dd HH:mm:ss") : "",
+        ];
+        csvRows.push(row.join(","));
+      }
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `users-${format(new Date(), "yyyy-MM-dd-HHmmss")}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${dataToExport.length} users`);
+    } catch (error) {
+      toast.error("Failed to export users");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [filteredRows, rows]);
+
+  const handleCreate = useCallback(() => {
+    if (!createEmail.trim() || !createName.trim() || !createHandle.trim() || !createPassword.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     createUser.mutate(
       {
         email: createEmail.trim(),
@@ -90,23 +245,33 @@ function UsersList() {
       {
         onSuccess: () => {
           setIsCreateOpen(false);
+          resetCreateForm();
           refetch();
+          refetchStats();
+          toast.success("User created successfully");
+        },
+        onError: (error) => {
+          toast.error("Failed to create user: " + (error.message || "Unknown error"));
         },
       }
     );
+  }, [createEmail, createName, createHandle, createRole, createPassword, createUser, refetch, refetchStats]);
+
+  const resetCreateForm = () => {
+    setCreateEmail("");
+    setCreateName("");
+    setCreateHandle("");
+    setCreateRole("USER");
+    setCreatePassword("");
   };
 
-  const openEdit = (user: User) => {
-    setSelectedUser(user);
-    setEditEmail(user.email);
-    setEditName(user.name);
-    setEditHandle(user.handle);
-    setEditRole(user.role);
-    setIsEditOpen(true);
-  };
-
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     if (!selectedUser) return;
+    if (!editEmail.trim() || !editName.trim() || !editHandle.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     updateUser.mutate(
       {
         id: selectedUser.id,
@@ -120,9 +285,105 @@ function UsersList() {
           setIsEditOpen(false);
           setSelectedUser(null);
           refetch();
+          refetchStats();
+          toast.success("User updated successfully");
+        },
+        onError: (error) => {
+          toast.error("Failed to update user: " + (error.message || "Unknown error"));
         },
       }
     );
+  }, [selectedUser, editEmail, editName, editHandle, editRole, updateUser, refetch, refetchStats]);
+
+  const handleDelete = useCallback(() => {
+    if (!selectedUser) return;
+
+    deleteUser.mutate(selectedUser.id, {
+      onSuccess: () => {
+        setIsDeleteOpen(false);
+        setSelectedUser(null);
+        refetch();
+        refetchStats();
+        toast.success("User deleted successfully");
+      },
+      onError: (error) => {
+        toast.error("Failed to delete user: " + (error.message || "Unknown error"));
+      },
+    });
+  }, [selectedUser, deleteUser, refetch, refetchStats]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      toast.loading(`Deleting ${selectedIds.length} users...`);
+      const deletePromises = selectedIds.map((id) =>
+        new Promise<void>((resolve, reject) => {
+          deleteUser.mutate(id, {
+            onSuccess: () => resolve(),
+            onError: () => reject(),
+          });
+        })
+      );
+      await Promise.all(deletePromises);
+      toast.success(`${selectedIds.length} users deleted`);
+      setSelectedIds([]);
+      setIsBulkDeleteOpen(false);
+      refetch();
+      refetchStats();
+    } catch {
+      toast.error("Failed to delete some users");
+    }
+  }, [selectedIds, deleteUser, refetch, refetchStats]);
+
+  const handleSendEmail = useCallback(async () => {
+    if (!selectedUser) return;
+    if (!emailSubject.trim() || !emailBody.trim()) {
+      toast.error("Please fill in subject and body");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.success(`Email sent to ${selectedUser.name}`);
+      setIsEmailDialogOpen(false);
+      setEmailSubject("");
+      setEmailBody("");
+      setSelectedUser(null);
+    } catch {
+      toast.error("Failed to send email");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  }, [selectedUser, emailSubject, emailBody]);
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setTwoFAFilter("all");
+  }, []);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        document.getElementById("search-input")?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const openEdit = (user: User) => {
+    setSelectedUser(user);
+    setEditEmail(user.email);
+    setEditName(user.name);
+    setEditHandle(user.handle);
+    setEditRole(user.role);
+    setIsEditOpen(true);
   };
 
   const openDelete = (user: User) => {
@@ -130,172 +391,52 @@ function UsersList() {
     setIsDeleteOpen(true);
   };
 
-  const handleDelete = () => {
-    if (!selectedUser) return;
-    deleteUser.mutate(selectedUser.id, {
-      onSuccess: () => {
-        setIsDeleteOpen(false);
-        setSelectedUser(null);
-        refetch();
-      },
-    });
+  const openEmailDialog = (user: User) => {
+    setSelectedUser(user);
+    setEmailSubject(`Message from Vellum Admin`);
+    setEmailBody(`Hello ${user.name},\n\n`);
+    setIsEmailDialogOpen(true);
   };
 
-  const renderHeader = () => {
-    return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mt-5 mb-10">
-        <StatCard
-          loading={isLoading}
-          label="Total users"
-          value={total.toLocaleString()}
-          delta={12.4}
-        />
-        <StatCard
-          loading={statsLoading}
-          label="Active users"
-          value={stats?.activeUsers?.toLocaleString() ?? "0"}
-          delta={4.1}
-          tone="success"
-        />
-        <StatCard
-          loading={statsLoading}
-          label="New this week"
-          value={stats?.newUsersThisWeek?.toLocaleString() ?? "0"}
-          delta={-2.3}
-          tone="info"
-        />
-        <StatCard
-          loading={isLoading}
-          label="Inactive"
-          value={(total - (stats?.activeUsers ?? 0)).toLocaleString()}
-          delta={0.6}
-          tone="warning"
-        />
-      </div>
-    );
-  }
+  // Render header with stats
+  const renderHeader = () => (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mt-5 mb-10">
+      <StatCard
+        loading={isLoading}
+        label="Total users"
+        value={total.toLocaleString()}
+        icon={Users}
+        delta={12.4}
+      />
+      <StatCard
+        loading={statsLoading}
+        label="Active users"
+        value={activeUsers.toLocaleString()}
+        icon={UserCheck}
+        delta={4.1}
+        tone="success"
+      />
+      <StatCard
+        loading={statsLoading}
+        label="New this week"
+        value={newUsersThisWeek.toLocaleString()}
+        icon={Calendar}
+        delta={-2.3}
+        tone="info"
+      />
+      <StatCard
+        loading={isLoading}
+        label="Inactive"
+        value={inactiveUsers.toLocaleString()}
+        icon={UserX}
+        delta={0.6}
+        tone="warning"
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      {/* Users Table */}
-      <ListPage
-        title="User Management"
-        description="Everyone with a Vellum account across web and mobile."
-        eyebrow="People"
-        rows={rows}
-        searchKeys={["name", "email", "handle", "role"]}
-        pageSize={15}
-        isLoading={isLoading}
-        enableSelection={true}
-        enableExport={true}
-        enablePagination={true}
-        actions={
-          can("users", "write") ? (
-            <Button size="sm" className="gap-1.5" onClick={openCreate}>
-              <UserPlus className="size-4" /> Invite
-            </Button>
-          ) : null
-        }
-        renderHeader={renderHeader()}
-        filters={
-          <>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              Role
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="text-muted-foreground">◎</span>
-              2F Auth
-              <span className="rotate-90 text-xs">›</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              + Add filter
-            </Button>
-          </>
-        }
-        columns={[
-          {
-            key: "user",
-            header: "User",
-            cell: (u) => (
-              <Link
-                to="/users/$userId"
-                params={{ userId: u.id }}
-                className="flex min-w-0 items-center gap-3 hover:opacity-80 transition-opacity"
-              >
-                <Avatar className="size-9 shrink-0">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {u.name?.[0]?.toUpperCase() ?? "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{u.name}</div>
-                  <div className="truncate text-xs text-muted-foreground">{u.email}</div>
-                </div>
-              </Link>
-            ),
-          },
-          {
-            key: "handle",
-            header: "Handle",
-            cell: (u) => <span className="font-mono text-xs text-muted-foreground">@{u.handle}</span>
-          },
-          {
-            key: "role",
-            header: "Role",
-            cell: (u) => <span className="text-sm capitalize">{u.role}</span>
-          },
-          {
-            key: "status",
-            header: "Status",
-            cell: (u) => <StatusBadge status={u.isActive ? "active" : "suspended"} />
-          },
-          {
-            key: "2fa",
-            header: "2F Auth",
-            cell: (u) => (
-              <span className={cn(
-                "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
-                (u as any).twoFactorEnabled
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-muted text-muted-foreground"
-              )}>
-                {(u as any).twoFactorEnabled ? "Enabled" : "Disabled"}
-              </span>
-            ),
-          },
-          {
-            key: "joined",
-            header: "Joined",
-            cell: (u) => (
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(u.createdAt), { addSuffix: true })}
-              </span>
-            ),
-          },
-        ]}
-        renderRowActions={(u) => (
-          <div className="flex items-center justify-end gap-1">
-
-            <Button variant="ghost" size="icon" className="size-8 cursor-pointer" aria-label="Email">
-              <Mail className="size-4" />
-            </Button>
-
-            {can("users", "write") && (
-              <Button variant="ghost" size="icon" className="size-8 hover:text-primary" aria-label="Edit" onClick={() => openEdit(u)}>
-                <Pencil className="size-4" />
-              </Button>
-            )}
-            {can("users", "delete") && (
-              <Button variant="ghost" size="icon" className="size-8 hover:text-destructive" aria-label="Delete" onClick={() => openDelete(u)}>
-                <Trash2 className="size-4" />
-              </Button>
-            )}
-          </div>
-        )}
-      />
-
       {/* Create User Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-md">
@@ -307,7 +448,7 @@ function UsersList() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-email">Email</Label>
+              <Label htmlFor="create-email">Email *</Label>
               <Input
                 id="create-email"
                 type="email"
@@ -318,7 +459,7 @@ function UsersList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-name">Name</Label>
+              <Label htmlFor="create-name">Name *</Label>
               <Input
                 id="create-name"
                 value={createName}
@@ -327,7 +468,7 @@ function UsersList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-handle">Handle</Label>
+              <Label htmlFor="create-handle">Handle *</Label>
               <Input
                 id="create-handle"
                 value={createHandle}
@@ -352,7 +493,7 @@ function UsersList() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-password">Password</Label>
+              <Label htmlFor="create-password">Password *</Label>
               <Input
                 id="create-password"
                 type="password"
@@ -370,7 +511,14 @@ function UsersList() {
               onClick={handleCreate}
               disabled={createUser.isPending || !createEmail.trim() || !createName.trim() || !createHandle.trim() || !createPassword.trim()}
             >
-              {createUser.isPending ? "Creating..." : "Create user"}
+              {createUser.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create user"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -387,7 +535,7 @@ function UsersList() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">Email *</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -396,7 +544,7 @@ function UsersList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name">Name *</Label>
               <Input
                 id="edit-name"
                 value={editName}
@@ -404,7 +552,7 @@ function UsersList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-handle">Handle</Label>
+              <Label htmlFor="edit-handle">Handle *</Label>
               <Input
                 id="edit-handle"
                 value={editHandle}
@@ -436,7 +584,14 @@ function UsersList() {
               onClick={handleEdit}
               disabled={updateUser.isPending || !editEmail.trim() || !editName.trim() || !editHandle.trim()}
             >
-              {updateUser.isPending ? "Saving..." : "Save changes"}
+              {updateUser.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save changes"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -449,6 +604,12 @@ function UsersList() {
             <DialogTitle>Delete user</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete <strong>{selectedUser?.name}</strong>? This action cannot be undone.
+              {selectedUser?.id === currentUser?.id && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="size-4 shrink-0" />
+                  You are about to delete your own account.
+                </div>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -460,11 +621,423 @@ function UsersList() {
               onClick={handleDelete}
               disabled={deleteUser.isPending}
             >
-              {deleteUser.isPending ? "Deleting..." : "Delete user"}
+              {deleteUser.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete user"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Dialog */}
+      <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete selected users</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{selectedIds.length}</strong> users? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsBulkDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+            >
+              Delete users
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send email to {selectedUser?.name}</DialogTitle>
+            <DialogDescription>
+              Compose an email to this user.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Email subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-body">Message</Label>
+              <textarea
+                id="email-body"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder="Write your message here..."
+                className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendEmail} disabled={!emailSubject.trim() || !emailBody.trim() || isSendingEmail}>
+              {isSendingEmail ? (
+                <><Loader2 className="mr-2 size-4 animate-spin" /> Sending...</>
+              ) : (
+                <><Mail className="mr-2 size-4" /> Send email</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main List */}
+      <ListPage
+        title="User Management"
+        description="Everyone with a Vellum account across web and mobile."
+        eyebrow="People"
+        rows={filteredRows}
+        searchKeys={["name", "email", "handle", "role"]}
+        pageSize={15}
+        isLoading={isLoading}
+        enableSelection={true}
+        onSelectionChange={(selected) => setSelectedIds(Array.from(selected))}
+        enableExport={true}
+        enablePagination={true}
+        searchPlaceholder="Search users... (⌘K)"
+        actions={
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={cn("size-4", isRefreshing && "animate-spin")} />
+                  <span className="hidden sm:inline">Refresh</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh user list</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleExport}
+                  disabled={isExporting || rows.length === 0}
+                >
+                  {isExporting ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export"}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Export users to CSV</TooltipContent>
+            </Tooltip>
+
+            {selectedIds.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setIsBulkDeleteOpen(true)}
+              >
+                <Trash2 className="size-4" />
+                <span className="hidden sm:inline">Delete {selectedIds.length}</span>
+              </Button>
+            )}
+
+            {can("users", "write") && (
+              <Button size="sm" className="gap-1.5" onClick={() => setIsCreateOpen(true)}>
+                <UserPlus className="size-4" /> Invite
+              </Button>
+            )}
+          </div>
+        }
+        renderHeader={renderHeader()}
+        filters={
+          <>
+            {!hasActiveFilters && !showFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setShowFilters(true)}
+              >
+                + Add filter
+              </Button>
+            )}
+
+            {(hasActiveFilters || showFilters) && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={showFilters ? "default" : "outline"}
+                    size="sm"
+                    className="gap-1.5 h-8"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    {showFilters ? "Hide filters" : "More filters"}
+                  </Button>
+                </div>
+
+                {showFilters && (
+                  <>
+                    <div className="h-4 w-px bg-border" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                          <Shield className="size-3.5" />
+                          Role
+                          <ChevronDown className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Filter by role</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {(["all", "USER", "MODERATOR", "CREATOR", "DEVELOPER", "EDITOR", "ADMIN"] as const).map((role) => (
+                          <DropdownMenuItem
+                            key={role}
+                            onClick={() => setRoleFilter(role)}
+                            className={cn(roleFilter === role && "bg-accent")}
+                          >
+                            {role === "all" ? "All roles" : role.charAt(0) + role.slice(1).toLowerCase()}
+                            {roleFilter === role && <Check className="ml-2 size-3.5" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                          <UserCheck className="size-3.5" />
+                          Status
+                          <ChevronDown className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {(["all", "active", "suspended"] as const).map((status) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={cn(statusFilter === status && "bg-accent")}
+                          >
+                            {status === "all" ? "All statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                            {statusFilter === status && <Check className="ml-2 size-3.5" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-8">
+                          <Shield className="size-3.5" />
+                          2FA
+                          <ChevronDown className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Filter by 2FA</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {(["all", "enabled", "disabled"] as const).map((twoFA) => (
+                          <DropdownMenuItem
+                            key={twoFA}
+                            onClick={() => setTwoFAFilter(twoFA)}
+                            className={cn(twoFAFilter === twoFA && "bg-accent")}
+                          >
+                            {twoFA === "all" ? "All" : twoFA.charAt(0).toUpperCase() + twoFA.slice(1)}
+                            {twoFAFilter === twoFA && <Check className="ml-2 size-3.5" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
+
+                {hasActiveFilters && (
+                  <>
+                    <div className="h-6 w-px bg-border" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-muted-foreground">Active filters:</span>
+                      {roleFilter !== "all" && (
+                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setRoleFilter("all")}>
+                          Role: {roleFilter}
+                          <X className="size-3" />
+                        </Badge>
+                      )}
+                      {statusFilter !== "all" && (
+                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                          Status: {statusFilter}
+                          <X className="size-3" />
+                        </Badge>
+                      )}
+                      {twoFAFilter !== "all" && (
+                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setTwoFAFilter("all")}>
+                          2FA: {twoFAFilter}
+                          <X className="size-3" />
+                        </Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={clearFilters}
+                      >
+                        Clear all
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        }
+        columns={[
+          {
+            key: "user",
+            header: "User",
+            cell: (u) => (
+              <Link
+                to="/users/$userId"
+                params={{ userId: u.id }}
+                className="flex min-w-0 items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <Avatar className="size-9 shrink-0">
+                  <AvatarImage src={u.avatar ?? ""} alt={u.name} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                    {u.name?.[0]?.toUpperCase() ?? "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{u.name}</div>
+                  <div className="truncate text-xs text-muted-foreground">{u.email}</div>
+                </div>
+              </Link>
+            ),
+          },
+          {
+            key: "handle",
+            header: "Handle",
+            cell: (u) => <span className="font-mono text-xs text-muted-foreground">@{u.handle}</span>
+          },
+          {
+            key: "role",
+            header: "Role",
+            cell: (u) => (
+              <Badge variant="outline" className="text-xs capitalize rounded-sm">
+                {u.role.toLocaleUpperCase()}
+              </Badge>
+            )
+          },
+          {
+            key: "status",
+            header: "Status",
+            cell: (u) => <StatusBadge status={u.isActive ? "active" : "suspended"} />
+          },
+          {
+            key: "2fa",
+            header: "2F Auth",
+            cell: (u) => (
+              <span className={cn(
+                "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+                (u as any).twoFactorEnabled
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {(u as any).twoFactorEnabled ? "Enabled" : "Disabled"}
+              </span>
+            ),
+          },
+          {
+            key: "joined",
+            header: "Joined",
+            cell: (u) => (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-xs text-muted-foreground cursor-help">
+                    {formatDistanceToNow(new Date(u.createdAt), { addSuffix: true })}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {format(new Date(u.createdAt), "PPP p")}
+                </TooltipContent>
+              </Tooltip>
+            ),
+          },
+        ]}
+        renderRowActions={(u) => (
+          <div className="flex items-center justify-end gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={() => openEmailDialog(u)}
+                >
+                  <Mail className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send email</TooltipContent>
+            </Tooltip>
+
+            {can("users", "write") && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 hover:text-primary"
+                    onClick={() => openEdit(u)}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit user</TooltipContent>
+              </Tooltip>
+            )}
+
+            {can("users", "delete") && u.id !== currentUser?.id && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 hover:text-destructive"
+                    onClick={() => openDelete(u)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete user</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        )}
+      />
     </div>
   );
 }

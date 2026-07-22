@@ -5,9 +5,14 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type SettingCategory } from './settings-definitions';
 
 @Injectable()
 export class AdminService {
+  private settingsCache: Record<string, any[]> | null = null;
+  private settingsCacheExpiry = 0;
+  private readonly SETTINGS_CACHE_TTL = 60_000; // 1 minute
+
   constructor(private prisma: PrismaService) {}
 
   async getDashboardStats() {
@@ -847,6 +852,11 @@ export class AdminService {
   }
 
   async listSystemSettings() {
+    const now = Date.now();
+    if (this.settingsCache && now < this.settingsCacheExpiry) {
+      return this.settingsCache;
+    }
+
     const settings = await this.prisma.systemSetting.findMany({
       orderBy: [{ category: 'asc' }, { key: 'asc' }],
     });
@@ -859,15 +869,30 @@ export class AdminService {
       grouped[setting.category].push(setting);
     }
 
+    this.settingsCache = grouped;
+    this.settingsCacheExpiry = now + this.SETTINGS_CACHE_TTL;
     return grouped;
   }
 
-  async updateSystemSetting(key: string, value: string) {
-    return this.prisma.systemSetting.upsert({
+  async updateSystemSetting(key: string, value: string, category?: string) {
+    const validation = validateSettingValue(key, value);
+    if (!validation.valid) {
+      throw new Error(`Invalid value for ${key}: ${validation.error}`);
+    }
+
+    const result = await this.prisma.systemSetting.upsert({
       where: { key },
-      update: { value },
-      create: { key, value },
+      update: { value, ...(category ? { category } : {}) },
+      create: {
+        key,
+        value,
+        category: category || 'general',
+        version: SETTINGS_VERSION,
+      },
     });
+
+    this.settingsCache = null;
+    return result;
   }
 
   async getStorageStats() {
@@ -947,7 +972,48 @@ export class AdminService {
 
   async resetSettings() {
     await this.prisma.systemSetting.deleteMany();
-    return { success: true, message: 'Settings reset to defaults' };
+
+    // Re-seed all default settings
+    for (const def of SETTINGS_DEFINITIONS) {
+      await this.prisma.systemSetting.create({
+        data: {
+          key: def.key,
+          value: def.value,
+          category: def.category,
+          description: def.description,
+          version: SETTINGS_VERSION,
+        },
+      });
+    }
+
+    this.settingsCache = null;
+    return { success: true, message: `Settings reset to ${SETTINGS_DEFINITIONS.length} defaults` };
+  }
+
+  async seedSettings() {
+    const existingCount = await this.prisma.systemSetting.count();
+    if (existingCount > 0) {
+      return { message: `${existingCount} settings already exist, skipping seed`, seeded: 0 };
+    }
+
+    for (const def of SETTINGS_DEFINITIONS) {
+      await this.prisma.systemSetting.create({
+        data: {
+          key: def.key,
+          value: def.value,
+          category: def.category,
+          description: def.description,
+          version: SETTINGS_VERSION,
+        },
+      });
+    }
+
+    this.settingsCache = null;
+    return { message: `Seeded ${SETTINGS_DEFINITIONS.length} system settings`, seeded: SETTINGS_DEFINITIONS.length };
+  }
+
+  async getSettingByKey(key: string) {
+    return this.prisma.systemSetting.findUnique({ where: { key } });
   }
 
   async listJobs(page = 1, limit = 20) {
@@ -1118,6 +1184,7 @@ export class AdminService {
       }),
     );
     await Promise.all(promises);
+    this.settingsCache = null;
     return this.getAISettings();
   }
 

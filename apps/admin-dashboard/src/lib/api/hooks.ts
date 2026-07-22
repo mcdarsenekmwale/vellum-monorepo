@@ -51,6 +51,7 @@ import {
   deleteFeatureFlag,
   getSystemSettings,
   updateSystemSetting,
+  seedSystemSettings,
   getAnalyticsOverview,
   getAnalyticsTimeseries,
   getTrafficSources,
@@ -731,7 +732,16 @@ export function useSystemSettings() {
 export function useUpdateSystemSetting() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, value }: { key: string; value: string }) => updateSystemSetting(key, value),
+    mutationFn: ({ key, value, category }: { key: string; value: string; category?: string }) =>
+      updateSystemSetting(key, value, category),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["system-settings"] }),
+  });
+}
+
+export function useSeedSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: seedSystemSettings,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["system-settings"] }),
   });
 }
