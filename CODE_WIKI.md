@@ -1288,6 +1288,37 @@ export REDIS_URL="redis://..."
 bun scripts/deploy-compute.ts
 ```
 
+#### Build Dependency Rule — CRITICAL
+
+Prisma Compute's auto-detect build (GitHub branch deployments) runs `npm install` in **production mode**, which omits `devDependencies`. The build script (`nest build`) requires certain tools that must live in `dependencies`, NOT `devDependencies`:
+
+| Package | Required by | Why it must be in `dependencies` |
+|---------|------------|----------------------------------|
+| `@nestjs/cli` | `nest build` | The Nest CLI is invoked by `npm run build` |
+| `typescript` | `nest build` | Nest CLI depends on TypeScript for compilation |
+
+**Verification script**: [packages/api/scripts/check-build-deps.mjs](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/scripts/check-build-deps.mjs)
+```bash
+cd packages/api
+npm run check:build-deps
+```
+
+This check also runs in CI (`.github/workflows/ci.yml` and `.github/workflows/deploy.yml`) to prevent accidental regressions.
+
+#### Migration Idempotency Rule — CRITICAL
+
+All Prisma migrations must be **idempotent** — safe to re-run on any database state. Prisma Compute's GitHub branch deployment runs `prisma migrate deploy` against the production database, and migrations may run against databases where schema objects already exist (from CLI deployments or manual operations).
+
+Patterns to use:
+- Tables: wrap in `DO $$ BEGIN IF NOT EXISTS ... CREATE TABLE ... END $$`
+- Columns: `DO $$ BEGIN IF NOT EXISTS ... ALTER TABLE ADD COLUMN ... END $$`
+- Indexes: `DO $$ BEGIN IF NOT EXISTS ... CREATE INDEX ... END $$`
+- Constraints/FKs: check `pg_constraint` before `ADD CONSTRAINT`
+- Policies: `DROP POLICY IF EXISTS` then `CREATE POLICY`
+- Seed data: `INSERT ... WHERE NOT EXISTS`
+
+**Resolution tool**: [packages/api/scripts/resolve-migrations.mjs](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/scripts/resolve-migrations.mjs) — marks all migrations as applied in `_prisma_migrations` (use when schema already exists and you need to clear a P3018 failed state).
+
 ### 10.3 Frontend Deployment (Vercel)
 
 Both the admin dashboard and web app are configured for Vercel deployment with [vercel.json](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/apps/admin-dashboard/vercel.json).

@@ -16,6 +16,8 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci
+      - name: Verify build dependencies are in correct package group
+        run: cd packages/api && npm run check:build-deps
       - run: cd packages/api && npx prisma generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
