@@ -1,15 +1,38 @@
-import "dotenv/config";
+import * as dotenv from 'dotenv';
+// Load .env first (may contain PRISMA_API_TOKEN/PRISMA_PROJECT_ID), then .env.production
+// with override so production values (DATABASE_URL, CORS_ORIGIN, etc.) take precedence.
+dotenv.config();
+dotenv.config({ path: '.env.production', override: true });
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { ComputeClient, NestjsBuild, Ok } from "@prisma/compute-sdk";
 import { createManagementApiClient } from "@prisma/management-api-sdk";
 
+function getPrismaToken(): string | null {
+  // Try Prisma Platform CLI auth file (macOS path)
+  const cliAuthPath = path.join(
+    os.homedir(),
+    "Library/Preferences/prisma-platform-cli/auth.json"
+  );
+  try {
+    const content = fs.readFileSync(cliAuthPath, "utf-8");
+    const data = JSON.parse(content);
+    if (data.token) return data.token;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 async function main() {
-  const apiToken = process.env.PRISMA_API_TOKEN;
+  const apiToken = process.env.PRISMA_API_TOKEN || getPrismaToken();
   if (!apiToken) {
-    console.error("Error: PRISMA_API_TOKEN environment variable is required");
+    console.error("Error: PRISMA_API_TOKEN not found. Set it as an env var or login via Prisma Platform CLI.");
     process.exit(1);
   }
 
-  const projectId = process.env.PRISMA_PROJECT_ID;
+  const projectId = process.env.PRISMA_PROJECT_ID || "proj_cmrbqbmdg0xkc0gf3uy3kzewy";
   if (!projectId) {
     console.error("Error: PRISMA_PROJECT_ID environment variable is required");
     process.exit(1);
@@ -61,20 +84,32 @@ async function main() {
   console.log(`  Region: us-east-1`);
   console.log("");
 
+  // Build env vars, filtering out undefined values (Prisma Compute rejects undefined)
+  const envVars: Record<string, string> = {
+    NODE_ENV: "production",
+    PORT: "3000",
+  };
+  for (const [key, val] of Object.entries({
+    JWT_SECRET: process.env.JWT_SECRET,
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+    BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS,
+    REDIS_URL: process.env.REDIS_URL,
+    DATABASE_URL: process.env.DATABASE_URL,
+    DIRECT_URL: process.env.DIRECT_URL,
+    DATABASE_URL_POOLED: process.env.DATABASE_URL_POOLED,
+  })) {
+    if (val) envVars[key] = val;
+  }
+
+  console.log("  Env vars:", Object.keys(envVars).join(", "));
+
   const result = await compute.deploy({
     strategy,
     projectId,
     appId: existingAppId || undefined,
     appName: "@vellum/api",
     region: "us-east-1",
-    envVars: {
-      NODE_ENV: "production",
-      JWT_SECRET: process.env.JWT_SECRET || undefined,
-      CORS_ORIGIN: process.env.CORS_ORIGIN || undefined,
-      BCRYPT_ROUNDS: process.env.BCRYPT_ROUNDS || undefined,
-      REDIS_URL: process.env.REDIS_URL || undefined,
-      PORT: "3000",
-    },
+    envVars,
     portMapping: { http: 3000 },
     timeoutSeconds: 300,
     progress: {

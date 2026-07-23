@@ -41,6 +41,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.3",
     "@prisma/client": "^6.19.3",
+    "@prisma/management-api-sdk": "^1.51.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/multer": "^2.2.0",
     "@types/uuid": "^10.0.0",
@@ -86,7 +87,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.1.28",
-    "@prisma/compute-sdk": "^0.34.0",
+    "@prisma/compute-sdk": "^0.36.0",
     "@types/express": "^5.0.6",
     "@types/helmet": "^0.0.48",
     "@types/jest": "^29.5.14",

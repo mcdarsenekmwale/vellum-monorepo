@@ -62,12 +62,17 @@ async function bootstrap() {
     }),
   );
 
-  const corsOrigins = configService
-    .get(
-      'CORS_ORIGIN',
-      process.env.CORS_ORIGIN??'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:8085,http://localhost:8086,http://localhost:8087,http://localhost:8088,http://localhost:8089,http://localhost:19006,https://vellum-monorepo-webapp.vercel.app',
-    )
-    .split(',');
+  // Build CORS origins: merge env var with required production origins
+  const envCorsOrigins = (configService.get<string>('CORS_ORIGIN') ?? process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const requiredOrigins = [
+    'https://vellum-monorepo-webapp.vercel.app',
+    'https://vellum-admin-dashboard-eta.vercel.app',
+    'https://vellum-admin-dashboard-eta-kappa.vercel.app',
+  ];
+  const corsOrigins = [...new Set([...envCorsOrigins, ...requiredOrigins])];
 
   app.enableCors({
     origin: corsOrigins,
