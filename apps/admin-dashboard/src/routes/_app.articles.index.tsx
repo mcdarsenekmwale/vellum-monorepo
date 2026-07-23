@@ -4,32 +4,26 @@ import {
   Pencil, 
   ArrowUpRight, 
   Trash2,
-  Search,
-  Filter,
   Download,
   RefreshCw,
   X,
   Check,
   AlertCircle,
   Loader2,
-  Calendar,
-  Clock,
   Tag,
-  User,
   FileText,
   MoreHorizontal,
   Copy,
   Share2,
   EyeOff,
   Eye,
-  BookOpen,
   TrendingUp,
   ChevronDown,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   useArticles,
@@ -202,7 +196,7 @@ function ArticlesPage() {
 
   const getAuthorInitials = (authorId: string) => {
     const name = getAuthorName(authorId);
-    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
   };
 
   // Reset form
@@ -724,6 +718,7 @@ function ArticlesPage() {
               return (
                 <div className="flex items-center gap-2">
                   <Avatar className="size-7">
+                    <AvatarImage src={(c.author as any).avatar} alt={authorName} />
                     <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
                       {initials}
                     </AvatarFallback>

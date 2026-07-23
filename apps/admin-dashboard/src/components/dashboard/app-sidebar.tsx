@@ -1,7 +1,7 @@
 "use client";
 
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, LogOut } from "lucide-react";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -98,21 +98,25 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-sidebar-accent cursor-pointer">
-              <Avatar className="size-8 shrink-0">
-                <AvatarImage src={avatarUrl(user?.avatarSeed ?? "guest")} alt={user?.name ?? "You"} />
-                <AvatarFallback>{user?.name?.[0] ?? "?"}</AvatarFallback>
-              </Avatar>
-              {!collapsed && (
-                <div className="min-w-0 leading-tight">
-                  <div className="truncate text-sm font-medium">{user?.name ?? "Signed out"}</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {user?.role ?? "—"} · {user?.email ?? ""}
+          <DropdownMenuTrigger asChild >
+            <button className="flex w-full items-center gap-2.5 rounded-xs px-2 py-2 text-left hover:bg-sidebar-accent cursor-pointer">
+              <div className="flex row w-full items-center justify-between gap-2.5">
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage src={avatarUrl(user?.avatarSeed ?? "guest")} alt={user?.name ?? "You"} />
+                  <AvatarFallback>{user?.name?.[0] ?? "?"}</AvatarFallback>
+                </Avatar>
+                {!collapsed && (
+                  <div className="min-w-0 leading-tight">
+                    <div className="truncate text-sm font-medium">{user?.name ?? "Signed out"}</div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {user?.role ?? "—"} · {user?.email ?? ""}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              {!collapsed ? <ChevronsUpDown className="size-4" /> : <ChevronsDownUp className="size-4" />}
             </button>
+
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
