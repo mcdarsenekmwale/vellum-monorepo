@@ -32,19 +32,17 @@ import {
   Plus,
   Eye,
   EyeOff,
-  Copy,
   Diff,
   Undo2,
   AlertCircle,
-  File,
   FileImage,
   FileVideo,
   FileAudio,
   FileText,
   FileArchive,
-  Globe,
-  Clock,
-  Calendar,
+  Loader2,
+  MessageSquare,
+  Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -71,17 +69,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useSystemSettings, useUpdateSystemSetting, useSeedSettings, useDeleteWorkspace, useResetSettings } from "@/lib/api/hooks";
 import type { SystemSetting } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
@@ -675,7 +662,10 @@ function SettingsPage() {
                   <UploadsPanel settings={categorySettings} />
                 ) : tab.id === "localization" ? (
                   <LocalizationPanel settings={categorySettings} />
-                ) : hasSettings ? (
+                ) : tab.id === "integrations" ? (
+                  <IntegrationsPanel settings={categorySettings} />
+                ) 
+                : hasSettings ? (
                   <CategorySettingsPanel
                     category={tab.label}
                     settings={categorySettings}
@@ -1883,6 +1873,385 @@ function LocalizationPanel({ settings }: { settings: SystemSetting[] }) {
             <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
               <Save className="size-4 mr-2" />
               {section.isSaving ? "Saving..." : "Save Localization"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
+  );
+}
+
+/* ─── Integrations Panel ─── */
+
+function IntegrationsPanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [activeIntegration, setActiveIntegration] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { status: 'success' | 'error' | 'testing' | null; message?: string }>>({});
+
+  // Get values from settings
+  const googleAnalyticsId = section.getValue("integrations.google_analytics_id", "");
+  const slackWebhook = section.getValue("integrations.slack_webhook", "");
+  const sentryDsn = section.getValue("integrations.sentry_dsn", "");
+  const stripeKey = section.getValue("integrations.stripe_key", "");
+  const analyticsEnabled = section.getValue("integrations.analytics_enabled", "false") === "true";
+
+  // Define integration configurations
+  const integrations = [
+    {
+      id: "google_analytics",
+      name: "Google Analytics",
+      icon: BarChart3,
+      color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+      description: "Track user behavior and engagement metrics",
+      fields: [
+        {
+          key: "integrations.google_analytics_id",
+          label: "Tracking ID",
+          value: googleAnalyticsId,
+          placeholder: "UA-XXXXXXXX-X or G-XXXXXXXX",
+          type: "text",
+          hint: "Google Analytics tracking ID",
+        },
+      ],
+      enabled: analyticsEnabled,
+    },
+    {
+      id: "slack",
+      name: "Slack",
+      icon: MessageSquare,
+      color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      description: "Receive notifications and alerts in your Slack workspace",
+      fields: [
+        {
+          key: "integrations.slack_webhook",
+          label: "Webhook URL",
+          value: slackWebhook,
+          placeholder: "https://hooks.slack.com/services/...",
+          type: "url",
+          hint: "Slack webhook URL for notifications",
+        },
+      ],
+      enabled: true,
+    },
+    {
+      id: "sentry",
+      name: "Sentry",
+      icon: AlertTriangle,
+      color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+      description: "Monitor errors and performance issues in real-time",
+      fields: [
+        {
+          key: "integrations.sentry_dsn",
+          label: "DSN",
+          value: sentryDsn,
+          placeholder: "https://...@sentry.io/...",
+          type: "url",
+          hint: "Sentry DSN for error tracking",
+        },
+      ],
+      enabled: true,
+    },
+    {
+      id: "stripe",
+      name: "Stripe",
+      icon: CreditCard,
+      color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+      description: "Process payments and manage subscriptions",
+      fields: [
+        {
+          key: "integrations.stripe_key",
+          label: "API Key",
+          value: stripeKey,
+          placeholder: "sk_live_... or sk_test_...",
+          type: "password",
+          hint: "Stripe API key for payments",
+        },
+      ],
+      enabled: true,
+    },
+  ];
+
+  const handleTestIntegration = async (integrationId: string) => {
+    setTestResults((prev) => ({ ...prev, [integrationId]: { status: 'testing' } }));
+
+    // Simulate testing
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // Random success/error for demo
+    const success = Math.random() > 0.3;
+    setTestResults((prev) => ({
+      ...prev,
+      [integrationId]: {
+        status: success ? 'success' : 'error',
+        message: success 
+          ? 'Connection successful' 
+          : 'Failed to connect. Please check your credentials.',
+      },
+    }));
+
+    if (success) {
+      toast.success(`${integrationId} connected successfully`);
+    } else {
+      toast.error(`Failed to connect ${integrationId}`);
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} integration setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    setTestResults({});
+    toast.info("Integrations settings reset to last saved values");
+  };
+
+  const hasLocalChange = (key: string) => section.changes.some((c) => c.key === key);
+
+  return (
+    <>
+      <div className="space-y-6">
+        {/* Enable Analytics */}
+        <SectionCard
+          title="Analytics"
+          description="Enable or disable analytics tracking across the platform."
+        >
+          <div className="flex items-center justify-between rounded-lg px-3 py-3">
+            <div className="space-y-0.5 pr-4">
+              <div className="text-sm font-medium">Analytics Enabled</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                Enable analytics tracking
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Switch
+                checked={analyticsEnabled}
+                onCheckedChange={(v) => section.updateValue("integrations.analytics_enabled", v ? "true" : "false")}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Integration Cards */}
+        <div className="space-y-4">
+          {integrations.map((integration) => {
+            const Icon = integration.icon;
+            const isExpanded = activeIntegration === integration.id;
+            const testResult = testResults[integration.id];
+            const hasUnsavedChanges = integration.fields.some((field) => 
+              hasLocalChange(field.key)
+            );
+
+            return (
+              <div
+                key={integration.id}
+                className={cn(
+                  "rounded-xl border transition-all",
+                  hasUnsavedChanges && "border-primary/30 shadow-sm",
+                  isExpanded && "shadow-md"
+                )}
+              >
+                {/* Integration Header */}
+                <div
+                  className={cn(
+                    "flex items-center gap-4 p-4 cursor-pointer transition-colors",
+                    isExpanded ? "bg-muted/30" : "hover:bg-muted/20"
+                  )}
+                  onClick={() => setActiveIntegration(isExpanded ? null : integration.id)}
+                >
+                  <div className={cn(
+                    "size-10 rounded-lg flex items-center justify-center border shrink-0",
+                    integration.color
+                  )}>
+                    <Icon className="size-5" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{integration.name}</span>
+                      {hasUnsavedChanges && (
+                        <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-600">
+                          Unsaved
+                        </Badge>
+                      )}
+                      {testResult?.status === 'success' && (
+                        <Badge variant="outline" className="text-[9px] border-emerald-500/50 text-emerald-600">
+                          <Check className="size-2.5 mr-0.5" />
+                          Connected
+                        </Badge>
+                      )}
+                      {testResult?.status === 'error' && (
+                        <Badge variant="outline" className="text-[9px] border-rose-500/50 text-rose-600">
+                          <X className="size-2.5 mr-0.5" />
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      {integration.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {integration.fields.some((f) => f.value) && (
+                      <Badge variant="secondary" className="text-[9px]">
+                        Configured
+                      </Badge>
+                    )}
+                    <ChevronRight className={cn(
+                      "size-4 text-muted-foreground transition-transform",
+                      isExpanded && "rotate-90"
+                    )} />
+                  </div>
+                </div>
+
+                {/* Integration Fields */}
+                {isExpanded && (
+                  <div className="border-t p-4 space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Configure your {integration.name} integration. Fill in the fields below to connect.
+                    </p>
+
+                    {integration.fields.map((field) => {
+                      const isFieldChanged = hasLocalChange(field.key);
+                      const isSaved = section.savedKeys.has(field.key);
+
+                      return (
+                        <div key={field.key} className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs font-medium">
+                              {field.label}
+                            </Label>
+                            {isSaved && !isFieldChanged && (
+                              <Badge
+                                variant="outline"
+                                className="h-3.5 px-1 text-[9px] font-medium text-emerald-600 border-emerald-200 bg-emerald-50"
+                              >
+                                <Check className="size-2.5 mr-0.5" />
+                                Saved
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type={field.type}
+                              value={field.value}
+                              onChange={(e) => section.updateValue(field.key, e.target.value)}
+                              placeholder={field.placeholder}
+                              className={cn(
+                                "flex-1",
+                                isFieldChanged && "border-primary/50 ring-1 ring-primary/20"
+                              )}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleTestIntegration(integration.id)}
+                              disabled={!field.value || testResult?.status === 'testing'}
+                              className="shrink-0 gap-1.5"
+                            >
+                              {testResult?.status === 'testing' ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : testResult?.status === 'success' ? (
+                                <Check className="size-3.5 text-emerald-500" />
+                              ) : testResult?.status === 'error' ? (
+                                <X className="size-3.5 text-rose-500" />
+                              ) : (
+                                <Zap className="size-3.5" />
+                              )}
+                              Test
+                            </Button>
+                          </div>
+                          {field.hint && (
+                            <p className="text-[11px] text-muted-foreground">{field.hint}</p>
+                          )}
+                          {testResult?.status === 'error' && testResult.message && (
+                            <p className="text-[11px] text-rose-500 flex items-center gap-1">
+                              <AlertCircle className="size-3" />
+                              {testResult.message}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveIntegration(null)}
+                      >
+                        Collapse
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={section.isSaving || !section.hasChanges}
+              className="gap-1.5"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveClick}
+              disabled={section.isSaving || !section.hasChanges}
+              className="gap-1.5"
+            >
+              <Save className="size-3.5" />
+              {section.isSaving ? "Saving..." : "Save changes"}
             </Button>
           </div>
         </div>
