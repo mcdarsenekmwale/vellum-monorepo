@@ -17,6 +17,7 @@ import { SearchModule } from './modules/search/search.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { SuggestedModule } from './modules/suggested/suggested.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { CacheModule } from './shared/cache/cache.module';
 import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware';
@@ -51,6 +52,7 @@ import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware
     WebhooksModule,
     AdminModule,
     HealthModule,
+    SuggestedModule,
   ],
 })
 export class AppModule implements NestModule {

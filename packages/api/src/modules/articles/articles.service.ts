@@ -157,7 +157,7 @@ export class ArticlesService {
       }>;
 
       const totalResult = await this.prisma.$queryRawUnsafe(
-        `SELECT COUNT(*) as count FROM "Article" WHERE ${whereClause}`
+        `SELECT COUNT(*) as count FROM "Article" a WHERE ${whereClause}`
       );
       const total = parseInt(totalResult[0].count);
 

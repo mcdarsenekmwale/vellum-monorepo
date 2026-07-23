@@ -3,6 +3,7 @@ import { Heart, Bookmark, MessageCircle, Share2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { WebShell } from "@/components/WebShell";
 import ShimmerImage from "@/components/ShimmerImage";
+import { SuggestedForYou } from "@/components/SuggestedForYou";
 import { useSocial } from "@/lib/social-store";
 import { useArticles, useHighlights, useStories, useAuthState } from "@/hooks/useApi";
 import { useMemo } from "react";
@@ -199,6 +200,9 @@ function FeedPage() {
             )}
           </div>
         </section>
+
+        {/* Suggested for You */}
+        <SuggestedForYou limit={4} />
 
         {/* Latest Articles */}
         <section className="mb-8">
