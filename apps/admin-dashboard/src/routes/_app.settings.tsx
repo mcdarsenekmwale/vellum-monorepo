@@ -36,7 +36,15 @@ import {
   Diff,
   Undo2,
   AlertCircle,
-  WifiOff,
+  File,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  FileText,
+  FileArchive,
+  Globe,
+  Clock,
+  Calendar,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -69,11 +77,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useSystemSettings, useUpdateSystemSetting, useSeedSettings, useDeleteWorkspace, useResetSettings } from "@/lib/api/hooks";
 import type { SystemSetting } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
 
 /* ─── Types ─── */
 
@@ -123,6 +135,26 @@ const LAYOUTS = [
   { id: "default", name: "Default", description: "Standard layout with sidebar" },
   { id: "compact", name: "Compact", description: "Dense layout for power users" },
   { id: "spacious", name: "Spacious", description: "Extra padding and breathing room" },
+];
+
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "ja", name: "Japanese" },
+  { code: "zh", name: "Chinese" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "ar", name: "Arabic" },
+  { code: "hi", name: "Hindi" },
+];
+
+const TIMEZONES = [
+  "UTC", "America/New_York", "America/Los_Angeles", "Europe/London",
+  "Europe/Paris", "Asia/Tokyo", "Asia/Shanghai", "Asia/Singapore", "Australia/Sydney",
+  "Pacific/Auckland", "America/Sao_Paulo", "Africa/Johannesburg",
+  "Asia/Dubai", "America/Chicago", "America/Denver", "Europe/Berlin",
 ];
 
 /* ─── Tab Configuration ─── */
@@ -631,9 +663,18 @@ function SettingsPage() {
 
             return (
               <TabsContent key={tab.id} value={tab.id} className="mt-0 space-y-6">
-
                 {isLoading ? (
                   <SettingsSkeleton />
+                ) : tab.id === "branding" ? (
+                  <BrandingPanel settings={categorySettings} />
+                ) : tab.id === "appearance" ? (
+                  <AppearancePanel settings={categorySettings} />
+                ) : tab.id === "security" ? (
+                  <SecurityPanel settings={categorySettings} />
+                ) : tab.id === "uploads" ? (
+                  <UploadsPanel settings={categorySettings} />
+                ) : tab.id === "localization" ? (
+                  <LocalizationPanel settings={categorySettings} />
                 ) : hasSettings ? (
                   <CategorySettingsPanel
                     category={tab.label}
@@ -643,14 +684,8 @@ function SettingsPage() {
                   <EmptyCategoryState label={tab.label} />
                 )}
 
-                {/* Branding-specific sections */}
-                {tab.id === "branding" && <BrandingPanel settings={categorySettings} />}
-                {tab.id === "appearance" && <AppearancePanel settings={categorySettings} />}
-                {tab.id === "security" && <SecurityPanel settings={categorySettings} />}
-
                 {/* Danger Zone — only on General */}
                 {tab.id === "general" && <DangerZone />}
-
               </TabsContent>
             );
           })}
@@ -1295,6 +1330,577 @@ function SecurityPanel({ settings }: { settings: SystemSetting[] }) {
   );
 }
 
+/* ─── Uploads Panel ─── */
+
+function UploadsPanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [newMimeType, setNewMimeType] = useState("");
+
+  // Get values from settings
+  const maxFileSize = section.getValue("uploads.max_file_size", "52428800");
+  const maxStoragePerUser = section.getValue("uploads.max_storage_per_user", "1073741824");
+  const imageMaxDimensions = section.getValue("uploads.image_max_dimensions", "4096");
+  const storageProvider = section.getValue("uploads.storage_provider", "local");
+  const allowedMimeTypesRaw = section.getValue("uploads.allowed_mime_types", "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,application/pdf");
+  const allowedMimeTypes = allowedMimeTypesRaw ? allowedMimeTypesRaw.split(",").filter(Boolean) : [];
+
+  // Common MIME types with icons
+  const commonMimeTypes = [
+    { value: "image/jpeg", label: "JPEG", icon: FileImage, group: "Images" },
+    { value: "image/png", label: "PNG", icon: FileImage, group: "Images" },
+    { value: "image/gif", label: "GIF", icon: FileImage, group: "Images" },
+    { value: "image/webp", label: "WEBP", icon: FileImage, group: "Images" },
+    { value: "image/svg+xml", label: "SVG", icon: FileImage, group: "Images" },
+    { value: "image/bmp", label: "BMP", icon: FileImage, group: "Images" },
+    { value: "video/mp4", label: "MP4", icon: FileVideo, group: "Videos" },
+    { value: "video/webm", label: "WEBM", icon: FileVideo, group: "Videos" },
+    { value: "video/quicktime", label: "MOV", icon: FileVideo, group: "Videos" },
+    { value: "video/avi", label: "AVI", icon: FileVideo, group: "Videos" },
+    { value: "audio/mpeg", label: "MP3", icon: FileAudio, group: "Audio" },
+    { value: "audio/wav", label: "WAV", icon: FileAudio, group: "Audio" },
+    { value: "audio/ogg", label: "OGG", icon: FileAudio, group: "Audio" },
+    { value: "application/pdf", label: "PDF", icon: FileText, group: "Documents" },
+    { value: "application/msword", label: "DOC", icon: FileText, group: "Documents" },
+    { value: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", label: "DOCX", icon: FileText, group: "Documents" },
+    { value: "application/vnd.ms-excel", label: "XLS", icon: FileText, group: "Documents" },
+    { value: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", label: "XLSX", icon: FileText, group: "Documents" },
+    { value: "application/vnd.ms-powerpoint", label: "PPT", icon: FileText, group: "Documents" },
+    { value: "application/vnd.openxmlformats-officedocument.presentationml.presentation", label: "PPTX", icon: FileText, group: "Documents" },
+    { value: "application/zip", label: "ZIP", icon: FileArchive, group: "Archives" },
+    { value: "application/x-rar-compressed", label: "RAR", icon: FileArchive, group: "Archives" },
+    { value: "application/x-7z-compressed", label: "7Z", icon: FileArchive, group: "Archives" },
+  ];
+
+  const toggleMimeType = (value: string) => {
+    const newTypes = allowedMimeTypes.includes(value)
+      ? allowedMimeTypes.filter((t) => t !== value)
+      : [...allowedMimeTypes, value];
+    section.updateValue("uploads.allowed_mime_types", newTypes.join(","));
+  };
+
+  const addCustomMimeType = () => {
+    if (newMimeType && !allowedMimeTypes.includes(newMimeType)) {
+      const newTypes = [...allowedMimeTypes, newMimeType];
+      section.updateValue("uploads.allowed_mime_types", newTypes.join(","));
+      setNewMimeType("");
+    }
+  };
+
+  const removeMimeType = (value: string) => {
+    const newTypes = allowedMimeTypes.filter((t) => t !== value);
+    section.updateValue("uploads.allowed_mime_types", newTypes.join(","));
+  };
+
+  // Format bytes to human readable
+  const formatBytes = (bytes: string) => {
+    const num = parseInt(bytes);
+    if (isNaN(num)) return bytes;
+    if (num === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(num) / Math.log(k));
+    return parseFloat((num / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} upload setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    setNewMimeType("");
+    toast.info("Uploads settings reset to last saved values");
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        {/* Storage Provider */}
+        <SectionCard
+          title="Storage provider"
+          description="Select where your files will be stored."
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: "local", label: "Local", icon: Database, description: "Local filesystem" },
+                { id: "s3", label: "S3", icon: Cloud, description: "Amazon S3" },
+                { id: "cloudinary", label: "Cloudinary", icon: Image, description: "Cloudinary CDN" },
+              ].map((provider) => {
+                const Icon = provider.icon;
+                const isSelected = storageProvider === provider.id;
+                return (
+                  <button
+                    key={provider.id}
+                    onClick={() => section.updateValue("uploads.storage_provider", provider.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <Icon className={cn("size-6", isSelected ? "text-primary" : "text-muted-foreground")} />
+                    <span className="text-sm font-medium">{provider.label}</span>
+                    <span className="text-[11px] text-muted-foreground text-center">{provider.description}</span>
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="size-2.5 text-primary-foreground" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Storage provider: local, s3, or cloudinary
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* File Size Limits */}
+        <SectionCard
+          title="File size limits"
+          description="Configure maximum file sizes for uploads."
+        >
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Max File Size
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={maxFileSize}
+                    onChange={(e) => section.updateValue("uploads.max_file_size", e.target.value)}
+                    min={1}
+                    max={1073741824}
+                    className="font-mono"
+                  />
+                  <span className="text-sm text-muted-foreground shrink-0">bytes</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {formatBytes(maxFileSize)} — Max file size in bytes, default 50MB
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Max Storage Per User
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={maxStoragePerUser}
+                    onChange={(e) => section.updateValue("uploads.max_storage_per_user", e.target.value)}
+                    min={1}
+                    max={10737418240}
+                    className="font-mono"
+                  />
+                  <span className="text-sm text-muted-foreground shrink-0">bytes</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {formatBytes(maxStoragePerUser)} — Max storage per user in bytes, default 1GB
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Image Max Dimensions
+              </Label>
+              <div className="flex items-center gap-2 max-w-[200px]">
+                <Input
+                  type="number"
+                  value={imageMaxDimensions}
+                  onChange={(e) => section.updateValue("uploads.image_max_dimensions", e.target.value)}
+                  min={100}
+                  max={16384}
+                  className="font-mono"
+                />
+                <span className="text-sm text-muted-foreground shrink-0">pixels</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Max image dimension in pixels
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Allowed MIME Types */}
+        <SectionCard
+          title="Allowed MIME types"
+          description="Select which file types can be uploaded."
+        >
+          <div className="space-y-4">
+            {/* Grouped MIME types */}
+            {["Images", "Videos", "Audio", "Documents", "Archives"].map((group) => {
+              const types = commonMimeTypes.filter((t) => t.group === group);
+              const selectedCount = types.filter((t) => allowedMimeTypes.includes(t.value)).length;
+
+              return (
+                <div key={group} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      {group}
+                    </span>
+                    <Badge variant="secondary" className="text-[9px]">
+                      {selectedCount}/{types.length}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {types.map((type) => {
+                      const isSelected = allowedMimeTypes.includes(type.value);
+                      const Icon = type.icon;
+                      return (
+                        <button
+                          key={type.value}
+                          onClick={() => toggleMimeType(type.value)}
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-xs transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border hover:border-muted-foreground/30 text-muted-foreground"
+                          )}
+                        >
+                          <Icon className={cn("size-3.5", isSelected ? "text-primary" : "text-muted-foreground")} />
+                          {type.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Custom MIME type input */}
+            <div className="space-y-2 border-t pt-4">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Add Custom MIME Type
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newMimeType}
+                  onChange={(e) => setNewMimeType(e.target.value)}
+                  placeholder="application/json"
+                  className="font-mono text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && addCustomMimeType()}
+                />
+                <Button variant="outline" size="sm" onClick={addCustomMimeType}>
+                  <Plus className="size-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Current allowed MIME types */}
+            {allowedMimeTypes.length > 0 && (
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Allowed Types ({allowedMimeTypes.length})
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      if (confirm("Remove all allowed MIME types?")) {
+                        section.updateValue("uploads.allowed_mime_types", "");
+                      }
+                    }}
+                  >
+                    <X className="size-3 mr-1" />
+                    Clear all
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {allowedMimeTypes.map((mime) => {
+                    const matched = commonMimeTypes.find((t) => t.value === mime);
+                    return (
+                      <Badge
+                        key={mime}
+                        variant="secondary"
+                        className="gap-1 pl-2 pr-1 py-1 font-mono text-[10px]"
+                      >
+                        {matched ? matched.label : mime}
+                        <button
+                          onClick={() => removeMimeType(mime)}
+                          className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted-foreground">
+              {allowedMimeTypes.length} MIME types currently allowed.
+              {allowedMimeTypes.length === 0 && " No types selected. Users won't be able to upload files."}
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} disabled={section.isSaving || !section.hasChanges}>
+              <RotateCcw className="size-4 mr-2" />
+              Reset
+            </Button>
+            <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
+              <Save className="size-4 mr-2" />
+              {section.isSaving ? "Saving..." : "Save Uploads"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
+  );
+}
+
+/* ─── Localization Panel ─── */
+
+function LocalizationPanel({ settings }: { settings: SystemSetting[] }) {
+  const section = useSettingsSection(settings);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const defaultLanguage = section.getValue("localization.default_language", "en");
+  const supportedLanguagesRaw = section.getValue("localization.supported_languages", "en,es,fr,de,ja");
+  const supportedLanguages = supportedLanguagesRaw ? supportedLanguagesRaw.split(",").filter(Boolean) : [];
+  const dateFormat = section.getValue("localization.date_format", "MM/DD/YYYY");
+  const timeFormat = section.getValue("localization.time_format", "12h");
+  const currency = section.getValue("localization.currency", "USD");
+
+  const toggleLanguage = (code: string) => {
+    const newLanguages = supportedLanguages.includes(code)
+      ? supportedLanguages.filter((l) => l !== code)
+      : [...supportedLanguages, code];
+    section.updateValue("localization.supported_languages", newLanguages.join(","));
+  };
+
+  const handleSaveClick = () => {
+    if (!section.hasChanges) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    const results = await section.saveChanges();
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
+
+    if (successes.length > 0 && failures.length === 0) {
+      toast.success(`Saved ${successes.length} localization setting${successes.length !== 1 ? "s" : ""}`);
+      setConfirmOpen(false);
+    } else if (successes.length > 0 && failures.length > 0) {
+      toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
+    } else if (failures.length > 0) {
+      toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
+    }
+  };
+
+  const handleReset = () => {
+    section.reset();
+    toast.info("Localization settings reset to last saved values");
+  };
+
+  return (
+    <>
+      <div className="space-y-6">
+        <SectionCard
+          title="Localization settings"
+          description="Configure language, date format, and regional preferences."
+        >
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Default Language
+                </Label>
+                <Select value={defaultLanguage} onValueChange={(v) => section.updateValue("localization.default_language", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Currency
+                </Label>
+                <Select value={currency} onValueChange={(v) => section.updateValue("localization.currency", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="JPY">JPY (¥)</SelectItem>
+                    <SelectItem value="CAD">CAD (C$)</SelectItem>
+                    <SelectItem value="AUD">AUD (A$)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Date Format
+                </Label>
+                <Select value={dateFormat} onValueChange={(v) => section.updateValue("localization.date_format", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                    <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                    <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                    <SelectItem value="MMMM D, YYYY">MMMM D, YYYY</SelectItem>
+                    <SelectItem value="D MMMM YYYY">D MMMM YYYY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Time Format
+                </Label>
+                <Select value={timeFormat} onValueChange={(v) => section.updateValue("localization.time_format", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
+                    <SelectItem value="24h">24-hour</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Supported Languages
+                </Label>
+                <Badge variant="secondary" className="text-[10px]">
+                  {supportedLanguages.length} selected
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <Badge
+                    key={lang.code}
+                    variant={supportedLanguages.includes(lang.code) ? "default" : "outline"}
+                    className="cursor-pointer gap-1 px-3 py-1.5 text-xs"
+                    onClick={() => toggleLanguage(lang.code)}
+                  >
+                    {supportedLanguages.includes(lang.code) && (
+                      <Check className="size-3" />
+                    )}
+                    {lang.name}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Click to toggle languages. {supportedLanguages.length} languages currently supported.
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {section.hasChanges ? (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {section.changes.length} unsaved change{section.changes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                All changes saved
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} disabled={section.isSaving || !section.hasChanges}>
+              <RotateCcw className="size-4 mr-2" />
+              Reset
+            </Button>
+            <Button onClick={handleSaveClick} disabled={section.isSaving || !section.hasChanges}>
+              <Save className="size-4 mr-2" />
+              {section.isSaving ? "Saving..." : "Save Localization"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <SettingsConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        changes={section.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmOpen(false)}
+        isSaving={section.isSaving}
+        saveErrors={section.saveErrors}
+      />
+    </>
+  );
+}
+
 /* ─── Category Settings Panel ─── */
 
 function CategorySettingsPanel({
@@ -1322,19 +1928,13 @@ function CategorySettingsPanel({
       setConfirmOpen(false);
     } else if (successes.length > 0 && failures.length > 0) {
       toast.warning(`Saved ${successes.length}, ${failures.length} failed`);
-      // Keep dialog open to show errors
     } else if (failures.length > 0) {
       toast.error(`Failed to save ${failures.length} setting${failures.length !== 1 ? "s" : ""}`);
-      // Keep dialog open for retry
     }
   };
 
   const handleCancel = () => {
     setConfirmOpen(false);
-    // Clear errors when closing a successful or cancelled dialog
-    if (Object.keys(section.saveErrors).length === 0) {
-      // already clean
-    }
   };
 
   const handleReset = () => {
@@ -1342,8 +1942,64 @@ function CategorySettingsPanel({
     toast.info("Changes reset to last saved values");
   };
 
-  // Group by inferred input type
-  const grouped = settings.reduce(
+  // Check if this is the general category
+  const isGeneralCategory = category === "General";
+
+  // Filter out duplicate workspace settings - keep only the most relevant ones
+  const getFilteredSettings = useMemo(() => {
+    if (!isGeneralCategory) return settings;
+
+    // Define which workspace keys to keep (prefer shorter, more specific keys)
+    const workspacePriority: Record<string, number> = {
+      "workspace.name": 1,
+      "workspace.language": 1,
+      "workspace.timezone": 1,
+      "workspace.url": 1,
+      "workspace.description": 1,
+      "workspace.maintenance_message": 1,
+    };
+
+    // Group settings by their base key (without prefixes)
+    const groupedByBaseKey: Record<string, SystemSetting[]> = {};
+    
+    settings.forEach((setting) => {
+      // Extract the base key (e.g., "timezone" from "workspace.timezone")
+      const parts = setting.key.split(".");
+      const baseKey = parts.length > 1 ? parts.slice(1).join(".") : setting.key;
+      
+      if (!groupedByBaseKey[baseKey]) {
+        groupedByBaseKey[baseKey] = [];
+      }
+      groupedByBaseKey[baseKey].push(setting);
+    });
+
+    // For each group, keep the setting with the highest priority or the shortest key
+    const filtered: SystemSetting[] = [];
+    
+    Object.values(groupedByBaseKey).forEach((group) => {
+      if (group.length === 1) {
+        filtered.push(group[0]);
+      } else {
+        // Sort by key length (shorter is better) and then by priority
+        const sorted = group.sort((a, b) => {
+          // Prefer workspace.* keys over others
+          const aIsWorkspace = a.key.startsWith("workspace.");
+          const bIsWorkspace = b.key.startsWith("workspace.");
+          if (aIsWorkspace && !bIsWorkspace) return -1;
+          if (!aIsWorkspace && bIsWorkspace) return 1;
+          
+          // Then by key length
+          return a.key.length - b.key.length;
+        });
+        filtered.push(sorted[0]);
+      }
+    });
+
+    return filtered;
+  }, [settings, isGeneralCategory]);
+
+  // Group by inferred input type using filtered settings
+  const grouped = getFilteredSettings.reduce(
     (acc, s) => {
       const type = inferInputType(section.getValue(s.key, s.value));
       acc[type].push(s);
@@ -1364,6 +2020,15 @@ function CategorySettingsPanel({
 
   const hasLocalChange = (key: string) => section.changes.some((c) => c.key === key);
 
+  // Get workspace-specific settings for display
+  const workspaceLanguage = section.getValue("workspace.language", "en");
+  const workspaceTimezone = section.getValue("workspace.timezone", "UTC");
+  const workspaceName = section.getValue("workspace.name", "Vellum Dev Space");
+  const workspaceDescription = section.getValue("workspace.description", "");
+  const workspaceUrl = section.getValue("workspace.url", "");
+  const maintenanceMessage = section.getValue("workspace.maintenance_message", "");
+  const maintenanceMode = section.getValue("maintenance.mode", "false");
+
   return (
     <>
       <SectionCard
@@ -1371,8 +2036,156 @@ function CategorySettingsPanel({
         description="Edit values below. Changes are staged until you save."
       >
         <div className="space-y-6">
-          {/* Color fields */}
-          {grouped.color.length > 0 && (
+          {/* Workspace-specific settings for General category */}
+          {isGeneralCategory && (
+            <>
+              {/* Workspace Name and Description */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Workspace Name"
+                  hint="The name of your workspace"
+                  saved={section.savedKeys.has("workspace.name")}
+                >
+                  <Input
+                    value={workspaceName}
+                    onChange={(e) => section.updateValue("workspace.name", e.target.value)}
+                    placeholder="Enter workspace name"
+                    className={cn(
+                      section.changes.some((c) => c.key === "workspace.name") && 
+                      "border-primary/50 ring-1 ring-primary/20"
+                    )}
+                  />
+                </Field>
+                <Field
+                  label="Workspace URL"
+                  hint="The canonical URL of your workspace"
+                  saved={section.savedKeys.has("workspace.url")}
+                >
+                  <Input
+                    value={workspaceUrl}
+                    onChange={(e) => section.updateValue("workspace.url", e.target.value)}
+                    placeholder="https://example.com"
+                    className={cn(
+                      section.changes.some((c) => c.key === "workspace.url") && 
+                      "border-primary/50 ring-1 ring-primary/20"
+                    )}
+                  />
+                </Field>
+              </div>
+
+              {/* Workspace Description */}
+              <Field
+                label="Workspace Description"
+                hint="A brief description of your workspace"
+                saved={section.savedKeys.has("workspace.description")}
+                className="sm:col-span-2"
+              >
+                <textarea
+                  value={workspaceDescription}
+                  onChange={(e) => section.updateValue("workspace.description", e.target.value)}
+                  rows={2}
+                  placeholder="Describe your workspace..."
+                  className={cn(
+                    "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    section.changes.some((c) => c.key === "workspace.description") && 
+                    "border-primary/50 ring-1 ring-primary/20"
+                  )}
+                />
+              </Field>
+
+              {/* Language and Timezone */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Workspace Language"
+                  hint="Default language for the workspace"
+                  saved={section.savedKeys.has("workspace.language")}
+                >
+                  <Select
+                    value={workspaceLanguage}
+                    onValueChange={(v) => section.updateValue("workspace.language", v)}
+                  >
+                    <SelectTrigger className={cn(
+                      section.changes.some((c) => c.key === "workspace.language") && 
+                      "border-primary/50 ring-1 ring-primary/20"
+                    )}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Field
+                  label="Workspace Timezone"
+                  hint="Default timezone for the workspace"
+                  saved={section.savedKeys.has("workspace.timezone")}
+                >
+                  <Select
+                    value={workspaceTimezone}
+                    onValueChange={(v) => section.updateValue("workspace.timezone", v)}
+                  >
+                    <SelectTrigger className={cn(
+                      section.changes.some((c) => c.key === "workspace.timezone") && 
+                      "border-primary/50 ring-1 ring-primary/20"
+                    )}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              {/* Maintenance Settings */}
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between rounded-lg px-3 py-3 transition-colors">
+                  <div className="space-y-0.5 pr-4">
+                    <div className="text-sm font-medium">Maintenance Mode</div>
+                    <div className="text-xs text-muted-foreground leading-relaxed">
+                      When enabled, only admins can access the platform
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch
+                      checked={maintenanceMode === "true"}
+                      onCheckedChange={(v) =>
+                        section.updateValue("maintenance.mode", v ? "true" : "false")
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Field
+                  label="Maintenance Message"
+                  hint="Message shown to users during maintenance"
+                  saved={section.savedKeys.has("workspace.maintenance_message")}
+                >
+                  <Input
+                    value={maintenanceMessage}
+                    onChange={(e) => section.updateValue("workspace.maintenance_message", e.target.value)}
+                    placeholder="We'll be right back!"
+                    className={cn(
+                      section.changes.some((c) => c.key === "workspace.maintenance_message") && 
+                      "border-primary/50 ring-1 ring-primary/20"
+                    )}
+                  />
+                </Field>
+              </div>
+            </>
+          )}
+
+          {/* Color fields - shown for non-general categories or if there are color settings */}
+          {!isGeneralCategory && grouped.color.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-3">
               {grouped.color.map((setting) => {
                 const isSaved = section.savedKeys.has(setting.key);
@@ -1411,117 +2224,90 @@ function CategorySettingsPanel({
             </div>
           )}
 
-          {/* Select fields */}
-          {grouped.select.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {grouped.select.map((setting) => {
-                const isSaved = section.savedKeys.has(setting.key);
-                const changed = hasLocalChange(setting.key);
-                const options = ["active", "inactive", "enabled", "disabled", "light", "dark", "system"];
+          {/* Other settings grouped by type - shown for non-general categories */}
+          {!isGeneralCategory && (
+            <>
+              {/* Text / URL / Email fields */}
+              {(grouped.text.length > 0 ||
+                grouped.url.length > 0 ||
+                grouped.email.length > 0) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[...grouped.text, ...grouped.url, ...grouped.email].map(
+                    (setting) => {
+                      const type = inferInputType(section.getValue(setting.key, setting.value));
+                      const isSaved = section.savedKeys.has(setting.key);
+                      const changed = hasLocalChange(setting.key);
+                      const err = section.saveErrors[setting.key];
 
-                return (
-                  <Field
-                    key={setting.key}
-                    label={formatSettingKey(setting.key)}
-                    hint={setting.description}
-                    saved={isSaved && !changed}
-                  >
-                    <Select
-                      value={section.getValue(setting.key, "")}
-                      onValueChange={(v) => section.updateValue(setting.key, v)}
-                      disabled={section.isSaving}
-                    >
-                      <SelectTrigger className={cn(changed && "border-primary/50 ring-1 ring-primary/20")}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {options.map((opt) => (
-                          <SelectItem key={opt} value={opt}>
-                            {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                );
-              })}
-            </div>
-          )}
+                      return (
+                        <Field
+                          key={setting.key}
+                          label={formatSettingKey(setting.key)}
+                          hint={setting.description}
+                          saved={isSaved && !changed}
+                        >
+                          <Input
+                            type={type === "email" ? "email" : "text"}
+                            value={section.getValue(setting.key, "")}
+                            onChange={(e) =>
+                              section.updateValue(setting.key, e.target.value)
+                            }
+                            disabled={section.isSaving}
+                            className={cn(
+                              changed && "border-primary/50 ring-1 ring-primary/20",
+                              err && "border-red-300 ring-1 ring-red-200"
+                            )}
+                          />
+                          {err && (
+                            <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                          )}
+                        </Field>
+                      );
+                    }
+                  )}
+                </div>
+              )}
 
-          {/* Multiselect fields */}
-          {grouped.multiselect.length > 0 && (
-            <div className="space-y-4">
-              {grouped.multiselect.map((setting) => {
-                const isSaved = section.savedKeys.has(setting.key);
-                const values = section.getValue(setting.key, "").split(",").filter(Boolean);
-                const options = ["culture", "design", "environment", "music", "architecture", "technology"];
+              {/* Textarea fields */}
+              {grouped.textarea.length > 0 && (
+                <div className="space-y-4">
+                  {grouped.textarea.map((setting) => {
+                    const isSaved = section.savedKeys.has(setting.key);
+                    const changed = hasLocalChange(setting.key);
+                    const err = section.saveErrors[setting.key];
 
-                return (
-                  <Field
-                    key={setting.key}
-                    label={formatSettingKey(setting.key)}
-                    hint={setting.description}
-                    saved={isSaved}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {values.map((val) => (
-                          <Badge
-                            key={val}
-                            variant="secondary"
-                            className="gap-1 pl-2 pr-1 py-1"
-                          >
-                            {val.trim()}
-                            <button
-                              onClick={() => {
-                                const newValues = values.filter((v) => v.trim() !== val.trim());
-                                section.updateValue(setting.key, newValues.join(","));
-                              }}
-                              className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5"
-                            >
-                              <X className="size-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-1.5">
-                            <Plus className="size-3.5" />
-                            Add option
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-48">
-                          {options
-                            .filter((opt) => !values.includes(opt))
-                            .map((opt) => (
-                              <DropdownMenuItem
-                                key={opt}
-                                onClick={() => {
-                                  const newValues = [...values, opt];
-                                  section.updateValue(setting.key, newValues.join(","));
-                                }}
-                              >
-                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                              </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </Field>
-                );
-              })}
-            </div>
-          )}
+                    return (
+                      <Field
+                        key={setting.key}
+                        label={formatSettingKey(setting.key)}
+                        hint={setting.description}
+                        saved={isSaved && !changed}
+                        className="sm:col-span-2"
+                      >
+                        <textarea
+                          value={section.getValue(setting.key, "")}
+                          onChange={(e) => section.updateValue(setting.key, e.target.value)}
+                          disabled={section.isSaving}
+                          rows={3}
+                          className={cn(
+                            "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                            changed && "border-primary/50 ring-1 ring-primary/20",
+                            err && "border-red-300 ring-1 ring-red-200"
+                          )}
+                        />
+                        {err && (
+                          <p className="text-[11px] text-red-500 mt-1">{err}</p>
+                        )}
+                      </Field>
+                    );
+                  })}
+                </div>
+              )}
 
-          {/* Text / URL / Email fields */}
-          {(grouped.text.length > 0 ||
-            grouped.url.length > 0 ||
-            grouped.email.length > 0) && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[...grouped.text, ...grouped.url, ...grouped.email].map(
-                  (setting) => {
-                    const type = inferInputType(section.getValue(setting.key, setting.value));
+              {/* Number fields */}
+              {grouped.number.length > 0 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {grouped.number.map((setting) => {
                     const isSaved = section.savedKeys.has(setting.key);
                     const changed = hasLocalChange(setting.key);
                     const err = section.saveErrors[setting.key];
@@ -1534,7 +2320,7 @@ function CategorySettingsPanel({
                         saved={isSaved && !changed}
                       >
                         <Input
-                          type={type === "email" ? "email" : "text"}
+                          type="number"
                           value={section.getValue(setting.key, "")}
                           onChange={(e) =>
                             section.updateValue(setting.key, e.target.value)
@@ -1550,146 +2336,75 @@ function CategorySettingsPanel({
                         )}
                       </Field>
                     );
-                  }
-                )}
-              </div>
-            )}
+                  })}
+                </div>
+              )}
 
-          {/* Textarea fields */}
-          {grouped.textarea.length > 0 && (
-            <div className="space-y-4">
-              {grouped.textarea.map((setting) => {
-                const isSaved = section.savedKeys.has(setting.key);
-                const changed = hasLocalChange(setting.key);
-                const err = section.saveErrors[setting.key];
+              {/* Boolean toggles */}
+              {grouped.boolean.length > 0 && (
+                <div className="space-y-1">
+                  {grouped.boolean.map((setting) => {
+                    const isSaved = section.savedKeys.has(setting.key);
+                    const changed = hasLocalChange(setting.key);
+                    const err = section.saveErrors[setting.key];
 
-                return (
-                  <Field
-                    key={setting.key}
-                    label={formatSettingKey(setting.key)}
-                    hint={setting.description}
-                    saved={isSaved && !changed}
-                    className="sm:col-span-2"
-                  >
-                    <textarea
-                      value={section.getValue(setting.key, "")}
-                      onChange={(e) => section.updateValue(setting.key, e.target.value)}
-                      disabled={section.isSaving}
-                      rows={3}
-                      className={cn(
-                        "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                        changed && "border-primary/50 ring-1 ring-primary/20",
-                        err && "border-red-300 ring-1 ring-red-200"
-                      )}
-                    />
-                    {err && (
-                      <p className="text-[11px] text-red-500 mt-1">{err}</p>
-                    )}
-                  </Field>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Number fields */}
-          {grouped.number.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {grouped.number.map((setting) => {
-                const isSaved = section.savedKeys.has(setting.key);
-                const changed = hasLocalChange(setting.key);
-                const err = section.saveErrors[setting.key];
-
-                return (
-                  <Field
-                    key={setting.key}
-                    label={formatSettingKey(setting.key)}
-                    hint={setting.description}
-                    saved={isSaved && !changed}
-                  >
-                    <Input
-                      type="number"
-                      value={section.getValue(setting.key, "")}
-                      onChange={(e) =>
-                        section.updateValue(setting.key, e.target.value)
-                      }
-                      disabled={section.isSaving}
-                      className={cn(
-                        changed && "border-primary/50 ring-1 ring-primary/20",
-                        err && "border-red-300 ring-1 ring-red-200"
-                      )}
-                    />
-                    {err && (
-                      <p className="text-[11px] text-red-500 mt-1">{err}</p>
-                    )}
-                  </Field>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Boolean toggles */}
-          {grouped.boolean.length > 0 && (
-            <div className="space-y-1">
-              {grouped.boolean.map((setting) => {
-                const isSaved = section.savedKeys.has(setting.key);
-                const changed = hasLocalChange(setting.key);
-                const err = section.saveErrors[setting.key];
-
-                return (
-                  <div
-                    key={setting.key}
-                    className={cn(
-                      "flex items-center justify-between rounded-lg px-3 py-3 transition-colors",
-                      changed && "bg-accent/30",
-                      err && "bg-red-50 dark:bg-red-950/20"
-                    )}
-                  >
-                    <div className="space-y-0.5 pr-4">
-                      <div className="text-sm font-medium">
-                        {formatSettingKey(setting.key)}
+                    return (
+                      <div
+                        key={setting.key}
+                        className={cn(
+                          "flex items-center justify-between rounded-lg px-3 py-3 transition-colors",
+                          changed && "bg-accent/30",
+                          err && "bg-red-50 dark:bg-red-950/20"
+                        )}
+                      >
+                        <div className="space-y-0.5 pr-4">
+                          <div className="text-sm font-medium">
+                            {formatSettingKey(setting.key)}
+                          </div>
+                          {setting.description && (
+                            <div className="text-xs text-muted-foreground leading-relaxed">
+                              {setting.description}
+                            </div>
+                          )}
+                          {err && (
+                            <div className="flex items-center gap-1 text-xs text-red-500 mt-0.5">
+                              <AlertCircle className="size-3" />
+                              {err}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isSaved && !changed && (
+                            <Check className="size-3.5 text-emerald-500" />
+                          )}
+                          <Switch
+                            checked={
+                              section.getValue(setting.key, "false") === "true"
+                            }
+                            onCheckedChange={(v) =>
+                              section.updateValue(
+                                setting.key,
+                                v ? "true" : "false"
+                              )
+                            }
+                            disabled={section.isSaving}
+                          />
+                        </div>
                       </div>
-                      {setting.description && (
-                        <div className="text-xs text-muted-foreground leading-relaxed">
-                          {setting.description}
-                        </div>
-                      )}
-                      {err && (
-                        <div className="flex items-center gap-1 text-xs text-red-500 mt-0.5">
-                          <AlertCircle className="size-3" />
-                          {err}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isSaved && !changed && (
-                        <Check className="size-3.5 text-emerald-500" />
-                      )}
-                      <Switch
-                        checked={
-                          section.getValue(setting.key, "false") === "true"
-                        }
-                        onCheckedChange={(v) =>
-                          section.updateValue(
-                            setting.key,
-                            v ? "true" : "false"
-                          )
-                        }
-                        disabled={section.isSaving}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
 
           {/* No settings fallback */}
-          {settings.length === 0 && (
+          {getFilteredSettings.length === 0 && (
             <EmptyCategoryState label={category} />
           )}
 
           {/* Footer Actions */}
-          {settings.length > 0 && (
+          {getFilteredSettings.length > 0 && (
             <>
               <Separator />
               <div className="flex items-center justify-between">

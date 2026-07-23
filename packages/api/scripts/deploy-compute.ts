@@ -89,15 +89,17 @@ async function main() {
 
   if (result.isOk()) {
     const { deploymentId, deploymentEndpointDomain, appEndpointDomain, promoted } = result.value;
+    const formatUrl = (domain: string) => 
+      domain.startsWith("http") ? domain : `https://${domain}`;
     console.log("");
     console.log("========================================");
     console.log("  ✅ Deployment successful!");
     console.log("========================================");
     console.log("");
     console.log(`  Deployment ID: ${deploymentId}`);
-    console.log(`  Deployment URL: https://${deploymentEndpointDomain}`);
+    console.log(`  Deployment URL: ${formatUrl(deploymentEndpointDomain)}`);
     if (appEndpointDomain) {
-      console.log(`  App URL: https://${appEndpointDomain}`);
+      console.log(`  App URL: ${formatUrl(appEndpointDomain)}`);
     }
     console.log(`  Promoted: ${promoted ? "yes" : "no"}`);
     console.log("");
