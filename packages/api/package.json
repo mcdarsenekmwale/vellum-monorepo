@@ -21,7 +21,8 @@
     "db:pull": "prisma db pull",
     "db:studio": "prisma studio",
     "prisma:generate": "prisma generate",
-    "deploy:compute": "bun scripts/deploy-compute.ts"
+    "deploy:compute": "bun scripts/deploy-compute.ts",
+    "resolve:migrations": "node scripts/resolve-migrations.mjs"
   },
   "keywords": [
     "nestjs",
