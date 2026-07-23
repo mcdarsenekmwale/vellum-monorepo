@@ -145,4 +145,125 @@ export class SuggestedService {
       isBookmarked: bookmarkedSlugs.has(a.slug),
     }));
   }
+
+  async getSuggestedAuthors(userId: string | undefined, limit = 5, offset = 0) {
+    try {
+      const followedAuthorIds = userId
+        ? await this.getFollowedAuthorIds(userId)
+        : [];
+
+      const users = await this.prisma.user.findMany({
+        where: {
+          isActive: true,
+          deletedAt: null,
+          role: { in: ['CREATOR', 'ADMIN', 'MODERATOR'] },
+          ...(followedAuthorIds.length > 0
+            ? { id: { notIn: followedAuthorIds } }
+            : {}),
+          ...(userId ? { id: { not: userId } } : {}),
+        },
+        select: {
+          id: true,
+          handle: true,
+          name: true,
+          avatar: true,
+          bio: true,
+          _count: {
+            select: {
+              followers: true,
+              articles: { where: { isPublished: true, deletedAt: null } },
+            },
+          },
+        },
+        orderBy: [
+          { followers: { _count: 'desc' } },
+          { createdAt: 'desc' },
+        ],
+        skip: offset,
+        take: limit + 1,
+      });
+
+      const hasMore = users.length > limit;
+      const data = users.slice(0, limit).map((u) => ({
+        id: u.id,
+        handle: u.handle,
+        name: u.name,
+        avatar: u.avatar,
+        bio: u.bio,
+        followersCount: u._count.followers,
+        articlesCount: u._count.articles,
+      }));
+
+      return {
+        data,
+        hasMore,
+        limit,
+        offset,
+      };
+    } catch (error: any) {
+      console.error('[SuggestedService] getSuggestedAuthors error:', error.message);
+      throw error;
+    }
+  }
+
+  async getReplacementAuthor(
+    userId: string | undefined,
+    excludeAuthorId: string,
+  ) {
+    try {
+      const followedAuthorIds = userId
+        ? await this.getFollowedAuthorIds(userId)
+        : [];
+
+      const excludedIds = new Set([...followedAuthorIds, excludeAuthorId]);
+
+      const users = await this.prisma.user.findMany({
+        where: {
+          isActive: true,
+          deletedAt: null,
+          role: { in: ['CREATOR', 'ADMIN', 'MODERATOR'] },
+          ...(excludedIds.size > 0
+            ? { id: { notIn: Array.from(excludedIds) } }
+            : {}),
+          ...(userId ? { id: { not: userId } } : {}),
+        },
+        select: {
+          id: true,
+          handle: true,
+          name: true,
+          avatar: true,
+          bio: true,
+          _count: {
+            select: {
+              followers: true,
+              articles: { where: { isPublished: true, deletedAt: null } },
+            },
+          },
+        },
+        orderBy: [
+          { followers: { _count: 'desc' } },
+          { createdAt: 'desc' },
+        ],
+        take: 1,
+      });
+
+      if (users.length === 0) {
+        return null;
+      }
+
+      const u = users[0];
+      return {
+        id: u.id,
+        handle: u.handle,
+        name: u.name,
+        avatar: u.avatar,
+        bio: u.bio,
+        followersCount: u._count.followers,
+        articlesCount: u._count.articles,
+      };
+    } catch (error: any) {
+      console.error('[SuggestedService] getReplacementAuthor error:', error.message);
+      throw error;
+    }
+  }
 }

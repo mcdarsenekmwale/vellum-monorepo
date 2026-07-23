@@ -20,6 +20,8 @@ import type {
   ApiKey,
   UserSettings,
   SuggestedArticlesResponse,
+  SuggestedAuthor,
+  SuggestedAuthorsResponse,
 } from './types/index';
 
 // Storage interface for cross-platform compatibility
@@ -631,6 +633,19 @@ export class ApiClient {
   async getSuggestedReplacement(excludeArticleId: string, excludeAuthorId: string): Promise<Article | null> {
     return this.request<Article | null>('/api/suggested/articles/replace', {
       query: { excludeArticleId, excludeAuthorId },
+    });
+  }
+
+  // Suggested Authors endpoints
+  async getSuggestedAuthors(limit = 5, offset = 0): Promise<SuggestedAuthorsResponse> {
+    return this.request<SuggestedAuthorsResponse>('/api/suggested/authors', {
+      query: { limit, offset },
+    });
+  }
+
+  async getSuggestedAuthorReplacement(excludeAuthorId: string): Promise<SuggestedAuthor | null> {
+    return this.request<SuggestedAuthor | null>('/api/suggested/authors/replace', {
+      query: { excludeAuthorId },
     });
   }
 

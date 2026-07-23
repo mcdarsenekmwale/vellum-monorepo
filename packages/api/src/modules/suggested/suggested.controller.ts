@@ -33,4 +33,28 @@ export class SuggestedController {
     const userId = req?.user?.id;
     return this.suggestedService.getReplacementArticle(userId, excludeArticleId, excludeAuthorId);
   }
+
+  @Get('authors')
+  @ApiOperation({ summary: 'Get suggested authors not yet followed' })
+  @ApiResponse({ status: 200, description: 'Suggested authors retrieved' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Number of items to skip' })
+  async getSuggestedAuthors(@Query() query: SuggestedQueryDto, @Request() req?: any) {
+    const userId = req?.user?.id;
+    const limit = query.limit ?? 5;
+    const offset = query.offset ?? 0;
+    return this.suggestedService.getSuggestedAuthors(userId, limit, offset);
+  }
+
+  @Get('authors/replace')
+  @ApiOperation({ summary: 'Get a replacement author for a just-followed author' })
+  @ApiResponse({ status: 200, description: 'Replacement author or null if none available' })
+  @ApiQuery({ name: 'excludeAuthorId', required: true, type: String, description: 'Author ID to exclude (just followed)' })
+  async getReplacementAuthor(
+    @Query('excludeAuthorId') excludeAuthorId: string,
+    @Request() req?: any,
+  ) {
+    const userId = req?.user?.id;
+    return this.suggestedService.getReplacementAuthor(userId, excludeAuthorId);
+  }
 }

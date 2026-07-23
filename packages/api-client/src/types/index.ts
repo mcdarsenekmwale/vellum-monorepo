@@ -270,3 +270,21 @@ export interface SuggestedArticlesResponse {
   limit: number;
   offset: number;
 }
+
+// Suggested Authors
+export interface SuggestedAuthor {
+  id: string;
+  handle: string;
+  name: string;
+  avatar?: string;
+  bio?: string;
+  followersCount: number;
+  articlesCount: number;
+}
+
+export interface SuggestedAuthorsResponse {
+  data: SuggestedAuthor[];
+  hasMore: boolean;
+  limit: number;
+  offset: number;
+}

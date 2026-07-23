@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuthState, useArticles } from "@/hooks/useApi";
+import { SuggestedAuthorsSidebar } from "@/components/SuggestedAuthorsSidebar";
 
 // Navigation items for authenticated users
 const authNavItems = [
@@ -237,59 +238,8 @@ export function WebShell({ children }: { children: ReactNode }) {
 
         {/* Right Sidebar */}
         <aside className="hidden lg:block w-[320px] flex-none p-8 sticky top-0 h-screen overflow-y-auto">
-          {/* Suggested Followers */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground font-semibold">
-                {isAuthenticated ? "Suggested for you" : "Featured writers"}
-              </span>
-              <button className="text-xs font-semibold hover:text-muted-foreground">
-                See All
-              </button>
-            </div>
-            <div className="space-y-4">
-              {articlesLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="size-11 rounded-full bg-muted animate-pulse" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 w-24 bg-muted rounded animate-pulse" />
-                        <div className="h-2 w-32 bg-muted rounded animate-pulse" />
-                      </div>
-                    </div>
-                  ))
-                : suggestedAuthors.map((a) => (
-                    <Link
-                        key={a.id}
-                        to="/author/$id"
-                        params={{ id: a.handle }}
-                        className="flex items-center gap-3 hover:opacity-80"
-                      >
-                      <img
-                        src={
-                          a.avatar ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(a.name)}&background=random`
-                        }
-                        alt={a.name}
-                        className="size-11 rounded-full object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">
-                          {a.handle}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {a.name}
-                        </p>
-                      </div>
-                      {isAuthenticated && (
-                        <button className="text-xs font-semibold text-accent hover:opacity-70">
-                          Follow
-                        </button>
-                      )}
-                    </Link>
-                  ))}
-            </div>
-          </div>
+          {/* Suggested Authors */}
+          <SuggestedAuthorsSidebar limit={5} />
 
           {/* Trending */}
           <div className="mb-8">
