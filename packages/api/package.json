@@ -22,7 +22,8 @@
     "db:studio": "prisma studio",
     "prisma:generate": "prisma generate",
     "deploy:compute": "bun scripts/deploy-compute.ts",
-    "resolve:migrations": "node scripts/resolve-migrations.mjs"
+    "resolve:migrations": "node scripts/resolve-migrations.mjs",
+    "check:build-deps": "node scripts/check-build-deps.mjs"
   },
   "keywords": [
     "nestjs",

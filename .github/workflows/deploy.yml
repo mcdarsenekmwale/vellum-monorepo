@@ -16,6 +16,9 @@ jobs:
           cache: 'npm'
       - uses: oven-sh/setup-bun@v2
       - run: npm ci
+      - name: Verify build dependencies are in correct package group
+        working-directory: packages/api
+        run: npm run check:build-deps
       - name: Deploy API to Prisma Compute
         working-directory: packages/api
         env:
