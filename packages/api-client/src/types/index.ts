@@ -41,6 +41,7 @@ export interface Article {
   authorId: string;
   likesCount: number;
   views: number;
+  commentsCount: number;
   featured: boolean;
   isPublished: boolean;
   publishedAt?: string;
@@ -260,4 +261,12 @@ export interface ApiKey {
   expiresAt?: string;
   createdAt: string;
   lastUsedAt?: string;
+}
+
+// Suggested Articles
+export interface SuggestedArticlesResponse {
+  data: Article[];
+  hasMore: boolean;
+  limit: number;
+  offset: number;
 }

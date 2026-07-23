@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { NotificationKind } from '@prisma/client';
+import { NotificationKind, Prisma } from '@prisma/client';
 
 @Injectable()
 export class LikesService {
@@ -11,75 +11,90 @@ export class LikesService {
       throw new BadRequestException('One of articleSlug, highlightId, or commentId is required');
     }
 
-    const existingLike = await this.prisma.like.findFirst({
-      where: {
-        userId,
-        articleSlug,
-        highlightId,
-        commentId,
-      },
-    });
+    const where = { userId, articleSlug, highlightId, commentId };
+    const targetKey = articleSlug ? 'articleSlug' : highlightId ? 'highlightId' : 'commentId';
+    const targetValue = articleSlug || highlightId || commentId;
 
-    if (existingLike) {
-      await this.prisma.like.delete({ where: { id: existingLike.id } });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existingLike = await tx.like.findFirst({ where });
 
-      if (articleSlug) {
-        await this.prisma.article.update({ where: { slug: articleSlug }, data: { likesCount: { decrement: 1 } } });
-      } else if (highlightId) {
-        await this.prisma.highlight.update({ where: { id: highlightId }, data: { likesCount: { decrement: 1 } } });
-      } else if (commentId) {
-        await this.prisma.comment.update({ where: { id: commentId }, data: { likesCount: { decrement: 1 } } });
+        if (existingLike) {
+          await tx.like.delete({ where: { id: existingLike.id } });
+          await this.decrementCount(tx, targetKey, targetValue as string);
+          return { liked: false };
+        }
+
+        await tx.like.create({ data: { userId, articleSlug, highlightId, commentId } });
+        await this.incrementCount(tx, targetKey, targetValue as string);
+        await this.maybeCreateNotification(tx, userId, targetKey, targetValue as string, articleSlug, highlightId, commentId);
+        return { liked: true };
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        const existingLike = await this.prisma.like.findFirst({ where });
+        if (existingLike) {
+          return { liked: true };
+        }
       }
+      throw error;
+    }
+  }
 
-      return { liked: false };
+  private async incrementCount(tx: any, targetKey: string, targetValue: string) {
+    if (targetKey === 'articleSlug') {
+      await tx.article.update({ where: { slug: targetValue }, data: { likesCount: { increment: 1 } } });
+    } else if (targetKey === 'highlightId') {
+      await tx.highlight.update({ where: { id: targetValue }, data: { likesCount: { increment: 1 } } });
+    } else if (targetKey === 'commentId') {
+      await tx.comment.update({ where: { id: targetValue }, data: { likesCount: { increment: 1 } } });
+    }
+  }
+
+  private async decrementCount(tx: any, targetKey: string, targetValue: string) {
+    if (targetKey === 'articleSlug') {
+      await tx.article.update({ where: { slug: targetValue }, data: { likesCount: { decrement: 1 } } });
+    } else if (targetKey === 'highlightId') {
+      await tx.highlight.update({ where: { id: targetValue }, data: { likesCount: { decrement: 1 } } });
+    } else if (targetKey === 'commentId') {
+      await tx.comment.update({ where: { id: targetValue }, data: { likesCount: { decrement: 1 } } });
+    }
+  }
+
+  private async maybeCreateNotification(
+    tx: any,
+    userId: string,
+    targetKey: string,
+    targetValue: string,
+    articleSlug?: string,
+    highlightId?: string,
+    commentId?: string,
+  ) {
+    let authorId: string | null = null;
+
+    if (targetKey === 'articleSlug') {
+      const article = await tx.article.findUnique({ where: { slug: targetValue }, select: { authorId: true } });
+      authorId = article?.authorId || null;
+    } else if (targetKey === 'highlightId') {
+      const highlight = await tx.highlight.findUnique({ where: { id: targetValue }, select: { authorId: true } });
+      authorId = highlight?.authorId || null;
+    } else if (targetKey === 'commentId') {
+      const comment = await tx.comment.findUnique({ where: { id: targetValue }, select: { authorId: true } });
+      authorId = comment?.authorId || null;
     }
 
-    await this.prisma.like.create({
-      data: { userId, articleSlug, highlightId, commentId },
-    });
-
-    if (articleSlug) {
-      await this.prisma.article.update({ where: { slug: articleSlug }, data: { likesCount: { increment: 1 } } });
-      const article = await this.prisma.article.findUnique({ where: { slug: articleSlug } });
-      if (article && article.authorId !== userId) {
-        await this.prisma.notification.create({
-          data: {
-            userId: article.authorId,
-            actorId: userId,
-            kind: NotificationKind.LIKE,
-            articleSlug,
-          },
-        });
-      }
-    } else if (highlightId) {
-      await this.prisma.highlight.update({ where: { id: highlightId }, data: { likesCount: { increment: 1 } } });
-      const highlight = await this.prisma.highlight.findUnique({ where: { id: highlightId } });
-      if (highlight && highlight.authorId && highlight.authorId !== userId) {
-        await this.prisma.notification.create({
-          data: {
-            userId: highlight.authorId,
-            actorId: userId,
-            kind: NotificationKind.LIKE,
-            highlightId,
-          },
-        });
-      }
-    } else if (commentId) {
-      await this.prisma.comment.update({ where: { id: commentId }, data: { likesCount: { increment: 1 } } });
-      const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
-      if (comment && comment.authorId !== userId) {
-        await this.prisma.notification.create({
-          data: {
-            userId: comment.authorId,
-            actorId: userId,
-            kind: NotificationKind.LIKE,
-            commentId,
-          },
-        });
-      }
+    if (authorId && authorId !== userId) {
+      await tx.notification.create({
+        data: {
+          userId: authorId,
+          actorId: userId,
+          kind: NotificationKind.LIKE,
+          articleSlug: articleSlug || null,
+          highlightId: highlightId || null,
+          commentId: commentId || null,
+        },
+      });
     }
-
-    return { liked: true };
   }
 
   async getLikedArticles(userId: string, page = 1, limit = 10) {

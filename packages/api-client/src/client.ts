@@ -19,6 +19,7 @@ import type {
   AuditLog,
   ApiKey,
   UserSettings,
+  SuggestedArticlesResponse,
 } from './types/index';
 
 // Storage interface for cross-platform compatibility
@@ -618,6 +619,19 @@ export class ApiClient {
 
   async deleteApiKey(id: string): Promise<void> {
     return this.request(`/api/webhooks/api-keys/${id}`, { method: 'DELETE' });
+  }
+
+  // Suggested Articles endpoints
+  async getSuggestedArticles(limit = 4, offset = 0): Promise<SuggestedArticlesResponse> {
+    return this.request<SuggestedArticlesResponse>('/api/suggested/articles', {
+      query: { limit, offset },
+    });
+  }
+
+  async getSuggestedReplacement(excludeArticleId: string, excludeAuthorId: string): Promise<Article | null> {
+    return this.request<Article | null>('/api/suggested/articles/replace', {
+      query: { excludeArticleId, excludeAuthorId },
+    });
   }
 
   // Health check
