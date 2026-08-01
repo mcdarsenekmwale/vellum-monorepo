@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuthState();
+  const { login } = useAuthState();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,31 +38,35 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }}>
-          {/* Back button */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginBottom: 24 }}
-          >
-            <ArrowLeft size={24} color="#000000" />
-          </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
+          showsVerticalScrollIndicator={false}
+        >
 
-          {/* Logo */}
-          <Text
-            style={{
-              fontFamily: 'Georgia',
-              fontStyle: 'italic',
-              fontSize: 32,
-              fontWeight: '600',
-              color: '#000000',
-              marginBottom: 8,
-            }}
-          >
-            Vellum.
-          </Text>
-          <Text style={{ fontSize: 16, color: '#666666', marginBottom: 32 }}>
-            Sign in to continue
-          </Text>
+          {/* Instagram-style centered logo */}
+          <View style={{ alignItems: 'center', marginTop: 48, marginBottom: 40 }}>
+            <Text
+              style={{
+                fontFamily: 'Georgia',
+                fontStyle: 'italic',
+                fontSize: 48,
+                fontWeight: '700',
+                color: '#000000',
+                letterSpacing: -1,
+              }}
+            >
+              Vellum.
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: '#666666',
+                marginTop: 8,
+              }}
+            >
+              Sign in to continue
+            </Text>
+          </View>
 
           {/* Error */}
           {error && (
@@ -79,10 +83,7 @@ export default function LoginScreen() {
           )}
 
           {/* Email Input */}
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Email
-            </Text>
+          <View style={{ marginBottom: 12 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -91,19 +92,20 @@ export default function LoginScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <Mail size={18} color="#999999" />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder="Email"
+                placeholderTextColor="#999999"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
@@ -114,9 +116,6 @@ export default function LoginScreen() {
 
           {/* Password Input */}
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Password
-            </Text>
             <View
               style={{
                 flexDirection: 'row',
@@ -125,18 +124,19 @@ export default function LoginScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <Lock size={18} color="#999999" />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder="Password"
+                placeholderTextColor="#999999"
                 secureTextEntry={!showPassword}
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
@@ -152,6 +152,13 @@ export default function LoginScreen() {
             </View>
           </View>
 
+          {/* Forgot Password */}
+          <View style={{ alignItems: 'flex-end', marginBottom: 24 }}>
+            <Text style={{ color: '#d97706', fontSize: 13, fontWeight: '500' }}>
+              Forgot password?
+            </Text>
+          </View>
+
           {/* Sign In Button */}
           <TouchableOpacity
             onPress={handleSubmit}
@@ -161,7 +168,7 @@ export default function LoginScreen() {
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
-              marginBottom: 16,
+              marginBottom: 24,
               opacity: isLoading ? 0.5 : 1,
             }}
           >
@@ -174,8 +181,116 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
+          {/* OR Divider */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#e5e5e5' }} />
+            <Text style={{ color: '#999999', fontSize: 13, marginHorizontal: 16, fontWeight: '500' }}>
+              OR
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#e5e5e5' }} />
+          </View>
+
+          {/* Social Login Options */}
+          {/* Google */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10 }}>G</Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Google
+            </Text>
+          </TouchableOpacity>
+
+          {/* Apple */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10 }}>
+              {'\uF8FF'}
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Apple
+            </Text>
+          </TouchableOpacity>
+
+          {/* Facebook */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10, color: '#1877F2' }}>
+              f
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Facebook
+            </Text>
+          </TouchableOpacity>
+
+          {/* Phone */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 32,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 18, marginRight: 10 }}>
+              {'\u260E'}
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Phone
+            </Text>
+          </TouchableOpacity>
+
           {/* Register Link */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              paddingVertical: 16,
+              borderTopWidth: 1,
+              borderTopColor: '#e5e5e5',
+            }}
+          >
             <Text style={{ color: '#666666', fontSize: 14 }}>New to Vellum? </Text>
             <Link href="/register" asChild>
               <TouchableOpacity>

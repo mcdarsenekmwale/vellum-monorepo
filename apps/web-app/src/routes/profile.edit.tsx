@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { WebShell } from "@/components/WebShell";
+import { Avatar } from "@/components/Avatar";
 import { apiClient } from "@/lib/api";
 import { useAuthState } from "@/hooks/useApi";
 import { ArrowLeft, Camera, Check } from "lucide-react";
@@ -109,13 +110,12 @@ function EditProfilePage() {
           {/* Avatar */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative group">
-              <img
-                src={
-                  avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=random`
-                }
-                alt={name}
-                className="size-28 rounded-full object-cover ring-4 ring-accent ring-offset-4 ring-offset-card"
+              <Avatar
+                src={avatar}
+                name={name}
+                handle={handle}
+                size="2xl"
+                className="size-28 ring-4 ring-accent ring-offset-4 ring-offset-card"
               />
               <button
                 type="button"

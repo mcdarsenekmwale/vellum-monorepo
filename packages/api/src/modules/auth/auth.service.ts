@@ -6,6 +6,14 @@ import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswor
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+const LEGACY_ROLE_TO_RBAC_KEY: Record<string, string> = {
+  ADMIN: 'super_admin',
+  MODERATOR: 'moderator',
+  CREATOR: 'author',
+  USER: 'registered_user',
+  GUEST: 'guest',
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -14,9 +22,55 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
+  // ─── RBAC Sync helpers (avoid circular module dep on RbacModule) ──────────
+
+  private async ensureRbacRole(roleKey: string): Promise<string | null> {
+    const role = await this.prisma.rbacRole.findFirst({
+      where: { key: roleKey, deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    return role?.id ?? null;
+  }
+
+  private async syncLegacyRoleToRbac(userId: string, legacyRole: string) {
+    const count = await this.prisma.userRoleAssignment.count({ where: { userId } });
+    if (count > 0) return; // already has RBAC roles, keep as-is
+    const rbacKey = LEGACY_ROLE_TO_RBAC_KEY[legacyRole] ?? 'registered_user';
+    const roleId = await this.ensureRbacRole(rbacKey);
+    if (!roleId) return;
+    try {
+      await this.prisma.userRoleAssignment.create({
+        data: { userId, roleId, isPrimary: true },
+      });
+      await this.prisma.roleAssignmentHistory.create({
+        data: { userId, roleId, action: 'assigned', reason: 'legacy role migration' },
+      });
+    } catch {
+      // unique constraint race - ignore
+    }
+  }
+
+  private async ensureRegisteredRole(userId: string) {
+    const count = await this.prisma.userRoleAssignment.count({ where: { userId } });
+    if (count > 0) return;
+    const roleId = await this.ensureRbacRole('registered_user');
+    if (!roleId) return;
+    try {
+      await this.prisma.userRoleAssignment.create({
+        data: { userId, roleId, isPrimary: true },
+      });
+      await this.prisma.roleAssignmentHistory.create({
+        data: { userId, roleId, action: 'assigned', reason: 'auto on register' },
+      });
+    } catch {
+      // unique constraint race - ignore
+    }
+  }
+
+  // ─── Auth flows ───────────────────────────────────────────────────────────
+
   async register(dto: RegisterDto) {
     try {
-      console.log('Register called with:', dto.email, dto.handle);
       const existingUser = await this.prisma.retryOnConnectionError(() =>
         this.prisma.user.findFirst({
           where: {
@@ -27,7 +81,6 @@ export class AuthService {
           },
         })
       );
-      console.log('Existing user check:', existingUser ? 'found' : 'not found');
 
       if (existingUser) {
         if (existingUser.email === dto.email) {
@@ -37,7 +90,9 @@ export class AuthService {
       }
 
       const passwordHash = await bcrypt.hash(dto.password, parseInt(this.configService.get('BCRYPT_ROUNDS', '12')));
-      console.log('Password hashed');
+
+      const verificationToken = uuidv4();
+      const verificationTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       const user = await this.prisma.retryOnConnectionError(() =>
         this.prisma.user.create({
@@ -48,10 +103,11 @@ export class AuthService {
             passwordHash,
             bio: dto.bio,
             publication: dto.publication,
+            verificationToken,
+            verificationTokenExpiresAt,
           },
         })
       );
-      console.log('User created:', user.id);
 
       await this.prisma.retryOnConnectionError(() =>
         this.prisma.userSettings.create({
@@ -60,17 +116,17 @@ export class AuthService {
           },
         })
       );
-      console.log('User settings created');
+
+      // Auto-assign registered_user RBAC role
+      await this.ensureRegisteredRole(user.id);
 
       const tokens = await this.generateTokens(user);
-      console.log('Tokens generated');
 
       return {
         user: this.sanitizeUser(user),
         ...tokens,
       };
     } catch (error) {
-      console.error('Register error:', error);
       throw error;
     }
   }
@@ -86,6 +142,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Guard: don't accept bcrypt compare against non-hash markers from legacy flows
+    if (!user.passwordHash || !user.passwordHash.startsWith('$2')) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
@@ -95,6 +156,9 @@ export class AuthService {
     if (!user.isActive) {
       throw new UnauthorizedException('Account is disabled');
     }
+
+    // Auto-migrate legacy role → RBAC on first login if no RBAC assignments
+    await this.syncLegacyRoleToRbac(user.id, user.role);
 
     const tokens = await this.generateTokens(user);
 
@@ -141,12 +205,14 @@ export class AuthService {
     }
 
     const resetToken = uuidv4();
-    const resetTokenExpires = new Date(Date.now() + 3600000);
+    const resetTokenExpiresAt = new Date(Date.now() + 3600 * 1000);
 
+    // Use DEDICATED reset token columns. DO NOT overwrite passwordHash!
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash: `reset:${resetToken}:${resetTokenExpires.getTime()}`,
+        resetToken,
+        resetTokenExpiresAt,
       },
     });
 
@@ -154,17 +220,11 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const users = await this.prisma.user.findMany();
-    const user = users.find(u => {
-      const parts = u.passwordHash.split(':');
-      if (parts[0] === 'reset' && parts[1] === dto.token) {
-        const expires = parseInt(parts[2]);
-        return expires > Date.now();
-      }
-      return false;
+    const user = await this.prisma.user.findUnique({
+      where: { resetToken: dto.token },
     });
 
-    if (!user) {
+    if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
@@ -172,28 +232,43 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
     });
 
     return { message: 'Password reset successful' };
   }
 
   async verifyEmail(dto: VerifyEmailDto) {
-    const users = await this.prisma.user.findMany();
-    const user = users.find(u => {
-      if (!u.emailVerified && u.passwordHash.includes(`verify:${dto.token}:`)) {
-        return true;
-      }
-      return false;
+    // 1) Prefer dedicated verificationToken column
+    let user = await this.prisma.user.findUnique({
+      where: { verificationToken: dto.token },
     });
+
+    // 2) Backward compat: legacy flows stored verify marker inside passwordHash
+    if (!user) {
+      const all = await this.prisma.user.findMany({ where: { emailVerified: null } });
+      user = all.find((u) => u.passwordHash?.includes(`verify:${dto.token}:`)) ?? null;
+    }
 
     if (!user) {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
+    if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: new Date() },
+      data: {
+        emailVerified: new Date(),
+        verificationToken: null,
+        verificationTokenExpiresAt: null,
+      },
     });
 
     return { message: 'Email verified successfully' };
@@ -231,11 +306,18 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
+    // Defense in depth: ensure RBAC roles on every authenticated access
+    try {
+      await this.syncLegacyRoleToRbac(user.id, user.role);
+    } catch {
+      // ignore transient errors during validation
+    }
+
     return user;
   }
 
   private sanitizeUser(user: any) {
-    const { passwordHash, ...sanitized } = user;
+    const { passwordHash, resetToken, resetTokenExpiresAt, verificationToken, verificationTokenExpiresAt, ...sanitized } = user;
     return sanitized;
   }
 }

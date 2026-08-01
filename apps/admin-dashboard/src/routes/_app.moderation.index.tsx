@@ -58,6 +58,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useReports, useUpdateReportStatus, useReportStats, useBulkUpdateReportStatus } from "@/lib/api/hooks";
 import { avatarUrl } from "@/lib/avatar";
 import { ChartSkeleton } from "@/components/dashboard/skeletons";
+import { PageState } from "@/components/dashboard/page-state";
+import { PermissionGate, PermissionGuard } from "@/components/dashboard/permission-guard";
+import { ReadOnlyBanner } from "@/components/dashboard/read-only-banner";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -71,7 +74,7 @@ export const Route = createFileRoute("/_app/moderation/")({
 });
 
 function ModerationIndexPage() {
-  const { data, isLoading, refetch } = useReports({ pageSize: 50 });
+  const { data, isLoading, error, refetch } = useReports({ pageSize: 50 });
   const { data: stats, refetch: refetchStats } = useReportStats();
   const updateStatus = useUpdateReportStatus();
   const bulkUpdateStatus = useBulkUpdateReportStatus();
@@ -615,8 +618,9 @@ function ModerationIndexPage() {
         />
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 flex-wrap">
+      <PermissionGuard resource="moderation" action="read" showReadOnlyBanner>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
           {([
             { key: "all" as StatusFilter, label: "All", icon: Shield },
             { key: "open" as StatusFilter, label: "Open", icon: Clock },
@@ -781,18 +785,20 @@ function ModerationIndexPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {filteredQueue.filter((r) => r.status === "open").length > 0 && statusFilter === "open" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600"
-                onClick={handleResolveAll}
-                disabled={updateStatus.isPending}
-              >
-                <CheckCircle2 className="size-3.5" />
-                Resolve all
-              </Button>
-            )}
+            <PermissionGate resource="moderation" action="write">
+              {filteredQueue.filter((r) => r.status === "open").length > 0 && statusFilter === "open" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600"
+                  onClick={handleResolveAll}
+                  disabled={updateStatus.isPending}
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  Resolve all
+                </Button>
+              )}
+            </PermissionGate>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-8">
@@ -815,57 +821,50 @@ function ModerationIndexPage() {
           </div>
         </div>
 
-        {isLoading ? (
-          <ChartSkeleton height={400} />
-        ) : filteredQueue.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-              <ShieldCheck className="size-8 text-emerald-500" />
-            </div>
-            <h3 className="text-lg font-semibold">All clear</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                ? "No reports match your current filters. Try adjusting your search criteria."
-                : "No reports pending review. The community is behaving well."}
-            </p>
-            {(searchQuery || statusFilter !== "all" || priorityFilter !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-6 gap-1.5"
-                onClick={() => {
-                  setSearchQuery("");
-                  setStatusFilter("all");
-                  setPriorityFilter("all");
-                }}
-              >
-                <RefreshCw className="size-3.5" /> Clear filters
-              </Button>
-            )}
-          </div>
-        ) : (
+        <PageState
+          isLoading={isLoading}
+          isError={!!error}
+          error={error}
+          data={filteredQueue}
+          useShimmer
+          onRetry={() => {
+            refetch();
+            refetchStats();
+          }}
+          emptyTitle="All clear"
+          emptyDescription={
+            searchQuery || statusFilter !== "all" || priorityFilter !== "all"
+              ? "No reports match your current filters. Try adjusting your search criteria."
+              : "No reports pending review. The community is behaving well."
+          }
+          emptyIcon={<ShieldCheck className="size-5 text-emerald-500" />}
+          shimmerComponent={<ChartSkeleton height={400} />}
+          minHeight="min-h-[400px]"
+        >
           <div className="space-y-3">
-            {selectedIds.size > 0 && (
-              <div className="flex items-center gap-3 rounded-lg border bg-accent/40 px-4 py-2.5 text-sm">
-                <span className="font-medium">{selectedIds.size} selected</span>
-                <div className="flex items-center gap-1.5">
-                  <Button size="sm" variant="outline" className="h-7" onClick={handleBulkResolve}>
-                    Resolve
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7" onClick={handleBulkDismiss}>
-                    Dismiss
+            <PermissionGate resource="moderation" action="write">
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 rounded-lg border bg-accent/40 px-4 py-2.5 text-sm">
+                  <span className="font-medium">{selectedIds.size} selected</span>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" className="h-7" onClick={handleBulkResolve}>
+                      Resolve
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7" onClick={handleBulkDismiss}>
+                      Dismiss
+                    </Button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-muted-foreground h-7"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    <X className="size-3.5 mr-1" /> Clear
                   </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto text-muted-foreground h-7"
-                  onClick={() => setSelectedIds(new Set())}
-                >
-                  <X className="size-3.5 mr-1" /> Clear
-                </Button>
-              </div>
-            )}
+              )}
+            </PermissionGate>
             <div className="flex items-center gap-3 px-2">
               <Checkbox
                 checked={allCurrentPageSelected}
@@ -983,34 +982,38 @@ function ModerationIndexPage() {
                     {r.status === "open" ? (
                       <>
                         <div className="flex items-center gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 h-8 text-xs border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/50"
-                            disabled={isProcessing}
-                            onClick={() => handleStatusUpdate(r.id, "resolved")}
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="size-3.5" />
-                            )}
-                            Resolve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 h-8 text-xs border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                            disabled={isProcessing}
-                            onClick={() => handleStatusUpdate(r.id, "dismissed")}
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <XCircle className="size-3.5" />
-                            )}
-                            Dismiss
-                          </Button>
+                          <PermissionGate resource="moderation" action="write">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 h-8 text-xs border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/50"
+                              disabled={isProcessing}
+                              onClick={() => handleStatusUpdate(r.id, "resolved")}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="size-3.5" />
+                              )}
+                              Resolve
+                            </Button>
+                          </PermissionGate>
+                          <PermissionGate resource="moderation" action="write">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 h-8 text-xs border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                              disabled={isProcessing}
+                              onClick={() => handleStatusUpdate(r.id, "dismissed")}
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <XCircle className="size-3.5" />
+                              )}
+                              Dismiss
+                            </Button>
+                          </PermissionGate>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="size-8">
@@ -1029,28 +1032,34 @@ function ModerationIndexPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleStatusUpdate(r.id, "resolved")}
-                                disabled={isProcessing}
-                              >
-                                <CheckCircle2 className="size-3.5 mr-2 text-emerald-500" /> Resolve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleStatusUpdate(r.id, "dismissed")}
-                                disabled={isProcessing}
-                              >
-                                <XCircle className="size-3.5 mr-2 text-muted-foreground" /> Dismiss
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-destructive"
-                                onClick={() => {
-                                  setShowBanDialog(true);
-                                  setBanTargetId(r.reporterId);
-                                }}
-                              >
-                                <Ban className="size-3.5 mr-2" /> Ban reporter
-                              </DropdownMenuItem>
+                              <PermissionGate resource="moderation" action="write">
+                                <DropdownMenuItem
+                                  onClick={() => handleStatusUpdate(r.id, "resolved")}
+                                  disabled={isProcessing}
+                                >
+                                  <CheckCircle2 className="size-3.5 mr-2 text-emerald-500" /> Resolve
+                                </DropdownMenuItem>
+                              </PermissionGate>
+                              <PermissionGate resource="moderation" action="write">
+                                <DropdownMenuItem
+                                  onClick={() => handleStatusUpdate(r.id, "dismissed")}
+                                  disabled={isProcessing}
+                                >
+                                  <XCircle className="size-3.5 mr-2 text-muted-foreground" /> Dismiss
+                                </DropdownMenuItem>
+                              </PermissionGate>
+                              <PermissionGate resource="users" action="admin">
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    setShowBanDialog(true);
+                                    setBanTargetId(r.reporterId);
+                                  }}
+                                >
+                                  <Ban className="size-3.5 mr-2" /> Ban reporter
+                                </DropdownMenuItem>
+                              </PermissionGate>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -1078,18 +1087,20 @@ function ModerationIndexPage() {
                             {formatDistanceToNow(new Date(r.resolvedAt), { addSuffix: true })}
                           </span>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 text-xs gap-1 mt-1"
-                          onClick={() => {
-                            setReopenReportId(r.id);
-                            setShowReopenDialog(true);
-                          }}
-                          disabled={isProcessing}
-                        >
-                          <RefreshCw className="size-3" /> Reopen
-                        </Button>
+                        <PermissionGate resource="moderation" action="write">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs gap-1 mt-1"
+                            onClick={() => {
+                              setReopenReportId(r.id);
+                              setShowReopenDialog(true);
+                            }}
+                            disabled={isProcessing}
+                          >
+                            <RefreshCw className="size-3" /> Reopen
+                          </Button>
+                        </PermissionGate>
                       </div>
                     )}
                   </div>
@@ -1097,7 +1108,7 @@ function ModerationIndexPage() {
               );
             })}
           </div>
-        )}
+        </PageState>
 
         {filteredQueue.length > 0 && (
           <div className="mt-6 pt-4 border-t flex items-center justify-between">
@@ -1137,6 +1148,7 @@ function ModerationIndexPage() {
           </div>
         )}
       </SectionCard>
+      </PermissionGuard>
     </div>
   );
 }

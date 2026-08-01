@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
+import { Avatar } from "@/components/Avatar";
 import { useNotifications } from "@/hooks/useApi";
 import { requireAuth } from "@/lib/auth";
 import { apiClient } from "@/lib/api";
@@ -133,7 +134,7 @@ function NotificationsPage() {
                 }`}
               >
                 <div className="relative shrink-0">
-                  <img src={actor?.avatar || undefined} alt="" className="size-12 rounded-full object-cover" />
+                  <Avatar src={actor?.avatar} name={actor?.name} handle={actor?.handle} size="lg" />
                   <span className="absolute -bottom-1 -right-1 size-6 rounded-full bg-background grid place-items-center border border-border">
                     <Icon className={`size-3.5 ${n.kind === "LIKE" ? "text-accent fill-accent" : "text-foreground"}`} />
                   </span>

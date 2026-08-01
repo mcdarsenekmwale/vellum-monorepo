@@ -1,5 +1,6 @@
 import React, { memo, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Avatar } from '../Avatar';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +25,8 @@ interface HighlightActionsProps {
   onBookmark: () => void;
   onMore: () => void;
   authorAvatar?: string;
+  authorName?: string;
+  authorHandle?: string;
 }
 
 /**
@@ -42,6 +45,8 @@ const HighlightActions = memo(function HighlightActions({
   onBookmark,
   onMore,
   authorAvatar,
+  authorName,
+  authorHandle,
 }: HighlightActionsProps) {
   // Button scale animations
   const likeScale = useSharedValue(1);
@@ -226,9 +231,11 @@ const HighlightActions = memo(function HighlightActions({
       {/* Music disc */}
       {authorAvatar && (
         <Animated.View style={[styles.audioThumb, musicStyle]}>
-          <Image
-            source={{ uri: authorAvatar }}
-            style={styles.audioThumbImage}
+          <Avatar
+            uri={authorAvatar}
+            name={authorName}
+            handle={authorHandle}
+            size={36}
           />
         </Animated.View>
       )}

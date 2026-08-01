@@ -52,19 +52,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    const isDev = process.env.NODE_ENV === 'development';
     const responseBody: any = {
       statusCode: status,
-      message,
+      message: status >= 500 && !isDev ? 'Internal server error' : message,
       timestamp: new Date().toISOString(),
       path: request.url,
     };
 
-    if (status >= 500) {
+    // Only expose internal error details in development
+    if (status >= 500 && isDev) {
       if (exception instanceof Error) {
         responseBody.errorType = exception.name;
         responseBody.errorCode = (exception as any).code;
         responseBody.errorMessage = exception.message;
-        responseBody.stack = process.env.NODE_ENV === 'development' ? exception.stack : undefined;
+        responseBody.stack = exception.stack;
       } else if (exception instanceof HttpException) {
         responseBody.errorDetails = errorDetails;
       }

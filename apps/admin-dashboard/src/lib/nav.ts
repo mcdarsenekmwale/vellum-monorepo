@@ -30,6 +30,9 @@ import {
   Settings,
   UserCircle,
   HelpCircle,
+  Headphones,
+  Ticket,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -97,6 +100,15 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Support",
+    items: [
+      { title: "Support Dashboard", to: "/support", icon: Headphones },
+      { title: "Tickets", to: "/support/tickets", icon: Ticket },
+      { title: "Knowledge Base", to: "/support/kb", icon: BookOpen },
+      { title: "Help Center", to: "/help", icon: HelpCircle },
+    ],
+  },
+  {
     label: "System",
     items: [
       { title: "Audit Logs", to: "/audit", icon: ScrollText },
@@ -104,7 +116,6 @@ export const NAV: NavGroup[] = [
       { title: "Feature Flags", to: "/flags", icon: ToggleLeft },
       { title: "Settings", to: "/settings", icon: Settings },
       { title: "Profile", to: "/profile", icon: UserCircle },
-      { title: "Help Center", to: "/help", icon: HelpCircle },
     ],
   },
 ];

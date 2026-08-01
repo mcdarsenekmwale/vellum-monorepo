@@ -13,4 +13,28 @@ export const apiClient = createApiClient({
   withCredentials: true,
 });
 
-export type { User, Article, Highlight, Comment, Category, Notification, PaginatedResponse, Story, UserSettings, ArticleAuthor, SearchResults, SuggestedArticlesResponse, SuggestedAuthor, SuggestedAuthorsResponse } from '@vellum/api-client/types';
+export type {
+  User,
+  Article,
+  Highlight,
+  Comment,
+  Category,
+  Notification,
+  PaginatedResponse,
+  Story,
+  UserSettings,
+  ArticleAuthor,
+  SearchResults,
+  SuggestedArticlesResponse,
+  SuggestedAuthor,
+  SuggestedAuthorsResponse,
+  HelpArticle,
+  SupportTicket,
+  TicketCategory,
+  TicketMessage,
+  TicketStatus,
+  TicketPriority,
+  TicketType,
+  CreateTicketRequest,
+  TicketListResponse,
+} from '@vellum/api-client/types';

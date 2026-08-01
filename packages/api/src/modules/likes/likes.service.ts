@@ -15,30 +15,52 @@ export class LikesService {
     const targetKey = articleSlug ? 'articleSlug' : highlightId ? 'highlightId' : 'commentId';
     const targetValue = articleSlug || highlightId || commentId;
 
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        const existingLike = await tx.like.findFirst({ where });
+    const MAX_RETRIES = 2;
 
-        if (existingLike) {
-          await tx.like.delete({ where: { id: existingLike.id } });
-          await this.decrementCount(tx, targetKey, targetValue as string);
-          return { liked: false };
-        }
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await this.prisma.$transaction(async (tx) => {
+          const existingLike = await tx.like.findFirst({ where });
 
-        await tx.like.create({ data: { userId, articleSlug, highlightId, commentId } });
-        await this.incrementCount(tx, targetKey, targetValue as string);
-        await this.maybeCreateNotification(tx, userId, targetKey, targetValue as string, articleSlug, highlightId, commentId);
-        return { liked: true };
-      });
-    } catch (error: any) {
-      if (error?.code === 'P2002') {
-        const existingLike = await this.prisma.like.findFirst({ where });
-        if (existingLike) {
+          if (existingLike) {
+            try {
+              await tx.like.delete({ where: { id: existingLike.id } });
+            } catch (deleteError: any) {
+              if (deleteError?.code === 'P2025') {
+                return { liked: false };
+              }
+              throw deleteError;
+            }
+            await this.decrementCount(tx, targetKey, targetValue as string);
+            return { liked: false };
+          }
+
+          try {
+            await tx.like.create({ data: { userId, articleSlug, highlightId, commentId } });
+          } catch (createError: any) {
+            if (createError?.code === 'P2002') {
+              return { liked: true };
+            }
+            throw createError;
+          }
+          await this.incrementCount(tx, targetKey, targetValue as string);
+          await this.maybeCreateNotification(tx, userId, targetKey, targetValue as string, articleSlug, highlightId, commentId);
           return { liked: true };
+        });
+      } catch (error: any) {
+        const isRetryable =
+          error?.code === 'P2002' ||
+          error?.code === 'P2025' ||
+          error?.code === 'P2034';
+
+        if (isRetryable && attempt < MAX_RETRIES) {
+          continue;
         }
+        throw error;
       }
-      throw error;
     }
+
+    throw new Error('Failed to toggle like after multiple attempts');
   }
 
   private async incrementCount(tx: any, targetKey: string, targetValue: string) {

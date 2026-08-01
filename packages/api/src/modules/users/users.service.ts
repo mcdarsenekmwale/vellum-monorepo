@@ -9,7 +9,21 @@ export class UsersService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        handle: true,
+        name: true,
+        avatar: true,
+        bio: true,
+        website: true,
+        location: true,
+        publication: true,
+        role: true,
+        isActive: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
         settings: true,
         articles: {
           where: { isPublished: true },
@@ -23,8 +37,6 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    const { passwordHash, ...profile } = user;
 
     const followerCount = await this.prisma.follow.count({
       where: { followingId: userId },
@@ -35,7 +47,7 @@ export class UsersService {
     });
 
     return {
-      ...profile,
+      ...user,
       followerCount,
       followingCount,
       articleCount: user.articles.length,
@@ -45,7 +57,17 @@ export class UsersService {
   async getUserByHandle(handle: string) {
     const user = await this.prisma.user.findUnique({
       where: { handle },
-      include: {
+      select: {
+        id: true,
+        handle: true,
+        name: true,
+        avatar: true,
+        bio: true,
+        website: true,
+        location: true,
+        publication: true,
+        role: true,
+        createdAt: true,
         settings: true,
         articles: {
           where: { isPublished: true },
@@ -60,8 +82,6 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { passwordHash, ...profile } = user;
-
     const followerCount = await this.prisma.follow.count({
       where: { followingId: user.id },
     });
@@ -71,7 +91,7 @@ export class UsersService {
     });
 
     return {
-      ...profile,
+      ...user,
       followerCount,
       followingCount,
       articleCount: user.articles.length,
@@ -92,10 +112,14 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: dto,
+      select: {
+        id: true, email: true, handle: true, name: true, avatar: true, bio: true,
+        website: true, location: true, publication: true, role: true, isActive: true,
+        emailVerified: true, createdAt: true, updatedAt: true,
+      },
     });
 
-    const { passwordHash, ...updatedUser } = user;
-    return updatedUser;
+    return user;
   }
 
   async updateSettings(userId: string, dto: UpdateUserSettingsDto) {

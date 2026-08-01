@@ -5,6 +5,7 @@ import { useAuthState } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { useState, useEffect } from 'react';
 import type { Article } from '@vellum/api-client/types';
+import { Avatar } from '../components/Avatar';
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading } = useAuthState();
@@ -67,9 +68,13 @@ export default function ProfilePage() {
   return (
     <ScrollView style={{ backgroundColor: '#f7f4ee', flex: 1 }}>
       <View style={{ paddingHorizontal: 24, paddingVertical: 24, alignItems: 'center' }}>
-        <Image
-          source={{ uri: user?.avatar || 'https://via.placeholder.com/96' }}
-          style={{ width: 96, height: 96, borderRadius: 48, borderWidth: 2, borderColor: '#ff6b6b' }}
+        <Avatar
+          uri={user?.avatar}
+          name={user?.name}
+          handle={user?.handle}
+          size={96}
+          style={{ borderWidth: 2, borderColor: '#ff6b6b' }}
+          containerStyle={{ borderWidth: 2, borderColor: '#ff6b6b' }}
         />
         <Text style={{ fontSize: 32, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 16, color: '#000000' }}>{user?.name || 'Guest'}</Text>
         <Text style={{ fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: '#666666', marginTop: 4 }}>{user?.handle || '@guest'}</Text>

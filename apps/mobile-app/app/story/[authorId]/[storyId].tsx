@@ -5,6 +5,7 @@ import { useAuthState } from '../../../hooks/useApi';
 import { apiClient } from '../../../lib/api';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { Story } from '../../../lib/api';
+import { Avatar } from '../../../components/Avatar';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -260,9 +261,15 @@ export default function StoryViewer() {
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Image
-              source={{ uri: currentStory.author.avatar || authUser?.avatar || '' }}
-              style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }}
+            <Avatar
+              uri={currentStory.author.avatar || authUser?.avatar}
+              name={currentStory.author.name}
+              handle={authUser?.handle}
+              size={36}
+              style={{
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.3)',
+              }}
             />
             <View>
               <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>

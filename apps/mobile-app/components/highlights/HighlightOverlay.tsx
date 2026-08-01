@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Avatar } from '../Avatar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -16,6 +17,8 @@ const { width, height: screenHeight } = Dimensions.get('window');
 interface HighlightOverlayProps {
   handle: string;
   authorAvatar?: string;
+  authorName?: string;
+  authorHandle?: string;
   description?: string;
   title: string;
   music?: string;
@@ -41,6 +44,8 @@ interface HighlightOverlayProps {
 const HighlightOverlay = memo(function HighlightOverlay({
   handle,
   authorAvatar,
+  authorName,
+  authorHandle,
   description,
   title,
   music,
@@ -66,8 +71,11 @@ const HighlightOverlay = memo(function HighlightOverlay({
     <View style={styles.overlayContainer}>
       {/* Author info */}
       <TouchableOpacity style={styles.authorRow} onPress={onProfilePress} activeOpacity={0.7}>
-        <Image
-          source={{ uri: authorAvatar || '' }}
+        <Avatar
+          uri={authorAvatar}
+          name={authorName}
+          handle={authorHandle || handle}
+          size={36}
           style={styles.authorAvatar}
         />
         <Text style={styles.handleText}>{handle}</Text>

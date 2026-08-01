@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuthState();
+  const { login } = useAuthState();
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
   const [email, setEmail] = useState('');
@@ -35,7 +35,6 @@ export default function RegisterScreen() {
 
     try {
       await apiClient.register({ email, password, name, handle });
-      // Auto-login after registration
       await login(email, password);
       router.replace('/');
     } catch (err: any) {
@@ -51,31 +50,42 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Back button */}
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ marginBottom: 24 }}
+            style={{ paddingVertical: 16 }}
           >
             <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
 
-          {/* Logo */}
-          <Text
-            style={{
-              fontFamily: 'Georgia',
-              fontStyle: 'italic',
-              fontSize: 32,
-              fontWeight: '600',
-              color: '#000000',
-              marginBottom: 8,
-            }}
-          >
-            Vellum.
-          </Text>
-          <Text style={{ fontSize: 16, color: '#666666', marginBottom: 32 }}>
-            Create your account
-          </Text>
+          {/* Instagram-style centered logo */}
+          <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 32 }}>
+            <Text
+              style={{
+                fontFamily: 'Georgia',
+                fontStyle: 'italic',
+                fontSize: 48,
+                fontWeight: '700',
+                color: '#000000',
+                letterSpacing: -1,
+              }}
+            >
+              Vellum.
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: '#666666',
+                marginTop: 8,
+              }}
+            >
+              Create your account
+            </Text>
+          </View>
 
           {/* Error */}
           {error && (
@@ -92,10 +102,7 @@ export default function RegisterScreen() {
           )}
 
           {/* Name Input */}
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Full Name
-            </Text>
+          <View style={{ marginBottom: 12 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -104,17 +111,18 @@ export default function RegisterScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <User size={18} color="#999999" />
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="Your name"
+                placeholder="Full Name"
+                placeholderTextColor="#999999"
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
@@ -124,10 +132,7 @@ export default function RegisterScreen() {
           </View>
 
           {/* Handle Input */}
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Handle
-            </Text>
+          <View style={{ marginBottom: 12 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -136,34 +141,32 @@ export default function RegisterScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <AtSign size={18} color="#999999" />
               <TextInput
                 value={handle}
                 onChangeText={(text) => setHandle(text.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())}
-                placeholder="yourhandle"
+                placeholder="Handle"
+                placeholderTextColor="#999999"
                 autoCapitalize="none"
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
                 }}
               />
             </View>
-            <Text style={{ fontSize: 12, color: '#999999', marginTop: 4 }}>
+            <Text style={{ fontSize: 12, color: '#999999', marginTop: 4, marginLeft: 4 }}>
               Letters, numbers, and underscores only
             </Text>
           </View>
 
           {/* Email Input */}
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Email
-            </Text>
+          <View style={{ marginBottom: 12 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -172,19 +175,20 @@ export default function RegisterScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <Mail size={18} color="#999999" />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder="Email"
+                placeholderTextColor="#999999"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
@@ -194,10 +198,7 @@ export default function RegisterScreen() {
           </View>
 
           {/* Password Input */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6, color: '#000000' }}>
-              Password
-            </Text>
+          <View style={{ marginBottom: 16 }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -206,18 +207,19 @@ export default function RegisterScreen() {
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: '#e5e5e5',
-                paddingHorizontal: 12,
+                paddingHorizontal: 14,
+                height: 52,
               }}
             >
               <Lock size={18} color="#999999" />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Min 6 characters"
+                placeholder="Password (min 6 characters)"
+                placeholderTextColor="#999999"
                 secureTextEntry={!showPassword}
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
                   paddingHorizontal: 10,
                   fontSize: 16,
                   color: '#000000',
@@ -242,7 +244,7 @@ export default function RegisterScreen() {
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
-              marginBottom: 16,
+              marginBottom: 24,
               opacity: isLoading ? 0.5 : 1,
             }}
           >
@@ -255,8 +257,116 @@ export default function RegisterScreen() {
             )}
           </TouchableOpacity>
 
+          {/* OR Divider */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#e5e5e5' }} />
+            <Text style={{ color: '#999999', fontSize: 13, marginHorizontal: 16, fontWeight: '500' }}>
+              OR
+            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: '#e5e5e5' }} />
+          </View>
+
+          {/* Social Login Options */}
+          {/* Google */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10 }}>G</Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Google
+            </Text>
+          </TouchableOpacity>
+
+          {/* Apple */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10 }}>
+              {'\uF8FF'}
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Apple
+            </Text>
+          </TouchableOpacity>
+
+          {/* Facebook */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 10,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 20, marginRight: 10, color: '#1877F2' }}>
+              f
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Facebook
+            </Text>
+          </TouchableOpacity>
+
+          {/* Phone */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ffffff',
+              paddingVertical: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#e5e5e5',
+              marginBottom: 32,
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 18, marginRight: 10 }}>
+              {'\u260E'}
+            </Text>
+            <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
+              Continue with Phone
+            </Text>
+          </TouchableOpacity>
+
           {/* Login Link */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              paddingVertical: 16,
+              borderTopWidth: 1,
+              borderTopColor: '#e5e5e5',
+            }}
+          >
             <Text style={{ color: '#666666', fontSize: 14 }}>Already have an account? </Text>
             <Link href="/login" asChild>
               <TouchableOpacity>

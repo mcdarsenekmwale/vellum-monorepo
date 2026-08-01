@@ -288,3 +288,113 @@ export interface SuggestedAuthorsResponse {
   limit: number;
   offset: number;
 }
+
+// ─── Help Center ──────────────────────────────────────────────────────────
+
+export interface HelpArticle {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  content: string[];
+  category: string;
+  icon: string;
+  readMinutes: number;
+  popular: boolean;
+  views: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TicketStatus =
+  | 'NEW'
+  | 'ASSIGNED'
+  | 'IN_PROGRESS'
+  | 'WAITING_ON_CUSTOMER'
+  | 'ESCALATED'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'REOPENED';
+
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'EMERGENCY';
+export type TicketType = 'CUSTOMER' | 'INTERNAL';
+
+export interface TicketCategory {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketMessage {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  author: ArticleAuthor;
+  body: string;
+  isInternal: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  message: string;
+  description?: string;
+  type: TicketType;
+  priority: TicketPriority;
+  status: TicketStatus;
+  userId: string;
+  assigneeId?: string;
+  departmentId?: string;
+  categoryId?: string;
+  slaPolicyId?: string;
+  dueAt?: string;
+  firstResponseAt?: string;
+  resolvedAt?: string;
+  closedAt?: string;
+  reopenedAt?: string;
+  satisfaction?: number;
+  version: number;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  category?: TicketCategory;
+  department?: { id: string; key: string; name: string; email?: string };
+  assignee?: ArticleAuthor;
+  messages?: TicketMessage[];
+  statusHistory?: Array<{
+    id: string;
+    fromStatus?: TicketStatus;
+    toStatus: TicketStatus;
+    reason?: string;
+    changedById: string;
+    changedBy?: { id: string; name: string };
+    createdAt: string;
+  }>;
+}
+
+export interface CreateTicketRequest {
+  subject: string;
+  message: string;
+  description?: string;
+  type?: TicketType;
+  priority?: TicketPriority;
+  categoryId?: string;
+}
+
+export interface TicketListResponse {
+  data: SupportTicket[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

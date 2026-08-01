@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Avatar } from "@/components/Avatar";
 import {
   Home,
   Compass,
@@ -63,9 +64,7 @@ export function WebShell({ children }: { children: ReactNode }) {
   const userDisplay = {
     name: user?.name || "Guest",
     handle: user?.handle || "@guest",
-    avatar:
-      user?.avatar ||
-      `https://ui-avatars.com/api/?name=Guest&background=random`,
+    avatar: user?.avatar || null,
   };
 
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
@@ -143,10 +142,12 @@ export function WebShell({ children }: { children: ReactNode }) {
                   to="/profile"
                   className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted"
                 >
-                  <img
+                  <Avatar
                     src={userDisplay.avatar}
                     alt={userDisplay.name}
-                    className="size-10 rounded-full object-cover"
+                    name={userDisplay.name}
+                    handle={userDisplay.handle}
+                    size="md"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">
@@ -207,10 +208,12 @@ export function WebShell({ children }: { children: ReactNode }) {
                       <span className="absolute top-2 right-2 size-2 bg-accent rounded-full" />
                     </Link>
                     <Link to="/profile" className="md:hidden">
-                      <img
+                      <Avatar
                         src={userDisplay.avatar}
                         alt=""
-                        className="size-9 rounded-full object-cover"
+                        name={userDisplay.name}
+                        handle={userDisplay.handle}
+                        size="sm"
                       />
                     </Link>
                   </>

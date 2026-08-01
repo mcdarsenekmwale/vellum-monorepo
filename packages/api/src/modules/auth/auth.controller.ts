@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus, Res, Inject, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto } from './dto/auth.dto';
@@ -31,6 +32,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email or handle already exists' })
@@ -43,6 +45,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -81,6 +84,7 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 200, description: 'Reset link sent' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -89,6 +93,7 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ApiOperation({ summary: 'Reset password' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -98,6 +103,7 @@ export class AuthController {
 
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ApiOperation({ summary: 'Verify email address' })
   @ApiResponse({ status: 200, description: 'Email verified' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -113,14 +119,19 @@ export class AuthController {
   async getMe(@Request() req: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { settings: true },
+      select: {
+        id: true, email: true, handle: true, name: true, avatar: true, bio: true,
+        website: true, location: true, publication: true, role: true, isActive: true,
+        emailVerified: true, createdAt: true, updatedAt: true,
+        settings: true,
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException();
     }
 
-    const { passwordHash, settings, ...profile } = user;
+    const { settings, ...profile } = user;
 
     return {
       ...profile,

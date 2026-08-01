@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
+import { Avatar } from "@/components/Avatar";
 import { useCategory } from "@/hooks/useApi";
 import { ArrowLeft, Clock } from "lucide-react";
 
@@ -116,13 +117,12 @@ function CategoryPage() {
                   {hero.excerpt ?? "Read on Vellum."}
                 </p>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
-                  {hero.author?.avatar && (
-                    <img
-                      src={hero.author.avatar}
-                      alt=""
-                      className="size-7 rounded-full object-cover"
-                    />
-                  )}
+                  <Avatar
+                    src={hero.author?.avatar}
+                    name={hero.author?.name}
+                    handle={hero.author?.handle}
+                    size="xs"
+                  />
                   <span className="font-semibold text-foreground">
                     {hero.author?.name}
                   </span>

@@ -105,6 +105,13 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes ig-bounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
 @utility animate-entry {
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

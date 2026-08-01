@@ -1,5 +1,6 @@
 import React, { memo, useRef, useMemo, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, TextInput, Keyboard, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Keyboard, Platform } from 'react-native';
+import { Avatar } from '../Avatar';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { X, Heart } from 'lucide-react-native';
 import type { Comment } from '@vellum/api-client/types';
@@ -11,6 +12,8 @@ interface HighlightCommentsProps {
   comments: Comment[];
   onAddComment: (body: string) => void;
   currentUserAvatar?: string | null;
+  currentUserName?: string | null;
+  currentUserHandle?: string | null;
 }
 
 export interface HighlightCommentsRef {
@@ -22,7 +25,7 @@ export interface HighlightCommentsRef {
  * Comments bottom sheet using @gorhom/bottom-sheet
  */
 const HighlightComments = memo(forwardRef<HighlightCommentsRef, HighlightCommentsProps>(function HighlightComments(
-  { highlightId, visible, onClose, comments, onAddComment, currentUserAvatar },
+  { highlightId, visible, onClose, comments, onAddComment, currentUserAvatar, currentUserName, currentUserHandle },
   ref
 ) {
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -77,7 +80,7 @@ const HighlightComments = memo(forwardRef<HighlightCommentsRef, HighlightComment
   // Render comment item
   const renderCommentItem = useCallback(({ item }: { item: Comment }) => (
     <View style={styles.commentItem}>
-      <Image source={{ uri: item.author?.avatar || 'https://via.placeholder.com/32' }} style={styles.commentAvatar} />
+      <Avatar uri={item.author?.avatar} name={item.author?.name} handle={item.author?.handle} size={32} style={styles.commentAvatar} />
       <View style={styles.commentBody}>
         <Text style={styles.commentAuthor}>
           {item.author?.name || 'Unknown'} <Text style={styles.commentTime}>· {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'now'}</Text>
@@ -140,8 +143,8 @@ const HighlightComments = memo(forwardRef<HighlightCommentsRef, HighlightComment
 
       {/* Comment input */}
       <View style={styles.composer}>
-        <Image source={{ uri: currentUserAvatar || 'https://via.placeholder.com/28' }} style={styles.composerAvatar} />
-        <TextInput
+        <Avatar uri={currentUserAvatar} name={currentUserName} handle={currentUserHandle} size={28} style={styles.composerAvatar} />
+        <BottomSheetTextInput
           value={commentText}
           onChangeText={setCommentText}
           placeholder="Add a comment..."

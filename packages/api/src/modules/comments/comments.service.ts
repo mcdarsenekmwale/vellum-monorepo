@@ -143,14 +143,15 @@ export class CommentsService {
     return this.prisma.comment.update({ where: { id: commentId }, data: { body } });
   }
 
-  async deleteComment(userId: string, commentId: string) {
+  async deleteComment(userId: string, commentId: string, userRole?: string) {
     const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
 
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
 
-    if (comment.authorId !== userId) {
+    // Author can delete their own; moderators/admins can delete any
+    if (comment.authorId !== userId && userRole !== 'MODERATOR' && userRole !== 'ADMIN') {
       throw new BadRequestException('You can only delete your own comments');
     }
 

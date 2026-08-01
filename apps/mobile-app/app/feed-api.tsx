@@ -1,9 +1,11 @@
 import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Link } from 'expo-router';
-import { Heart, Bookmark, MessageCircle, Share2, Eye } from 'lucide-react-native';
+import { Eye } from 'lucide-react-native';
 import { useArticles, useHighlights, useStories, useSocialActions, useAuthState } from '../hooks/useApi';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Article, Highlight, Story } from '@vellum/api-client/types';
+import { Avatar } from '../components/Avatar';
+import { ArticleActions } from '../components/ArticleActions';
 
 const STORY_24H = 24 * 60 * 60 * 1000;
 
@@ -54,8 +56,8 @@ export default function FeedPage() {
   const { data: storiesData, isLoading: storiesLoading } = useStories();
   const { toggleLike, toggleBookmark, isLoading: actionLoading } = useSocialActions();
 
-  const [likedArticles, setLikedArticles] = useState<Set<string>>(new Set());
-  const [savedArticles, setSavedArticles] = useState<Set<string>>(new Set());
+  const [likedMap, setLikedMap] = useState<Map<string, boolean>>(new Map());
+  const [bookmarkedMap, setBookmarkedMap] = useState<Map<string, boolean>>(new Map());
   const [viewedStories, setViewedStories] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
@@ -100,34 +102,81 @@ export default function FeedPage() {
     return authorStories.some((s) => !viewedStories.has(s.id));
   };
 
+  // Check if article is liked (API state + optimistic local override)
+  const isArticleLiked = useCallback((article: Article): boolean => {
+    const local = likedMap.get(article.slug);
+    return local !== undefined ? local : article.isLiked;
+  }, [likedMap]);
+
+  // Check if article is bookmarked (API state + optimistic local override)
+  const isArticleBookmarked = useCallback((article: Article): boolean => {
+    const local = bookmarkedMap.get(article.slug);
+    return local !== undefined ? local : article.isBookmarked;
+  }, [bookmarkedMap]);
+
+  // Get effective likes count
+  const getLikesCount = useCallback((article: Article): number => {
+    const local = likedMap.get(article.slug);
+    if (local === undefined) return article.likesCount;
+    return local ? article.likesCount + 1 : Math.max(0, article.likesCount - 1);
+  }, [likedMap]);
+
   // Handle like toggle
   const handleLike = async (articleSlug: string) => {
+    const article = articles.find(a => a.slug === articleSlug);
+    if (!article) return;
+
+    const currentLiked = isArticleLiked(article);
+    const nextLiked = !currentLiked;
+
+    setLikedMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(articleSlug, nextLiked);
+      return newMap;
+    });
+
     const result = await toggleLike(articleSlug);
-    if (result !== null) {
-      setLikedArticles(prev => {
-        const newSet = new Set(prev);
-        if (result) {
-          newSet.add(articleSlug);
-        } else {
-          newSet.delete(articleSlug);
-        }
-        return newSet;
+    if (typeof result !== 'boolean') {
+      setLikedMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(articleSlug);
+        return newMap;
+      });
+    } else {
+      setLikedMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(articleSlug, result);
+        return newMap;
       });
     }
   };
 
   // Handle bookmark toggle
   const handleBookmark = async (articleSlug: string) => {
+    const article = articles.find(a => a.slug === articleSlug);
+    if (!article) return;
+
+    const currentSaved = isArticleBookmarked(article);
+    const nextSaved = !currentSaved;
+
+    setBookmarkedMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(articleSlug, nextSaved);
+      return newMap;
+    });
+
     const result = await toggleBookmark(articleSlug);
-    if (result !== null) {
-      setSavedArticles(prev => {
-        const newSet = new Set(prev);
-        if (result) {
-          newSet.add(articleSlug);
-        } else {
-          newSet.delete(articleSlug);
-        }
-        return newSet;
+    if (typeof result !== 'boolean') {
+      setBookmarkedMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(articleSlug);
+        return newMap;
+      });
+    } else {
+      setBookmarkedMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(articleSlug, result);
+        return newMap;
       });
     }
   };
@@ -167,7 +216,7 @@ export default function FeedPage() {
           <Link href="/compose" asChild>
             <TouchableOpacity style={{ alignItems: 'center', width: 64, marginRight: 6 }}>
               <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: '#d97706', padding: 2 }}>
-                <Image source={{ uri: user.avatar || 'https://via.placeholder.com/64' }} style={{ width: '100%', height: '100%', borderRadius: 28 }} />
+                <Avatar uri={user.avatar} name={user.name} handle={user.handle} size={54} />
               </View>
               <Text style={{ fontSize: 10, textAlign: 'center', fontWeight: '600', marginTop: 5, color: '#000000', textTransform: 'uppercase', letterSpacing: 0.5 }} numberOfLines={1}>Your Story</Text>
             </TouchableOpacity>
@@ -193,7 +242,7 @@ export default function FeedPage() {
                   borderColor: unviewed ? '#d97706' : '#e5e5e5',
                   padding: 2,
                 }}>
-                  <Image source={{ uri: author.avatar || 'https://via.placeholder.com/64' }} style={{ width: '100%', height: '100%', borderRadius: 28 }} />
+                  <Avatar uri={author.avatar} name={author.name} handle={author.handle} size={54} />
                 </View>
                 <Text style={{
                   fontSize: 10, fontWeight: '600', marginTop: 5,
@@ -239,29 +288,32 @@ export default function FeedPage() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <Link href={`/author/${featured.author?.handle}`} asChild>
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Image source={{ uri: featured.author?.avatar || 'https://via.placeholder.com/36' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                <Avatar
+                  uri={featured.author?.avatar}
+                  name={featured.author?.name}
+                  handle={featured.author?.handle}
+                  size={36}
+                />
                 <View>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>{featured.author?.name}</Text>
                   <Text style={{ fontSize: 10, color: '#999999' }}>{formatRelativeTime(featured.createdAt)}</Text>
                 </View>
               </TouchableOpacity>
             </Link>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <TouchableOpacity onPress={() => handleLike(featured.slug)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Heart size={22} color={likedArticles.has(featured.slug) ? '#e11d48' : '#0a0a0a'} fill={likedArticles.has(featured.slug) ? '#e11d48' : 'none'} />
-              </TouchableOpacity>
-              <Link href={`/article/${featured.slug}`} asChild>
-                <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <MessageCircle size={22} color="#0a0a0a" />
-                </TouchableOpacity>
-              </Link>
-              <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Share2 size={22} color="#0a0a0a" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleBookmark(featured.slug)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Bookmark size={22} color={savedArticles.has(featured.slug) ? '#d97706' : '#0a0a0a'} fill={savedArticles.has(featured.slug) ? '#d97706' : 'none'} />
-              </TouchableOpacity>
-            </View>
+            <ArticleActions
+              articleSlug={featured.slug}
+              isLiked={isArticleLiked(featured)}
+              isBookmarked={isArticleBookmarked(featured)}
+              likesCount={getLikesCount(featured)}
+              commentsCount={featured.commentsCount || 0}
+              onLikeToggle={handleLike}
+              onBookmarkToggle={handleBookmark}
+              size="medium"
+              showShare={true}
+              showCounts={false}
+              tintColor="#0a0a0a"
+              activeTintColor="#e11d48"
+            />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
             <Eye size={12} color="#a3a3a3" />
@@ -270,7 +322,7 @@ export default function FeedPage() {
             </Text>
             <Text style={{ fontSize: 11, color: '#a3a3a3' }}>·</Text>
             <Text style={{ fontSize: 11, color: '#a3a3a3', fontWeight: '500' }}>
-              {(likedArticles.has(featured.slug) ? featured.likesCount + 1 : featured.likesCount).toLocaleString()} likes
+              {getLikesCount(featured).toLocaleString()} likes
             </Text>
           </View>
         </View>
@@ -306,9 +358,9 @@ export default function FeedPage() {
       {/* Articles list */}
       <View style={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 16 }}>
         {rest.map((a) => {
-          const liked = likedArticles.has(a.slug);
-          const saved = savedArticles.has(a.slug);
-          const likeCount = liked ? a.likesCount + 1 : a.likesCount;
+          const liked = isArticleLiked(a);
+          const bookmarked = isArticleBookmarked(a);
+          const likeCount = getLikesCount(a);
           
           return (
             <View key={a.slug} style={{ marginBottom: 26 }}>
@@ -331,22 +383,21 @@ export default function FeedPage() {
                     {a.views?.toLocaleString() || '0'} views
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                  <TouchableOpacity onPress={() => handleLike(a.slug)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Heart size={16} color={liked ? '#e11d48' : '#525252'} fill={liked ? '#e11d48' : 'none'} />
-                  </TouchableOpacity>
-                  <Link href={`/article/${a.slug}`} asChild>
-                    <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                      <MessageCircle size={16} color="#525252" />
-                    </TouchableOpacity>
-                  </Link>
-                  <TouchableOpacity hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Share2 size={16} color="#525252" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleBookmark(a.slug)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Bookmark size={16} color={saved ? '#d97706' : '#525252'} fill={saved ? '#d97706' : 'none'} />
-                  </TouchableOpacity>
-                </View>
+                <ArticleActions
+                  articleSlug={a.slug}
+                  isLiked={liked}
+                  isBookmarked={bookmarked}
+                  likesCount={likeCount}
+                  commentsCount={a.commentsCount || 0}
+                  onLikeToggle={handleLike}
+                  onBookmarkToggle={handleBookmark}
+                  size="small"
+                  showShare={true}
+                  showCounts={false}
+                  variant="compact"
+                  tintColor="#525252"
+                  activeTintColor="#e11d48"
+                />
               </View>
             </View>
           );

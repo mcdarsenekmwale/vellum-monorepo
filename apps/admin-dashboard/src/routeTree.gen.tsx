@@ -44,14 +44,18 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiRouteImport } from './routes/_app.ai'
 import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
 import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
+import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index'
 import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
+import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
+import { Route as AppSupportKbRouteImport } from './routes/_app.support.kb'
 import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
 import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
 import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
 import { Route as AppArticlesArticleIdRouteImport } from './routes/_app.articles.$articleId'
+import { Route as AppSupportTicketsTicketIdRouteImport } from './routes/_app.support.tickets.$ticketId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -227,6 +231,11 @@ const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppUsersRoute,
 } as any)
+const AppSupportIndexRoute = AppSupportIndexRouteImport.update({
+  id: '/support/',
+  path: '/support/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppModerationIndexRoute = AppModerationIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -246,6 +255,16 @@ const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
   getParentRoute: () => AppUsersRoute,
+} as any)
+const AppSupportTicketsRoute = AppSupportTicketsRouteImport.update({
+  id: '/support/tickets',
+  path: '/support/tickets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportKbRoute = AppSupportKbRouteImport.update({
+  id: '/support/kb',
+  path: '/support/kb',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppModerationReportIdRoute = AppModerationReportIdRouteImport.update({
   id: '/$reportId',
@@ -267,6 +286,12 @@ const AppArticlesArticleIdRoute = AppArticlesArticleIdRouteImport.update({
   path: '/$articleId',
   getParentRoute: () => AppArticlesRoute,
 } as any)
+const AppSupportTicketsTicketIdRoute =
+  AppSupportTicketsTicketIdRouteImport.update({
+    id: '/$ticketId',
+    path: '/$ticketId',
+    getParentRoute: () => AppSupportTicketsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -306,11 +331,15 @@ export interface FileRoutesByFullPath {
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/support/kb': typeof AppSupportKbRoute
+  '/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/users/$userId': typeof AppUsersUserIdRoute
   '/articles/': typeof AppArticlesIndexRoute
   '/audit/': typeof AppAuditIndexRoute
   '/moderation/': typeof AppModerationIndexRoute
+  '/support/': typeof AppSupportIndexRoute
   '/users/': typeof AppUsersIndexRoute
+  '/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -346,11 +375,15 @@ export interface FileRoutesByTo {
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/support/kb': typeof AppSupportKbRoute
+  '/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/users/$userId': typeof AppUsersUserIdRoute
   '/articles': typeof AppArticlesIndexRoute
   '/audit': typeof AppAuditIndexRoute
   '/moderation': typeof AppModerationIndexRoute
+  '/support': typeof AppSupportIndexRoute
   '/users': typeof AppUsersIndexRoute
+  '/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -392,11 +425,15 @@ export interface FileRoutesById {
   '/_app/audit/$entryId': typeof AppAuditEntryIdRoute
   '/_app/help/$articleId': typeof AppHelpArticleIdRoute
   '/_app/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/_app/support/kb': typeof AppSupportKbRoute
+  '/_app/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/_app/articles/': typeof AppArticlesIndexRoute
   '/_app/audit/': typeof AppAuditIndexRoute
   '/_app/moderation/': typeof AppModerationIndexRoute
+  '/_app/support/': typeof AppSupportIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
+  '/_app/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -438,11 +475,15 @@ export interface FileRouteTypes {
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
+    | '/support/kb'
+    | '/support/tickets'
     | '/users/$userId'
     | '/articles/'
     | '/audit/'
     | '/moderation/'
+    | '/support/'
     | '/users/'
+    | '/support/tickets/$ticketId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -478,11 +519,15 @@ export interface FileRouteTypes {
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
+    | '/support/kb'
+    | '/support/tickets'
     | '/users/$userId'
     | '/articles'
     | '/audit'
     | '/moderation'
+    | '/support'
     | '/users'
+    | '/support/tickets/$ticketId'
   id:
     | '__root__'
     | '/'
@@ -523,11 +568,15 @@ export interface FileRouteTypes {
     | '/_app/audit/$entryId'
     | '/_app/help/$articleId'
     | '/_app/moderation/$reportId'
+    | '/_app/support/kb'
+    | '/_app/support/tickets'
     | '/_app/users/$userId'
     | '/_app/articles/'
     | '/_app/audit/'
     | '/_app/moderation/'
+    | '/_app/support/'
     | '/_app/users/'
+    | '/_app/support/tickets/$ticketId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -783,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersIndexRouteImport
       parentRoute: typeof AppUsersRoute
     }
+    '/_app/support/': {
+      id: '/_app/support/'
+      path: '/support'
+      fullPath: '/support/'
+      preLoaderRoute: typeof AppSupportIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/moderation/': {
       id: '/_app/moderation/'
       path: '/'
@@ -811,6 +867,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersUserIdRouteImport
       parentRoute: typeof AppUsersRoute
     }
+    '/_app/support/tickets': {
+      id: '/_app/support/tickets'
+      path: '/support/tickets'
+      fullPath: '/support/tickets'
+      preLoaderRoute: typeof AppSupportTicketsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/kb': {
+      id: '/_app/support/kb'
+      path: '/support/kb'
+      fullPath: '/support/kb'
+      preLoaderRoute: typeof AppSupportKbRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/moderation/$reportId': {
       id: '/_app/moderation/$reportId'
       path: '/$reportId'
@@ -838,6 +908,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/articles/$articleId'
       preLoaderRoute: typeof AppArticlesArticleIdRouteImport
       parentRoute: typeof AppArticlesRoute
+    }
+    '/_app/support/tickets/$ticketId': {
+      id: '/_app/support/tickets/$ticketId'
+      path: '/$ticketId'
+      fullPath: '/support/tickets/$ticketId'
+      preLoaderRoute: typeof AppSupportTicketsTicketIdRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
     }
   }
 }
@@ -909,6 +986,17 @@ const AppUsersRouteWithChildren = AppUsersRoute._addFileChildren(
   AppUsersRouteChildren,
 )
 
+interface AppSupportTicketsRouteChildren {
+  AppSupportTicketsTicketIdRoute: typeof AppSupportTicketsTicketIdRoute
+}
+
+const AppSupportTicketsRouteChildren: AppSupportTicketsRouteChildren = {
+  AppSupportTicketsTicketIdRoute: AppSupportTicketsTicketIdRoute,
+}
+
+const AppSupportTicketsRouteWithChildren =
+  AppSupportTicketsRoute._addFileChildren(AppSupportTicketsRouteChildren)
+
 interface AppRouteChildren {
   AppAdvertisementsRoute: typeof AppAdvertisementsRoute
   AppAiRoute: typeof AppAiRoute
@@ -941,6 +1029,9 @@ interface AppRouteChildren {
   AppUsersRoute: typeof AppUsersRouteWithChildren
   AppVideosRoute: typeof AppVideosRoute
   AppWebhooksRoute: typeof AppWebhooksRoute
+  AppSupportKbRoute: typeof AppSupportKbRoute
+  AppSupportTicketsRoute: typeof AppSupportTicketsRouteWithChildren
+  AppSupportIndexRoute: typeof AppSupportIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -975,6 +1066,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppUsersRoute: AppUsersRouteWithChildren,
   AppVideosRoute: AppVideosRoute,
   AppWebhooksRoute: AppWebhooksRoute,
+  AppSupportKbRoute: AppSupportKbRoute,
+  AppSupportTicketsRoute: AppSupportTicketsRouteWithChildren,
+  AppSupportIndexRoute: AppSupportIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

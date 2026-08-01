@@ -7,6 +7,7 @@ import {
   useMemo,
 } from "react";
 import { X, Heart, Send } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
 import { useSocial } from "@/lib/social-store";
 import { useStoriesByAuthor, useStories } from "@/hooks/useApi";
 
@@ -327,15 +328,12 @@ function StoryViewer() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <img
-                src={
-                  currentStory.author?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    currentStory.author?.name || "User"
-                  )}&background=random`
-                }
-                alt=""
-                className="w-9 h-9 rounded-full border-2 border-white/30 object-cover"
+              <Avatar
+                src={currentStory.author?.avatar}
+                name={currentStory.author?.name}
+                handle={currentStory.author?.handle}
+                size="sm"
+                className="border-2 border-white/30"
               />
               <div>
                 <p className="text-white text-sm font-semibold">

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { WebShell } from "@/components/WebShell";
+import { Avatar } from "@/components/Avatar";
 import { apiClient } from "@/lib/api";
 import { useUser, useSocialActions } from "@/hooks/useApi";
 import { ArrowLeft, UserPlus, Check } from "lucide-react";
@@ -141,13 +142,11 @@ function FollowingPage() {
                   to={`/author/${user.handle}`}
                   className="shrink-0"
                 >
-                  <img
-                    src={
-                      user.avatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
-                    }
-                    alt={user.name}
-                    className="size-12 rounded-full object-cover"
+                  <Avatar
+                    src={user.avatar}
+                    name={user.name}
+                    handle={user.handle}
+                    size="lg"
                   />
                 </Link>
                 <div className="flex-1 min-w-0">

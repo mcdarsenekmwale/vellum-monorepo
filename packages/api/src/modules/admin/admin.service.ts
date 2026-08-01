@@ -1,5 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { CacheService } from '../../shared/cache/cache.service';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -13,7 +15,95 @@ export class AdminService {
   private settingsCacheExpiry = 0;
   private readonly SETTINGS_CACHE_TTL = 60_000; // 1 minute
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private cache: CacheService,
+  ) {}
+
+  /** Strip sensitive fields before returning a user to callers. */
+  private sanitizeUser(user: any) {
+    const { passwordHash, resetToken, resetTokenExpiresAt, verificationToken, verificationTokenExpiresAt, ...sanitized } = user;
+    return sanitized;
+  }
+
+  /** Deterministic HMAC-SHA256 hash for API keys (so we can look them up by hash). */
+  private hashApiKey(rawKey: string): string {
+    const secret = this.configService.get('API_KEY_SECRET') || this.configService.get('JWT_SECRET') || 'vellum-dev-secret-change-me';
+    return crypto.createHmac('sha256', secret).update(rawKey).digest('hex');
+  }
+
+  // ─── Legacy Role → RBAC bidirectional sync ────────────────────────────────
+  private readonly LEGACY_TO_RBAC: Record<string, string> = {
+    ADMIN: 'super_admin',
+    MODERATOR: 'moderator',
+    CREATOR: 'author',
+    USER: 'registered_user',
+    GUEST: 'guest',
+  };
+
+  private async syncLegacyRoleToRbacAssignments(
+    userId: string,
+    legacyRole: string,
+    opts?: { replacedBy?: string },
+  ) {
+    const targetKey = this.LEGACY_TO_RBAC[legacyRole] ?? 'registered_user';
+    const targetRole = await this.prisma.rbacRole.findFirst({
+      where: { key: targetKey, deletedAt: null, isActive: true },
+      select: { id: true },
+    });
+    if (!targetRole) return;
+
+    const legacyKeys = Object.values(this.LEGACY_TO_RBAC);
+    // Remove previous legacy-mapped RBAC assignments (only the ones mapped from legacy roles)
+    // so we don't accumulate. Keep custom RBAC-only roles intact.
+    const existingAssignments = await this.prisma.userRoleAssignment.findMany({
+      where: { userId, role: { key: { in: legacyKeys } } },
+      include: { role: true },
+    });
+    for (const existing of existingAssignments) {
+      if (existing.role.key !== targetKey) {
+        await this.prisma.userRoleAssignment.deleteMany({
+          where: { userId, roleId: existing.roleId },
+        });
+        await this.prisma.roleAssignmentHistory.create({
+          data: {
+            userId,
+            roleId: existing.roleId,
+            action: 'removed',
+            reason: opts?.replacedBy ?? `sync from legacy role → ${legacyRole}`,
+          },
+        });
+      }
+    }
+    // Upsert target
+    const hasCurrent = existingAssignments.some((a) => a.role.key === targetKey);
+    if (!hasCurrent) {
+      try {
+        await this.prisma.userRoleAssignment.upsert({
+          where: { userId_roleId: { userId, roleId: targetRole.id } },
+          create: { userId, roleId: targetRole.id, isPrimary: true },
+          update: { isPrimary: true },
+        });
+        await this.prisma.roleAssignmentHistory.create({
+          data: {
+            userId,
+            roleId: targetRole.id,
+            action: 'assigned',
+            reason: opts?.replacedBy ?? `sync from legacy role → ${legacyRole}`,
+          },
+        });
+      } catch {
+        // unique constraint race
+      }
+    }
+    // Invalidate RBAC cache
+    try {
+      await this.cache.del(`rbac:permissions:${userId}`);
+    } catch {
+      // optional
+    }
+  }
 
   async getDashboardStats() {
     const now = new Date();
@@ -81,14 +171,15 @@ export class AdminService {
   }
 
   async getUserById(id: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
     });
+    return this.sanitizeUser(user);
   }
 
   async createUser(email: string, name: string, handle: string, role: Role, password: string) {
     const passwordHash = await bcrypt.hash(password, 12);
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         email,
         name,
@@ -97,10 +188,14 @@ export class AdminService {
         passwordHash,
       },
     });
+    // Sync legacy role → RBAC assignments
+    await this.syncLegacyRoleToRbacAssignments(created.id, role, { replacedBy: 'admin createUser' });
+    await this.prisma.userSettings.create({ data: { userId: created.id } }).catch(() => null);
+    return this.sanitizeUser(created);
   }
 
   async updateUser(id: string, data: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role; avatar?: string; publication?: string; isActive?: boolean }) {
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
@@ -115,28 +210,37 @@ export class AdminService {
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
     });
+    if (data.role !== undefined) {
+      await this.syncLegacyRoleToRbacAssignments(id, data.role, { replacedBy: 'admin updateUser' });
+    }
+    return this.sanitizeUser(updated);
   }
 
   async deleteUser(id: string) {
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+    return this.sanitizeUser(updated);
   }
 
   async updateUserRole(userId: string, role: Role) {
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { role },
     });
+    await this.syncLegacyRoleToRbacAssignments(userId, role, { replacedBy: 'admin updateUserRole' });
+    return this.sanitizeUser(updated);
   }
 
   async toggleUserStatus(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    return this.prisma.user.update({
+    if (!user) throw new NotFoundException('User not found');
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: !user.isActive },
     });
+    return this.sanitizeUser(updated);
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
@@ -593,16 +697,22 @@ export class AdminService {
   }
 
   async createApiKey(name: string, scopes: string[], userId?: string, expiresAt?: Date) {
-    const key = 'sk_' + crypto.randomBytes(24).toString('hex');
-    return this.prisma.apiKey.create({
+    const rawKey = 'sk_' + crypto.randomBytes(24).toString('hex');
+    const keyHash = this.hashApiKey(rawKey);
+    const record = await this.prisma.apiKey.create({
       data: {
         name,
-        key,
+        key: keyHash,
         scopes,
         userId: userId || null,
         expiresAt: expiresAt || null,
       },
+      include: {
+        user: { select: { id: true, handle: true, name: true, email: true } },
+      },
     });
+    // Return raw key ONCE (only on creation — never stored)
+    return { ...record, rawKey };
   }
 
   async deleteApiKey(id: string) {
@@ -1406,11 +1516,18 @@ export class AdminService {
   }
 
   async createSupportTicket(userId: string, data: { subject: string; message: string; priority: string }) {
+    const count = await this.prisma.supportTicket.count();
+    const ticketNumber = `TKT-${String(count + 1).padStart(6, '0')}`;
+    const priorityMap: Record<string, string> = {
+      low: 'LOW', medium: 'MEDIUM', high: 'HIGH', critical: 'CRITICAL', emergency: 'EMERGENCY',
+    };
     return this.prisma.supportTicket.create({
       data: {
+        ticketNumber,
         subject: data.subject,
         message: data.message,
-        priority: data.priority,
+        priority: (priorityMap[data.priority.toLowerCase()] ?? 'MEDIUM') as any,
+        status: 'NEW',
         userId,
       },
       include: {
@@ -1421,9 +1538,16 @@ export class AdminService {
 
   async listSupportTickets(params?: { page?: number; limit?: number; status?: string; priority?: string }) {
     const skip = ((params?.page ?? 1) - 1) * (params?.limit ?? 20);
-    const where: Record<string, any> = {};
-    if (params?.status) where.status = params.status;
-    if (params?.priority) where.priority = params.priority;
+    const where: Record<string, any> = { deletedAt: null };
+    if (params?.status) {
+      const statusMap: Record<string, string> = {
+        open: 'NEW', in_progress: 'IN_PROGRESS', resolved: 'RESOLVED', closed: 'CLOSED',
+      };
+      where.status = statusMap[params.status.toLowerCase()] ?? params.status.toUpperCase();
+    }
+    if (params?.priority) {
+      where.priority = params.priority.toUpperCase();
+    }
 
     const [tickets, total] = await Promise.all([
       this.prisma.supportTicket.findMany({
@@ -1433,6 +1557,7 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
+          assignee: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
         },
       }),
       this.prisma.supportTicket.count({ where }),
@@ -1442,9 +1567,15 @@ export class AdminService {
   }
 
   async updateSupportTicketStatus(id: string, status: string) {
+    const statusMap: Record<string, string> = {
+      open: 'NEW', assigned: 'ASSIGNED', in_progress: 'IN_PROGRESS',
+      waiting_on_customer: 'WAITING_ON_CUSTOMER', waiting_on_internal: 'WAITING_ON_INTERNAL',
+      escalated: 'ESCALATED', resolved: 'RESOLVED', closed: 'CLOSED', reopened: 'REOPENED',
+    };
+    const mappedStatus = statusMap[status.toLowerCase()] ?? status.toUpperCase();
     return this.prisma.supportTicket.update({
       where: { id },
-      data: { status },
+      data: { status: mappedStatus as any },
       include: {
         user: { select: { id: true, email: true, name: true, handle: true } },
       },
@@ -1452,10 +1583,21 @@ export class AdminService {
   }
 
   async getSupportTicket(id: string) {
-    return this.prisma.supportTicket.findUnique({
-      where: { id },
+    return this.prisma.supportTicket.findFirst({
+      where: { id, deletedAt: null },
       include: {
         user: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
+        assignee: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
+        department: true,
+        category: true,
+        messages: {
+          include: { author: { select: { id: true, name: true, avatar: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+        statusHistory: {
+          include: { changedBy: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
   }

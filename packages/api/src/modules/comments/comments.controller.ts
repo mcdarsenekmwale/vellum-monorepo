@@ -46,11 +46,11 @@ export class CommentsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.MODERATOR, Role.ADMIN)
+  @Roles(Role.USER, Role.CREATOR, Role.MODERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Delete a comment' })
   @ApiResponse({ status: 200, description: 'Comment deleted' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   async deleteComment(@Request() req: any, @Param('id') id: string) {
-    return this.commentsService.deleteComment(req.user.id, id);
+    return this.commentsService.deleteComment(req.user.id, id, req.user.role);
   }
 }

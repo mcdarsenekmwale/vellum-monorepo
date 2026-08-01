@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Animated, Pressable, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Animated, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { 
   ArrowLeft, 
@@ -15,6 +15,7 @@ import {
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuthState } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
+import { Avatar } from '../components/Avatar';
 
 /* ----------------- Custom Switch Component ----------------- */
 
@@ -228,9 +229,12 @@ export default function SettingsPage() {
       {/* User Profile Header */}
       {user && (
         <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, alignItems: 'center' }}>
-          <Image
-            source={{ uri: user.avatar || '' }}
-            style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#e5e0d8' }}
+          <Avatar
+            uri={user.avatar}
+            name={user.name}
+            handle={user.handle}
+            size={80}
+            style={{ borderWidth: 2, borderColor: '#e5e0d8' }}
           />
           <Text style={{ fontSize: 22, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 12, color: '#000000' }}>{user.name}</Text>
           <Text style={{ fontSize: 12, fontWeight: '600', color: '#666666', marginTop: 4 }}>{user.handle}</Text>

@@ -5,6 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { UserPlus, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
+import { Avatar } from "@/components/Avatar";
 import { useLoginPrompt } from "@/components/LoginPrompt";
 import { useAuthState } from "@/hooks/useApi";
 import type { SuggestedAuthor } from "@/lib/api";
@@ -214,13 +215,13 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
                 params={{ id: author.handle }}
                 className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
               >
-                <img
-                  src={
-                    author.avatar ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(author.name)}&background=random`
-                  }
+                <Avatar
+                  src={author.avatar}
                   alt={author.name}
-                  className="size-11 rounded-full object-cover flex-none"
+                  name={author.name}
+                  handle={author.handle}
+                  size="md"
+                  className="size-11"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">

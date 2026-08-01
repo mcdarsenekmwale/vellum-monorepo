@@ -3,47 +3,25 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Mail,
   UserPlus,
-  MoreHorizontal,
   Pencil,
   Trash2,
-  Search,
   Download,
   RefreshCw,
   X,
   Check,
   Shield,
-  UserCog,
   Users,
   UserCheck,
   UserX,
   Calendar,
   ChevronDown,
-  Loader2,
-  AlertCircle
-} from "lucide-react";
+  Loader2} from "lucide-react";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,13 +48,14 @@ import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CreateUserSheet, EditUserDialog, DeleteUserDialog, BulkDeleteDialog, EmailDialog } from "@/components/dashboard/users_action_components";
 
 export const Route = createFileRoute("/_app/users/")({
   head: () => ({ meta: [{ title: "Users · Vellum Admin" }] }),
   component: UsersList,
 });
 
-type RoleFilter = "all" | "USER" | "MODERATOR" | "CREATOR" | "DEVELOPER" | "EDITOR" | "ADMIN";
+type RoleFilter = "all" | "USER" | "MODERATOR" | "CREATOR" | "DEVELOPER" | "EDITOR" | "ADMIN" | "SUPPORT_AGENT" | "SUPPORT_ADMIN" ;
 type StatusFilter = "all" | "active" | "suspended";
 type TwoFAFilter = "all" | "enabled" | "disabled";
 
@@ -438,269 +417,64 @@ function UsersList() {
   return (
     <div className="space-y-6">
       {/* Create User Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invite user</DialogTitle>
-            <DialogDescription>
-              Create a new user account with the specified role and credentials.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="create-email">Email *</Label>
-              <Input
-                id="create-email"
-                type="email"
-                value={createEmail}
-                onChange={(e) => setCreateEmail(e.target.value)}
-                placeholder="user@example.com"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-name">Name *</Label>
-              <Input
-                id="create-name"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                placeholder="John Doe"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-handle">Handle *</Label>
-              <Input
-                id="create-handle"
-                value={createHandle}
-                onChange={(e) => setCreateHandle(e.target.value)}
-                placeholder="johndoe"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-role">Role</Label>
-              <Select value={createRole} onValueChange={setCreateRole}>
-                <SelectTrigger id="create-role">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USER">User</SelectItem>
-                  <SelectItem value="EDITOR">Editor</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="MODERATOR">Moderator</SelectItem>
-                  <SelectItem value="CREATOR">Creator</SelectItem>
-                  <SelectItem value="DEVELOPER">Developer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-password">Password *</Label>
-              <Input
-                id="create-password"
-                type="password"
-                value={createPassword}
-                onChange={(e) => setCreatePassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={createUser.isPending || !createEmail.trim() || !createName.trim() || !createHandle.trim() || !createPassword.trim()}
-            >
-              {createUser.isPending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create user"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateUserSheet
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        createEmail={createEmail}
+        setCreateEmail={setCreateEmail}
+        createName={createName}
+        setCreateName={setCreateName}
+        createHandle={createHandle}
+        setCreateHandle={setCreateHandle}
+        createRole={createRole}
+        setCreateRole={setCreateRole}
+        createPassword={createPassword}
+        setCreatePassword={setCreatePassword}
+        handleCreate={handleCreate}
+        createUserPending={createUser.isPending}
+      />
 
-      {/* Edit User Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit user</DialogTitle>
-            <DialogDescription>
-              Update user details and role.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-handle">Handle *</Label>
-              <Input
-                id="edit-handle"
-                value={editHandle}
-                onChange={(e) => setEditHandle(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-role">Role</Label>
-              <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger id="edit-role">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USER">User</SelectItem>
-                  <SelectItem value="MODERATOR">Moderator</SelectItem>
-                  <SelectItem value="CREATOR">Creator</SelectItem>
-                  <SelectItem value="DEVELOPER">Developer</SelectItem>
-                  <SelectItem value="EDITOR">Editor</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={updateUser.isPending || !editEmail.trim() || !editName.trim() || !editHandle.trim()}
-            >
-              {updateUser.isPending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save changes"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditUserDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        editEmail={editEmail}
+        setEditEmail={setEditEmail}
+        editName={editName}
+        setEditName={setEditName}
+        editHandle={editHandle}
+        setEditHandle={setEditHandle}
+        editRole={editRole}
+        setEditRole={setEditRole}
+        handleEdit={handleEdit}
+        updateUserPending={updateUser.isPending}
+      />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete user</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{selectedUser?.name}</strong>? This action cannot be undone.
-              {selectedUser?.id === currentUser?.id && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                  <AlertCircle className="size-4 shrink-0" />
-                  You are about to delete your own account.
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteUser.isPending}
-            >
-              {deleteUser.isPending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete user"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteUserDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        selectedUser={selectedUser}
+        currentUser={currentUser}
+        handleDelete={handleDelete}
+        deleteUserPending={deleteUser.isPending}
+      />
 
       {/* Bulk Delete Dialog */}
-      <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete selected users</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{selectedIds.length}</strong> users? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsBulkDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-            >
-              Delete users
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BulkDeleteDialog
+        open={isBulkDeleteOpen}
+        onOpenChange={setIsBulkDeleteOpen}
+        selectedIds={selectedIds}
+        handleBulkDelete={handleBulkDelete}
+      />
+
 
       {/* Email Dialog */}
-      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send email to {selectedUser?.name}</DialogTitle>
-            <DialogDescription>
-              Compose an email to this user.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email-subject">Subject</Label>
-              <Input
-                id="email-subject"
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder="Email subject"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email-body">Message</Label>
-              <textarea
-                id="email-body"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                placeholder="Write your message here..."
-                className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSendEmail} disabled={!emailSubject.trim() || !emailBody.trim() || isSendingEmail}>
-              {isSendingEmail ? (
-                <><Loader2 className="mr-2 size-4 animate-spin" /> Sending...</>
-              ) : (
-                <><Mail className="mr-2 size-4" /> Send email</>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EmailDialog 
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        user={selectedUser}
+        onSend={handleSendEmail}
+      />
 
       {/* Main List */}
       <ListPage
@@ -814,7 +588,7 @@ function UsersList() {
                       <DropdownMenuContent align="start">
                         <DropdownMenuLabel>Filter by role</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {(["all", "USER", "MODERATOR", "CREATOR", "DEVELOPER", "EDITOR", "ADMIN"] as const).map((role) => (
+                        {(["all", "USER", "MODERATOR", "CREATOR", "DEVELOPER", "EDITOR", "ADMIN", "SUPPORT_AGENT" , "SUPPORT_ADMIN"] as const).map((role) => (
                           <DropdownMenuItem
                             key={role}
                             onClick={() => setRoleFilter(role)}

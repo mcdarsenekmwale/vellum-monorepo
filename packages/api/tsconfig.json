@@ -19,5 +19,5 @@
     "types": ["node", "express", "multer"]
   },
   "include": ["src/**/*", "prisma/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.spec.ts", "src/**/*.test.ts", "tsconfig.spec.json"]
+  "exclude": ["node_modules", "dist", "src/**/*.spec.ts", "src/**/*.test.ts", "tsconfig.spec.json", "prisma/seed-rbac.ts"]
 }

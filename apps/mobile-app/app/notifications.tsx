@@ -5,6 +5,7 @@ import { useNotifications, useArticles } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { useMemo } from 'react';
 import type { Notification } from '@vellum/api-client/types';
+import { Avatar } from '../components/Avatar';
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -122,7 +123,7 @@ export default function NotificationsPage() {
             >
               {/* Avatar with action icon */}
               <View style={styles.avatarWrapper}>
-                <Image source={{ uri: actor?.avatar || 'https://via.placeholder.com/48' }} style={styles.avatar} />
+                <Avatar uri={actor?.avatar} name={actor?.name} handle={actor?.handle} size={48} />
                 <View style={styles.actionIcon}>
                   <Icon
                     size={11}

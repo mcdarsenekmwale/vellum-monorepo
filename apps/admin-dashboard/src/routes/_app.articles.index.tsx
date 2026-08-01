@@ -21,6 +21,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
+import { PermissionGuard, PermissionGate } from "@/components/dashboard/permission-guard";
+import { ReadOnlyBanner } from "@/components/dashboard/read-only-banner";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -82,7 +84,7 @@ type SortOption = "newest" | "oldest" | "mostViews" | "mostLikes" | "title";
 
 function ArticlesPage() {
   const navigate = useNavigate();
-  const { data, isLoading, refetch } = useArticles();
+  const { data, isLoading, error, refetch } = useArticles();
   const { data: categories } = useCategories();
   const { data: users } = useUsers();
   const createArticle = useCreateArticle();
@@ -488,15 +490,17 @@ function ArticlesPage() {
 
   return (
     <>
-      <ListPage
-        title="Articles"
-        description="Long-form written content across all authors."
-        eyebrow="Content"
-        rows={filteredRows}
-        searchKeys={["title", "excerpt"]}
-        pageSize={15}
-        isLoading={isLoading}
-        enableSelection={true}
+      <PermissionGuard resource="articles" action="read" showReadOnlyBanner>
+        <ListPage
+          title="Articles"
+          description="Long-form written content across all authors."
+          eyebrow="Content"
+          rows={filteredRows}
+          searchKeys={["title", "excerpt"]}
+          pageSize={15}
+          isLoading={isLoading}
+          error={error}
+          enableSelection={true}
         searchPlaceholder="Search articles... (⌘K)"
         onSelectionChange={(selected) => setSelectedIds(Array.from(selected))}
         enableExport={true}
@@ -880,6 +884,7 @@ function ArticlesPage() {
           navigate({ to: "/articles/$articleId", params: { articleId: c.id } });
         }}
       />
+      </PermissionGuard>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

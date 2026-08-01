@@ -289,6 +289,8 @@ export interface AIAgent {
   lastRunAt: string | null;
   createdAt: string;
   updatedAt: string;
+  config: Record<any, any>;
+  featured?: any;
 }
 
 // ─── Background Jobs ────────────────────────────────────────────────────────
@@ -689,14 +691,31 @@ export async function deleteHelpArticle(id: string): Promise<void> {
 
 export interface SupportTicket {
   id: string;
+  ticketNumber: string;
   subject: string;
   message: string;
+  description?: string;
+  type?: string;
   priority: string;
   status: string;
   userId: string;
+  assigneeId?: string | null;
+  departmentId?: string | null;
+  categoryId?: string | null;
+  dueAt?: string | null;
+  firstResponseAt?: string | null;
+  resolvedAt?: string | null;
+  closedAt?: string | null;
+  reopenedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   user?: { id: string; email: string; name: string; handle: string; avatar: string | null };
+  assignee?: { id: string; email: string; name: string; handle: string; avatar: string | null };
+  department?: { id: string; name: string; key: string };
+  category?: { id: string; name: string; key: string };
+  messages?: Array<{ id: string; body: string; isInternal: boolean; createdAt: string; author: { id: string; name: string; avatar: string | null } }>;
+  internalNotes?: Array<{ id: string; body: string; createdAt: string; author: { id: string; name: string; avatar?: string | null } }>;
+  statusHistory?: Array<{ id: string; fromStatus: string | null; toStatus: string; reason: string | null; createdAt: string; changedBy: { id: string; name: string } }>;
 }
 
 export async function createSupportTicket(data: {
@@ -723,6 +742,296 @@ export async function getSupportTicket(id: string): Promise<SupportTicket> {
 export async function updateSupportTicketStatus(id: string, status: string): Promise<SupportTicket> {
   return api(`/admin/support-tickets/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
 }
+
+// ─── Enterprise RBAC API ────────────────────────────────────────────────────
+
+export interface RbacPermission {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  groupId?: string;
+  group?: { id: string; key: string; name: string };
+}
+
+export interface RbacRole {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  isSystem: boolean;
+  isActive: boolean;
+  rank: number;
+  parentId?: string | null;
+  userCount?: number;
+  permissionCount?: number;
+  parent?: { id: string; key: string; name: string } | null;
+  permissions?: Array<{
+    permissionId: string;
+    granted: boolean;
+    permission: RbacPermission & { group?: { id: string; key: string; name: string } };
+  }>;
+}
+
+export interface PermissionGroup {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  permissions: RbacPermission[];
+}
+
+export interface UserRoleAssignment {
+  id: string;
+  userId: string;
+  roleId: string;
+  isPrimary: boolean;
+  expiresAt?: string | null;
+  role: RbacRole;
+}
+
+export interface UserEffectivePermissions {
+  permissions: string[];
+  roles: RbacRole[];
+  overrides: Array<{
+    id: string;
+    granted: boolean;
+    reason?: string | null;
+    permission: RbacPermission;
+  }>;
+}
+
+export async function getRbacRoles(params?: { search?: string; includeInactive?: boolean }): Promise<RbacRole[]> {
+  return api("/rbac/roles", { query: params });
+}
+
+export async function getRbacRole(id: string): Promise<RbacRole> {
+  return api(`/rbac/roles/${id}`);
+}
+
+export async function createRbacRole(data: {
+  key: string;
+  name: string;
+  description?: string;
+  parentId?: string;
+  rank?: number;
+  permissionIds?: string[];
+}): Promise<RbacRole> {
+  return api("/rbac/roles", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateRbacRole(
+  id: string,
+  data: { name?: string; description?: string; parentId?: string | null; rank?: number; isActive?: boolean },
+): Promise<RbacRole> {
+  return api(`/rbac/roles/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteRbacRole(id: string): Promise<{ success: boolean }> {
+  return api(`/rbac/roles/${id}`, { method: "DELETE" });
+}
+
+export async function restoreRbacRole(id: string): Promise<RbacRole> {
+  return api(`/rbac/roles/${id}/restore`, { method: "POST" });
+}
+
+export async function duplicateRbacRole(id: string, data: { key: string; name: string }): Promise<RbacRole> {
+  return api(`/rbac/roles/${id}/duplicate`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function assignRolePermissions(roleId: string, permissionIds: string[]): Promise<RbacRole> {
+  return api(`/rbac/roles/${roleId}/permissions`, { method: "PUT", body: JSON.stringify({ permissionIds }) });
+}
+
+export async function getPermissionGroups(): Promise<PermissionGroup[]> {
+  return api("/rbac/permission-groups");
+}
+
+export async function getRbacPermissions(params?: { groupId?: string; search?: string }): Promise<RbacPermission[]> {
+  return api("/rbac/permissions", { query: params });
+}
+
+export async function getRbacPermission(id: string): Promise<RbacPermission> {
+  return api(`/rbac/permissions/${id}`);
+}
+
+export async function createRbacPermission(data: {
+  key: string;
+  name: string;
+  groupId: string;
+  description?: string;
+  sortOrder?: number;
+}): Promise<RbacPermission> {
+  return api("/rbac/permissions", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateRbacPermission(
+  id: string,
+  data: { name?: string; groupId?: string; description?: string; sortOrder?: number },
+): Promise<RbacPermission> {
+  return api(`/rbac/permissions/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteRbacPermission(id: string): Promise<{ success: boolean }> {
+  return api(`/rbac/permissions/${id}`, { method: "DELETE" });
+}
+
+export async function getUserRoles(userId: string): Promise<UserRoleAssignment[]> {
+  return api(`/rbac/users/${userId}/roles`);
+}
+
+export async function assignUserRole(userId: string, roleId: string, isPrimary?: boolean, expiresAt?: string) {
+  return api(`/rbac/users/${userId}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ roleId, isPrimary, expiresAt }),
+  });
+}
+
+export async function removeUserRole(userId: string, roleId: string) {
+  return api(`/rbac/users/${userId}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export async function bulkAssignUserRole(userIds: string[], roleId: string) {
+  return api("/rbac/users/bulk-assign-role", {
+    method: "POST",
+    body: JSON.stringify({ userIds, roleId }),
+  });
+}
+
+export async function getUserEffectivePermissions(userId: string): Promise<UserEffectivePermissions> {
+  return api(`/rbac/users/${userId}/effective-permissions`);
+}
+
+export async function getUserRoleHistory(userId: string) {
+  return api(`/rbac/users/${userId}/role-history`);
+}
+
+export async function setPermissionOverride(
+  userId: string,
+  permissionId: string,
+  granted: boolean,
+  reason?: string,
+  expiresAt?: string,
+) {
+  return api(`/rbac/users/${userId}/permission-overrides`, {
+    method: "POST",
+    body: JSON.stringify({ permissionId, granted, reason, expiresAt }),
+  });
+}
+
+export async function removePermissionOverride(userId: string, permissionId: string) {
+  return api(`/rbac/users/${userId}/permission-overrides/${permissionId}`, { method: "DELETE" });
+}
+
+export async function getMyPermissions(): Promise<UserEffectivePermissions> {
+  return api("/rbac/me/permissions");
+}
+
+export async function seedRbac() {
+  return api("/rbac/seed", { method: "POST" });
+}
+
+// ─── Enterprise Support API ─────────────────────────────────────────────────
+
+export interface SupportDashboard {
+  summary: { openTickets: number; unassigned: number; inProgress: number; escalated: number; resolved: number; closed: number; onlineAgents: number };
+  byPriority: Array<{ priority: string; _count: number }>;
+  byStatus: Array<{ status: string; _count: number }>;
+}
+
+export interface SupportAgent {
+  id: string;
+  userId: string;
+  status: string;
+  activeTickets: number;
+  maxTickets: number;
+  skills: string[];
+  user: { id: string; name: string; email: string; avatar: string | null };
+  department?: { id: string; name: string };
+}
+
+export async function getSupportDashboard(): Promise<SupportDashboard> {
+  return api("/support/dashboard");
+}
+
+export async function getSupportAgents(): Promise<SupportAgent[]> {
+  return api("/support/agents");
+}
+
+export async function assignTicket(ticketId: string, agentId: string, reason?: string) {
+  return api(`/support/tickets/${ticketId}/assign`, { method: "POST", body: JSON.stringify({ agentId, reason }) });
+}
+
+export async function addTicketMessage(ticketId: string, body: string, isInternal?: boolean) {
+  return api(`/support/tickets/${ticketId}/messages`, { method: "POST", body: JSON.stringify({ body, isInternal }) });
+}
+
+export async function addTicketNote(ticketId: string, body: string) {
+  return api(`/support/tickets/${ticketId}/notes`, { method: "POST", body: JSON.stringify({ body }) });
+}
+
+export async function escalateTicket(ticketId: string, reason?: string) {
+  return api(`/support/tickets/${ticketId}/escalate`, { method: "POST", body: JSON.stringify({ reason }) });
+}
+
+export async function getSupportTicketsV2(params?: {
+  page?: number; limit?: number; status?: string; priority?: string; assigneeId?: string; unassigned?: boolean; search?: string;
+}): Promise<Paginated<SupportTicket>> {
+  return api("/support/tickets", { query: params });
+}
+
+export async function getSupportTicketV2(id: string): Promise<SupportTicket> {
+  return api(`/support/tickets/${id}`);
+}
+
+export async function updateTicketStatusV2(id: string, status: string, reason?: string): Promise<SupportTicket> {
+  return api(`/support/tickets/${id}/status`, { method: "PUT", body: JSON.stringify({ status, reason }) });
+}
+
+export interface CannedResponse {
+  id: string;
+  title: string;
+  body: string;
+  category: string | null;
+  shortcut: string | null;
+  isActive: boolean;
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getCannedResponses(category?: string): Promise<CannedResponse[]> {
+  return api("/support/canned-responses", { query: { category } });
+}
+
+export async function getCannedResponse(id: string): Promise<CannedResponse> {
+  return api(`/support/canned-responses/${id}`);
+}
+
+export async function createCannedResponse(data: {
+  title: string; body: string; category?: string; shortcut?: string;
+}): Promise<CannedResponse> {
+  return api("/support/canned-responses", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateCannedResponse(id: string, data: {
+  title?: string; body?: string; category?: string; shortcut?: string; isActive?: boolean;
+}): Promise<CannedResponse> {
+  return api(`/support/canned-responses/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteCannedResponse(id: string): Promise<{ success: boolean }> {
+  return api(`/support/canned-responses/${id}`, { method: "DELETE" });
+}
+
+export async function recordCannedResponseUsed(id: string): Promise<CannedResponse> {
+  return api(`/support/canned-responses/${id}/use`, { method: "POST" });
+}
+
+export async function getAgentLeaderboard() {
+  return api("/support/agents/leaderboard");
+}
+
 
 export async function bulkUpdateReportStatus(ids: string[], status: string, note?: string): Promise<{ updated: number; reports: Report[] }> {
   return api("/admin/reports/bulk/status", { method: "PUT", body: JSON.stringify({ ids, status, note }) });

@@ -128,6 +128,34 @@ import {
   type UserSettings,
   deleteWorkspace,
   resetSettings,
+  getRbacRoles,
+  getRbacRole,
+  createRbacRole,
+  updateRbacRole,
+  deleteRbacRole,
+  duplicateRbacRole,
+  assignRolePermissions,
+  getPermissionGroups,
+  getRbacPermissions,
+  getUserRoles,
+  assignUserRole,
+  removeUserRole,
+  getUserEffectivePermissions,
+  getUserRoleHistory,
+  setPermissionOverride,
+  removePermissionOverride,
+  type RbacRole,
+  type PermissionGroup,
+  type RbacPermission,
+  type UserRoleAssignment,
+  type UserEffectivePermissions,
+  getCannedResponses,
+  getCannedResponse,
+  createCannedResponse,
+  updateCannedResponse,
+  deleteCannedResponse,
+  recordCannedResponseUsed,
+  type CannedResponse,
 } from "./services";
 
 export type ListParams = {
@@ -1136,6 +1164,259 @@ export function useUpdateSupportTicketStatus() {
   });
 }
 
+// ─── Canned Responses ───────────────────────────────────────────────────────
+
+export function useCannedResponses(category?: string) {
+  return useQuery({
+    queryKey: ["canned-responses", category],
+    queryFn: () => getCannedResponses(category),
+  });
+}
+
+export function useCannedResponse(id: string | undefined) {
+  return useQuery({
+    queryKey: ["canned-response", id],
+    enabled: !!id,
+    queryFn: () => getCannedResponse(id!),
+  });
+}
+
+export function useCreateCannedResponse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createCannedResponse,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["canned-responses"] }),
+  });
+}
+
+export function useUpdateCannedResponse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateCannedResponse>[1] }) =>
+      updateCannedResponse(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["canned-responses"] }),
+  });
+}
+
+export function useDeleteCannedResponse() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteCannedResponse,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["canned-responses"] }),
+  });
+}
+
+export function useMarkCannedResponseUsed() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: recordCannedResponseUsed,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["canned-responses"] }),
+  });
+}
+
+// ─── Enterprise RBAC ────────────────────────────────────────────────────────
+
+export function useRbacRoles(params?: { search?: string; includeInactive?: boolean }) {
+  return useQuery({
+    queryKey: ["rbac-roles", params],
+    queryFn: () => getRbacRoles(params),
+  });
+}
+
+export function useRbacRole(id: string | undefined) {
+  return useQuery({
+    queryKey: ["rbac-role", id],
+    enabled: !!id,
+    queryFn: () => getRbacRole(id!),
+  });
+}
+
+export function useCreateRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      key: string;
+      name: string;
+      description?: string;
+      parentId?: string;
+      rank?: number;
+      permissionIds?: string[];
+    }) => createRbacRole(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+    },
+  });
+}
+
+export function useUpdateRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: string;
+      name?: string;
+      description?: string;
+      parentId?: string | null;
+      rank?: number;
+      isActive?: boolean;
+    }) => updateRbacRole(id, data),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+      qc.invalidateQueries({ queryKey: ["rbac-role", vars.id] });
+    },
+  });
+}
+
+export function useDeleteRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteRbacRole(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+    },
+  });
+}
+
+export function useDuplicateRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, key, name }: { id: string; key: string; name: string }) =>
+      duplicateRbacRole(id, { key, name }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+    },
+  });
+}
+
+export function useAssignRolePermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
+      assignRolePermissions(roleId, permissionIds),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+      qc.invalidateQueries({ queryKey: ["rbac-role", vars.roleId] });
+    },
+  });
+}
+
+export function usePermissionGroups() {
+  return useQuery({
+    queryKey: ["permission-groups"],
+    queryFn: getPermissionGroups,
+  });
+}
+
+export function useRbacPermissions(params?: { groupId?: string; search?: string }) {
+  return useQuery({
+    queryKey: ["rbac-permissions", params],
+    queryFn: () => getRbacPermissions(params),
+  });
+}
+
+export function useUserRbacRoles(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["user-rbac-roles", userId],
+    enabled: !!userId,
+    queryFn: () => getUserRoles(userId!),
+  });
+}
+
+export function useAssignUserRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      roleId,
+      isPrimary,
+      expiresAt,
+    }: {
+      userId: string;
+      roleId: string;
+      isPrimary?: boolean;
+      expiresAt?: string;
+    }) => assignUserRole(userId, roleId, isPrimary, expiresAt),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["user-rbac-roles", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["user-permissions", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["user-role-history", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+    },
+  });
+}
+
+export function useRemoveUserRbacRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
+      removeUserRole(userId, roleId),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["user-rbac-roles", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["user-permissions", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["user-role-history", vars.userId] });
+      qc.invalidateQueries({ queryKey: ["rbac-roles"] });
+    },
+  });
+}
+
+export function useUserEffectivePermissions(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["user-permissions", userId],
+    enabled: !!userId,
+    queryFn: () => getUserEffectivePermissions(userId!),
+  });
+}
+
+export function useUserRoleHistory(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["user-role-history", userId],
+    enabled: !!userId,
+    queryFn: () => getUserRoleHistory(userId!),
+  });
+}
+
+export function useSetPermissionOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      permissionId,
+      granted,
+      reason,
+      expiresAt,
+    }: {
+      userId: string;
+      permissionId: string;
+      granted: boolean;
+      reason?: string;
+      expiresAt?: string;
+    }) => setPermissionOverride(userId, permissionId, granted, reason, expiresAt),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["user-permissions", vars.userId] });
+    },
+  });
+}
+
+export function useRemovePermissionOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, permissionId }: { userId: string; permissionId: string }) =>
+      removePermissionOverride(userId, permissionId),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["user-permissions", vars.userId] });
+    },
+  });
+}
+
+export function useSupportDashboard() {
+  return useQuery({
+    queryKey: ["support-dashboard"],
+    queryFn: () => import("./services").then((m) => m.getSupportDashboard()),
+  });
+}
+
 // ─── Re-exports ─────────────────────────────────────────────────────────────
 
 export type {
@@ -1171,4 +1452,10 @@ export type {
   ReportTrendsResponse,
   HelpArticle,
   SupportTicket,
+  CannedResponse,
+  RbacRole,
+  PermissionGroup,
+  RbacPermission,
+  UserRoleAssignment,
+  UserEffectivePermissions,
 };

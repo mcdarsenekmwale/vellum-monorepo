@@ -1,15 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Shield, Pencil, Trash2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { 
+  Copy, 
+  Pencil, 
+  Plus, 
+  Search, 
+  Shield, 
+  Trash2,
+  Users,
+  Key,
+  MoreVertical,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ShieldAlert,
+  UserCog,
+  Users as UsersIcon,
+  Check,
+  X,
+  Filter,
+  LayoutGrid,
+  List,
+  Star,
+  Clock,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { PageState } from "@/components/dashboard/page-state";
 import { SectionCard } from "@/components/dashboard/section-card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useRoles, type RoleWithCount } from "@/lib/api/hooks";
-import { ChartSkeleton } from "@/components/dashboard/skeletons";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -19,125 +41,190 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  useAssignRolePermissions,
+  useCreateRbacRole,
+  useDeleteRbacRole,
+  useDuplicateRbacRole,
+  usePermissionGroups,
+  useRbacRoles,
+  useUpdateRbacRole,
+} from "@/lib/api/hooks";
+import type { RbacRole } from "@/lib/api/services";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/roles")({
   head: () => ({ meta: [{ title: "Roles · Vellum Admin" }] }),
   component: RolesPage,
 });
 
-const ROLE_DESCRIPTIONS: Record<string, string> = {
-  ADMIN: "Full access to manage users, content, moderation, and settings",
-  MODERATOR: "Review reports and manage community content",
-  CREATOR: "Create and manage own content",
-  USER: "Standard user with read access to published content",
-  GUEST: "Limited read-only access",
+type RoleFormState = {
+  key: string;
+  name: string;
+  description: string;
+  permissionIds: string[];
 };
 
-const ROLE_TONES: Record<string, string> = {
-  ADMIN: "var(--chart-1)",
-  MODERATOR: "var(--chart-4)",
-  CREATOR: "var(--chart-5)",
-  USER: "var(--chart-2)",
-  GUEST: "var(--chart-3)",
+const EMPTY_FORM: RoleFormState = {
+  key: "",
+  name: "",
+  description: "",
+  permissionIds: [],
 };
 
-type SimulatedRole = RoleWithCount & { description: string; isCustom?: boolean };
+function keyFromName(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+// Role color mapping for consistent visual identity
+const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  admin: { bg: "bg-rose-500/10", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/20" },
+  moderator: { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/20" },
+  editor: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "border-blue-500/20" },
+  creator: { bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/20" },
+  developer: { bg: "bg-purple-500/10", text: "text-purple-600 dark:text-purple-400", border: "border-purple-500/20" },
+  user: { bg: "bg-muted", text: "text-muted-foreground", border: "border-transparent" },
+};
+
+const DEFAULT_COLOR = { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" };
+
+function getRoleColor(key: string) {
+  return ROLE_COLORS[key.toLowerCase()] ?? DEFAULT_COLOR;
+}
 
 function RolesPage() {
-  const { data, isLoading } = useRoles();
-  const apiRoles = data ?? [];
+  const [search, setSearch] = useState("");
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editRole, setEditRole] = useState<RbacRole | null>(null);
+  const [deleteRole, setDeleteRole] = useState<RbacRole | null>(null);
+  const [duplicateRole, setDuplicateRole] = useState<RbacRole | null>(null);
+  const [form, setForm] = useState<RoleFormState>(EMPTY_FORM);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const [customRoles, setCustomRoles] = useState<SimulatedRole[]>([]);
+  const roleQuery = useRbacRoles({ search, includeInactive });
+  const groupQuery = usePermissionGroups();
+  const createRole = useCreateRbacRole();
+  const updateRole = useUpdateRbacRole();
+  const deleteRoleMutation = useDeleteRbacRole();
+  const duplicateRoleMutation = useDuplicateRbacRole();
+  const assignPermissions = useAssignRolePermissions();
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createDescription, setCreateDescription] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const roles = roleQuery.data ?? [];
+  const groups = groupQuery.data ?? [];
+  const allPermissionIds = useMemo(
+    () => new Set(groups.flatMap((group) => group.permissions.map((permission) => permission.id))),
+    [groups],
+  );
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<SimulatedRole | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const resetForm = () => setForm(EMPTY_FORM);
 
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deletingRole, setDeletingRole] = useState<SimulatedRole | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const allRoles: SimulatedRole[] = useMemo(() => {
-    const apiMapped = apiRoles.map((r) => ({
-      ...r,
-      description: ROLE_DESCRIPTIONS[r.role] ?? "Custom role",
-    }));
-    return [...apiMapped, ...customRoles];
-  }, [apiRoles, customRoles]);
-
-  const handleCreate = () => {
-    const trimmed = createName.trim();
-    if (!trimmed) return;
-    setIsCreating(true);
-    setTimeout(() => {
-      const newRole: SimulatedRole = {
-        role: trimmed.toUpperCase().replace(/\s+/g, "_"),
-        count: 0,
-        description: createDescription.trim() || "Custom role",
-        isCustom: true,
-      };
-      setCustomRoles((prev) => [...prev, newRole]);
-      setIsCreating(false);
-      setIsCreateOpen(false);
-      setCreateName("");
-      setCreateDescription("");
-      toast.success("Role created successfully (simulated)");
-    }, 500);
+  const openCreate = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open) resetForm();
   };
 
-  const openEdit = (role: SimulatedRole) => {
-    setEditingRole(role);
-    setEditName(role.role);
-    setEditDescription(role.description);
-    setIsEditOpen(true);
+  const openEdit = (role: RbacRole) => {
+    setEditRole(role);
+    setForm({
+      key: role.key,
+      name: role.name,
+      description: role.description ?? "",
+      permissionIds: role.permissions?.filter((p) => p.granted).map((p) => p.permissionId) ?? [],
+    });
   };
 
-  const handleEdit = () => {
-    if (!editingRole) return;
-    setIsEditing(true);
-    setTimeout(() => {
-      if (editingRole.isCustom) {
-        setCustomRoles((prev) =>
-          prev.map((r) =>
-            r.role === editingRole.role
-              ? { ...r, role: editName.trim().toUpperCase().replace(/\s+/g, "_"), description: editDescription.trim() }
-              : r
-          )
-        );
-      }
-      setIsEditing(false);
-      setIsEditOpen(false);
-      setEditingRole(null);
-      setEditName("");
-      setEditDescription("");
-      toast.success("Role updated successfully (simulated)");
-    }, 500);
+  const togglePermission = (permissionId: string) => {
+    setForm((current) => {
+      const selected = new Set(current.permissionIds);
+      if (selected.has(permissionId)) selected.delete(permissionId);
+      else selected.add(permissionId);
+      return { ...current, permissionIds: Array.from(selected) };
+    });
   };
 
-  const openDelete = (role: SimulatedRole) => {
-    setDeletingRole(role);
-    setIsDeleteOpen(true);
+  const handleCreate = async () => {
+    const name = form.name.trim();
+    const key = form.key.trim() || keyFromName(name);
+    if (!name || !key) return;
+
+    try {
+      await createRole.mutateAsync({
+        key,
+        name,
+        description: form.description.trim() || undefined,
+        permissionIds: form.permissionIds,
+      });
+      toast.success("Role created");
+      openCreate(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create role");
+    }
   };
 
-  const handleDelete = () => {
-    if (!deletingRole) return;
-    setIsDeleting(true);
-    setTimeout(() => {
-      if (deletingRole.isCustom) {
-        setCustomRoles((prev) => prev.filter((r) => r.role !== deletingRole.role));
-      }
-      setIsDeleting(false);
-      setIsDeleteOpen(false);
-      setDeletingRole(null);
-      toast.success("Role deleted successfully (simulated)");
-    }, 500);
+  const handleUpdate = async () => {
+    if (!editRole) return;
+    try {
+      await updateRole.mutateAsync({
+        id: editRole.id,
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+      });
+      await assignPermissions.mutateAsync({ roleId: editRole.id, permissionIds: form.permissionIds });
+      toast.success("Role updated");
+      setEditRole(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update role");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteRole) return;
+    try {
+      await deleteRoleMutation.mutateAsync(deleteRole.id);
+      toast.success("Role deleted");
+      setDeleteRole(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete role");
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!duplicateRole) return;
+    const key = form.key.trim() || keyFromName(form.name);
+    if (!key || !form.name.trim()) return;
+    try {
+      await duplicateRoleMutation.mutateAsync({
+        id: duplicateRole.id,
+        key,
+        name: form.name.trim(),
+      });
+      toast.success("Role duplicated");
+      setDuplicateRole(null);
+      resetForm();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to duplicate role");
+    }
   };
 
   return (
@@ -145,167 +232,608 @@ function RolesPage() {
       <PageHeader
         eyebrow="People"
         title="Roles"
-        description="User roles and their distribution across the platform."
+        description="Manage platform roles, membership counts, and permission grants from the RBAC API."
         actions={
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5">
-                <Plus className="size-4" /> New role
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create role</DialogTitle>
-                <DialogDescription>
-                  Add a new role with custom permissions and description.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="create-name">Role name</Label>
-                  <Input
-                    id="create-name"
-                    value={createName}
-                    onChange={(e) => setCreateName(e.target.value)}
-                    placeholder="e.g. Editor"
-                    autoFocus
-                  />
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 rounded-lg border bg-background p-1">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={cn(
+                      "rounded-md p-1.5 transition-colors",
+                      viewMode === "grid"
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "rounded-md p-1.5 transition-colors",
+                      viewMode === "list"
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="create-description">Description</Label>
-                  <Textarea
-                    id="create-description"
-                    value={createDescription}
-                    onChange={(e) => setCreateDescription(e.target.value)}
-                    placeholder="Brief description of what this role can do..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={isCreating}>
-                  Cancel
+              </TooltipTrigger>
+              <TooltipContent>Toggle view mode</TooltipContent>
+            </Tooltip>
+
+            <Dialog open={createOpen} onOpenChange={openCreate}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Plus className="size-4" /> New role
                 </Button>
-                <Button onClick={handleCreate} disabled={isCreating || !createName.trim()}>
-                  {isCreating ? "Creating..." : "Create role"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                <RoleDialogHeader title="Create role" description="Create a custom role and assign its starting permissions." />
+                <RoleForm
+                  form={form}
+                  groups={groups}
+                  allPermissionIds={allPermissionIds}
+                  onChange={setForm}
+                  onTogglePermission={togglePermission}
+                />
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => openCreate(false)} disabled={createRole.isPending}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreate} disabled={createRole.isPending || !form.name.trim()}>
+                    {createRole.isPending ? "Creating..." : "Create role"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
-      {isLoading ? (
-        <ChartSkeleton height={200} />
-      ) : allRoles.length === 0 ? (
-        <SectionCard><div className="p-6 text-center text-sm text-muted-foreground">No roles found.</div></SectionCard>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {allRoles.map((r) => {
-            const tone = ROLE_TONES[r.role] ?? "var(--chart-1)";
-            return (
-              <SectionCard key={r.role}>
-                <div className="flex items-start gap-3">
-                  <div className="grid size-10 shrink-0 place-items-center rounded-md" style={{ background: `color-mix(in oklab, ${tone} 15%, transparent)` }}>
-                    <Shield className="size-5" style={{ color: tone }} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold capitalize">{r.role}</div>
-                    <div className="text-xs text-muted-foreground">{r.description}</div>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-4 text-xs">
-                  <div>
-                    <div className="text-lg font-semibold tabular-nums">{r.count.toLocaleString()}</div>
-                    <div className="text-muted-foreground">Members</div>
-                  </div>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 hover:text-primary"
-                      onClick={() => openEdit(r)}
-                      title="Edit role"
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 hover:text-destructive"
-                      onClick={() => openDelete(r)}
-                      title="Delete role"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </SectionCard>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit role</DialogTitle>
-            <DialogDescription>Update the role name and description.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Role name</Label>
-              <Input
-                id="edit-name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={3}
-              />
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Roles</span>
+            <div className="grid size-8 place-items-center rounded-md bg-primary/10 text-primary">
+              <Shield className="size-4" />
             </div>
           </div>
+          <div className="mt-2 text-2xl font-semibold">{roles.length}</div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active Roles</span>
+            <div className="grid size-8 place-items-center rounded-md bg-emerald-500/10 text-emerald-500">
+              <ShieldCheck className="size-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-semibold">{roles.filter(r => r.isActive).length}</div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">System Roles</span>
+            <div className="grid size-8 place-items-center rounded-md bg-amber-500/10 text-amber-500">
+              <Star className="size-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-semibold">{roles.filter(r => r.isSystem).length}</div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Members</span>
+            <div className="grid size-8 place-items-center rounded-md bg-blue-500/10 text-blue-500">
+              <UsersIcon className="size-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-semibold">
+            {roles.reduce((sum, r) => sum + (r.userCount ?? 0), 0).toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="pl-9 h-9"
+            placeholder="Search roles..."
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+            <Checkbox 
+              checked={includeInactive} 
+              onCheckedChange={(checked) => setIncludeInactive(Boolean(checked))} 
+            />
+            Include inactive roles
+          </label>
+          {(search || includeInactive) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setIncludeInactive(false);
+              }}
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Clear filters
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Roles Grid/List */}
+      <PageState
+        data={roles}
+        isLoading={roleQuery.isLoading || groupQuery.isLoading}
+        isError={roleQuery.isError || groupQuery.isError}
+        error={roleQuery.error ?? groupQuery.error}
+        onRetry={() => {
+          roleQuery.refetch();
+          groupQuery.refetch();
+        }}
+        emptyTitle="No roles found"
+        emptyDescription="Create a role or adjust the search filter."
+      >
+        {viewMode === "grid" ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {roles.map((role) => {
+              const colors = getRoleColor(role.key);
+              return (
+                <SectionCard key={role.id} className="group transition-all hover:shadow-md hover:border-foreground/20">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "grid size-10 shrink-0 place-items-center rounded-md border",
+                      colors.bg,
+                      colors.text,
+                      colors.border
+                    )}>
+                      <Shield className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="text-sm font-semibold">{role.name}</div>
+                        {role.isSystem && (
+                          <Badge variant="secondary" className="text-[9px] gap-1">
+                            <Star className="size-2.5" />
+                            System
+                          </Badge>
+                        )}
+                        {!role.isActive && (
+                          <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">{role.key}</div>
+                      {role.description && (
+                        <div className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{role.description}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3 border-t pt-4 text-xs">
+                    <div>
+                      <div className="text-lg font-semibold tabular-nums">{role.userCount ?? 0}</div>
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Users className="size-3" />
+                        Members
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold tabular-nums">{role.permissionCount ?? 0}</div>
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Key className="size-3" />
+                        Permissions
+                      </div>
+                    </div>
+                    <div className="flex items-end justify-end gap-0.5">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 hover:text-primary"
+                            onClick={() => openEdit(role)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit role</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 hover:text-primary"
+                            onClick={() => {
+                              setDuplicateRole(role);
+                              setForm({ ...EMPTY_FORM, key: `${role.key}_copy`, name: `${role.name} Copy` });
+                            }}
+                          >
+                            <Copy className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Duplicate role</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "size-7",
+                              role.isSystem 
+                                ? "text-muted-foreground cursor-not-allowed opacity-50" 
+                                : "hover:text-destructive"
+                            )}
+                            disabled={role.isSystem}
+                            onClick={() => setDeleteRole(role)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {role.isSystem ? "System roles cannot be deleted" : "Delete role"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </SectionCard>
+              );
+            })}
+          </div>
+        ) : (
+          /* List View */
+          <SectionCard padded={false} className="overflow-hidden">
+            <div className="divide-y">
+              {roles.map((role) => {
+                const colors = getRoleColor(role.key);
+                return (
+                  <div
+                    key={role.id}
+                    className="group flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className={cn(
+                      "grid size-10 shrink-0 place-items-center rounded-md border",
+                      colors.bg,
+                      colors.text,
+                      colors.border
+                    )}>
+                      <Shield className="size-5" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-sm">{role.name}</span>
+                        {role.isSystem && (
+                          <Badge variant="secondary" className="text-[9px] gap-1">
+                            <Star className="size-2.5" />
+                            System
+                          </Badge>
+                        )}
+                        {!role.isActive && (
+                          <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                            Inactive
+                          </Badge>
+                        )}
+                        <span className="font-mono text-[10px] text-muted-foreground ml-1">{role.key}</span>
+                      </div>
+                      {role.description && (
+                        <p className="text-sm text-muted-foreground truncate">{role.description}</p>
+                      )}
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="size-3" />
+                        {role.userCount ?? 0} members
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Key className="size-3" />
+                        {role.permissionCount ?? 0} permissions
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 hover:text-primary"
+                            onClick={() => openEdit(role)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit role</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 hover:text-primary"
+                            onClick={() => {
+                              setDuplicateRole(role);
+                              setForm({ ...EMPTY_FORM, key: `${role.key}_copy`, name: `${role.name} Copy` });
+                            }}
+                          >
+                            <Copy className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Duplicate role</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "size-7",
+                              role.isSystem 
+                                ? "text-muted-foreground cursor-not-allowed opacity-50" 
+                                : "hover:text-destructive"
+                            )}
+                            disabled={role.isSystem}
+                            onClick={() => setDeleteRole(role)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {role.isSystem ? "System roles cannot be deleted" : "Delete role"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+      </PageState>
+
+      {/* Edit Dialog */}
+      <Dialog open={Boolean(editRole)} onOpenChange={(open) => !open && setEditRole(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <RoleDialogHeader title="Edit role" description="Update role details and permission grants." />
+          <RoleForm
+            form={form}
+            groups={groups}
+            allPermissionIds={allPermissionIds}
+            onChange={setForm}
+            onTogglePermission={togglePermission}
+            lockKey
+          />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isEditing}>
+            <Button variant="outline" onClick={() => setEditRole(null)} disabled={updateRole.isPending || assignPermissions.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleEdit} disabled={isEditing || !editName.trim()}>
-              {isEditing ? "Saving..." : "Save changes"}
+            <Button onClick={handleUpdate} disabled={updateRole.isPending || assignPermissions.isPending || !form.name.trim()}>
+              {updateRole.isPending || assignPermissions.isPending ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      {/* Duplicate Dialog */}
+      <Dialog open={Boolean(duplicateRole)} onOpenChange={(open) => !open && setDuplicateRole(null)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete role</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{deletingRole?.role}</strong>? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isDeleting}>
+          <RoleDialogHeader title="Duplicate role" description={`Create a copy of ${duplicateRole?.name ?? "this role"}.`} />
+          <div className="space-y-4 py-4">
+            <Field label="Role name" id="duplicate-name">
+              <Input
+                id="duplicate-name"
+                value={form.name}
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              />
+            </Field>
+            <Field label="Role key" id="duplicate-key">
+              <Input
+                id="duplicate-key"
+                value={form.key}
+                onChange={(event) => setForm((current) => ({ ...current, key: keyFromName(event.target.value) }))}
+              />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicateRole(null)} disabled={duplicateRoleMutation.isPending}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete role"}
+            <Button onClick={handleDuplicate} disabled={duplicateRoleMutation.isPending || !form.name.trim()}>
+              {duplicateRoleMutation.isPending ? "Duplicating..." : "Duplicate role"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={Boolean(deleteRole)} onOpenChange={(open) => !open && setDeleteRole(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="size-5" />
+              Delete role
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteRole?.name}</strong>? 
+              This will remove the role from all users and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteRole?.userCount && deleteRole.userCount > 0 && (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-sm text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-2">
+                <Users className="size-4" />
+                <span>This role is assigned to {deleteRole.userCount} user{deleteRole.userCount !== 1 ? "s" : ""}.</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteRole(null)} disabled={deleteRoleMutation.isPending}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteRoleMutation.isPending}>
+              {deleteRoleMutation.isPending ? "Deleting..." : "Delete role"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function RoleDialogHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <DialogHeader>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
+    </DialogHeader>
+  );
+}
+
+function RoleForm({
+  form,
+  groups,
+  allPermissionIds,
+  onChange,
+  onTogglePermission,
+  lockKey = false,
+}: {
+  form: RoleFormState;
+  groups: Array<{ id: string; name: string; permissions: Array<{ id: string; key: string; name: string }> }>;
+  allPermissionIds: Set<string>;
+  onChange: (form: RoleFormState) => void;
+  onTogglePermission: (permissionId: string) => void;
+  lockKey?: boolean;
+}) {
+  const selected = new Set(form.permissionIds);
+  const allSelected = allPermissionIds.size > 0 && form.permissionIds.length === allPermissionIds.size;
+
+  return (
+    <div className="space-y-5 py-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Role name" id="role-name">
+          <Input
+            id="role-name"
+            value={form.name}
+            onChange={(event) =>
+              onChange({
+                ...form,
+                name: event.target.value,
+                key: lockKey || form.key ? form.key : keyFromName(event.target.value),
+              })
+            }
+            autoFocus
+          />
+        </Field>
+        <Field label="Role key" id="role-key">
+          <Input
+            id="role-key"
+            value={form.key}
+            disabled={lockKey}
+            onChange={(event) => onChange({ ...form, key: keyFromName(event.target.value) })}
+          />
+        </Field>
+      </div>
+      <Field label="Description" id="role-description">
+        <Textarea
+          id="role-description"
+          value={form.description}
+          onChange={(event) => onChange({ ...form, description: event.target.value })}
+          rows={3}
+        />
+      </Field>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <Label>Permissions</Label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {form.permissionIds.length} of {allPermissionIds.size} selected
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onChange({ ...form, permissionIds: allSelected ? [] : Array.from(allPermissionIds) })}
+            >
+              {allSelected ? "Clear all" : "Select all"}
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {groups.map((group) => (
+            <div key={group.id} className="rounded-lg border bg-card/50 p-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px]">
+                  {group.permissions.length} permissions
+                </Badge>
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {group.name}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {group.permissions.map((permission) => (
+                  <label
+                    key={permission.id}
+                    className={cn(
+                      "flex items-start gap-2 rounded-md p-2 text-sm transition-colors cursor-pointer",
+                      selected.has(permission.id)
+                        ? "bg-primary/5 hover:bg-primary/10"
+                        : "hover:bg-muted/50"
+                    )}
+                  >
+                    <Checkbox
+                      checked={selected.has(permission.id)}
+                      onCheckedChange={() => onTogglePermission(permission.id)}
+                      className="mt-0.5"
+                    />
+                    <span className="space-y-0.5">
+                      <span className="block font-medium text-sm">{permission.name}</span>
+                      <span className="block font-mono text-[10px] text-muted-foreground">{permission.key}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, id, children }: { label: string; id: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id} className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      {children}
     </div>
   );
 }

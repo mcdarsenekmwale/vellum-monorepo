@@ -22,6 +22,8 @@ import {
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { PermissionGuard, PermissionGate } from "@/components/dashboard/permission-guard";
+import { ReadOnlyBanner } from "@/components/dashboard/read-only-banner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -223,13 +225,14 @@ function CommentsPage() {
         ))}
       </div>
 
-      <ListPage<Comment>
-        title="Comments"
-        description="All community comments and replies with moderation state."
-        eyebrow="Community"
-        rows={filteredRows}
-        isLoading={isLoading}
-        error={error}
+      <PermissionGuard resource="comments" action="read" showReadOnlyBanner>
+        <ListPage<Comment>
+          title="Comments"
+          description="All community comments and replies with moderation state."
+          eyebrow="Community"
+          rows={filteredRows}
+          isLoading={isLoading}
+          error={error}
         searchKeys={["body"]}
         pageSize={15}
         enableSelection={true}
@@ -547,6 +550,7 @@ function CommentsPage() {
           </div>
         )}
       />
+      </PermissionGuard>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

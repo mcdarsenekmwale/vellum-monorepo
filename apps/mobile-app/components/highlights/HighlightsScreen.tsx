@@ -179,6 +179,8 @@ const HighlightsScreen = memo(function HighlightsScreen() {
         comments={comments}
         onAddComment={handleAddComment}
         currentUserAvatar={user?.avatar}
+        currentUserName={user?.name}
+        currentUserHandle={user?.handle}
       />
     </View>
   );

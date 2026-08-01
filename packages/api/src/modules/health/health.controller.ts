@@ -1,5 +1,6 @@
-import { Controller, Get, Injectable } from '@nestjs/common';
+import { Controller, Get, Injectable, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
 
@@ -10,6 +11,7 @@ export class HealthController {
   constructor(
     private prisma: PrismaService,
     private cache: CacheService,
+    private configService: ConfigService,
   ) {}
 
   @Get()
@@ -39,9 +41,10 @@ export class HealthController {
       await this.prisma.$queryRaw`SELECT 1`;
       dbLatencyMs = Date.now() - start;
       dbStatus = 'connected';
-    } catch (error: any) {
+    } catch {
       dbStatus = 'disconnected';
-      dbError = error?.message || 'Unknown database error';
+      // Don't expose internal error details to potential attackers
+      dbError = 'Database connection failed';
     }
 
     try {
@@ -50,9 +53,9 @@ export class HealthController {
       await this.cache.get('health:ping');
       cacheLatencyMs = Date.now() - start;
       cacheStatus = 'connected';
-    } catch (error: any) {
+    } catch {
       cacheStatus = 'disconnected';
-      cacheError = error?.message || 'Unknown cache error';
+      cacheError = 'Cache connection failed';
     }
 
     const cacheInfo = this.cache.getStatus();
@@ -75,32 +78,24 @@ export class HealthController {
   }
 
   @Get('debug')
-  @ApiOperation({ summary: 'Debug database schema' })
+  @ApiOperation({ summary: 'Debug database schema (development only)' })
   async debug() {
+    if (this.configService.get('NODE_ENV', 'development') !== 'development') {
+      throw new ForbiddenException('Debug endpoint is only available in development');
+    }
+
     const results: any = {};
     
     try {
       results.articleTableExists = await this.prisma.$queryRaw`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'Article')`;
-    } catch (error: any) {
-      results.articleTableExistsError = error?.message;
+    } catch {
+      results.articleTableExistsError = 'Query failed';
     }
     
     try {
       results.articleColumns = await this.prisma.$queryRaw`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'Article' ORDER BY ordinal_position`;
-    } catch (error: any) {
-      results.articleColumnsError = error?.message;
-    }
-    
-    try {
-      const start = Date.now();
-      results.rawArticles = await this.prisma.$queryRaw`SELECT id, slug, title, excerpt, readMinutes, categoryId, authorId, likesCount, views, featured, isPublished, createdAt, updatedAt FROM "Article" WHERE "isPublished" = true AND "deletedAt" IS NULL LIMIT 3`;
-      results.rawQueryLatency = Date.now() - start;
-    } catch (error: any) {
-      results.rawArticlesError = {
-        message: error?.message,
-        code: error?.code,
-        stack: error?.stack,
-      };
+    } catch {
+      results.articleColumnsError = 'Query failed';
     }
     
     try {
@@ -108,14 +103,11 @@ export class HealthController {
       results.prismaArticles = await this.prisma.article.findMany({
         where: { isPublished: true, deletedAt: null },
         take: 3,
+        select: { id: true, slug: true, title: true, createdAt: true },
       });
       results.prismaQueryLatency = Date.now() - start;
     } catch (error: any) {
-      results.prismaArticlesError = {
-        message: error?.message,
-        code: error?.code,
-        stack: error?.stack,
-      };
+      results.prismaArticlesError = { message: error?.message, code: error?.code };
     }
     
     return {

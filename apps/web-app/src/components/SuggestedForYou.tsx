@@ -18,6 +18,7 @@ import { apiClient } from "@/lib/api";
 import { useSocial } from "@/lib/social-store";
 import { useLoginPrompt } from "@/components/LoginPrompt";
 import { useAuthState } from "@/hooks/useApi";
+import { Avatar } from "@/components/Avatar";
 import type { Article, SuggestedArticlesResponse } from "@/lib/api";
 
 interface SuggestedForYouProps {
@@ -53,10 +54,12 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [articleStates, setArticleStates] = useState<Record<string, ArticleState>>({});
+  const [likeAnimKeys, setLikeAnimKeys] = useState<Record<string, number>>({});
+  const [bookmarkAnimKeys, setBookmarkAnimKeys] = useState<Record<string, number>>({});
   const offsetRef = useRef(0);
 
   const { isAuthenticated } = useAuthState();
-  const { isLiked, isSaved, toggleLike, toggleBookmark, shareArticle } = useSocial();
+  const { isLiked, isSaved, hasCommented, addComment, toggleLike, toggleBookmark, shareArticle } = useSocial();
   const { promptLogin, LoginPromptComponent } = useLoginPrompt();
 
   const fetchSuggested = useCallback(async () => {
@@ -166,6 +169,10 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
       promptLogin("like this article");
       return;
     }
+    setLikeAnimKeys((prev) => ({
+      ...prev,
+      [article.slug]: (prev[article.slug] || 0) + 1,
+    }));
     toggleLike(article.slug);
   };
 
@@ -174,6 +181,10 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
       promptLogin("bookmark this article");
       return;
     }
+    setBookmarkAnimKeys((prev) => ({
+      ...prev,
+      [article.slug]: (prev[article.slug] || 0) + 1,
+    }));
     toggleBookmark(article.slug);
   };
 
@@ -206,12 +217,7 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
     }));
 
     try {
-      const comment = await apiClient.createComment({
-        body: state.commentText.trim(),
-        articleSlug: article.slug,
-      });
-
-      console.log("[SuggestedForYou] Comment created:", comment);
+      await addComment(article.slug, state.commentText.trim());
 
       setArticleStates((prev) => ({
         ...prev,
@@ -326,7 +332,10 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
           };
           const liked = isLiked(article.slug);
           const saved = isSaved(article.slug);
+          const commented = hasCommented(article.slug);
           const likes = liked ? article.likesCount + 1 : article.likesCount;
+          const likeAnimKey = likeAnimKeys[article.slug] || 0;
+          const bookmarkAnimKey = bookmarkAnimKeys[article.slug] || 0;
 
           return (
             <article
@@ -369,10 +378,12 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
                     params={{ id: article.author?.handle || article.authorId }}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                   >
-                    <img
-                      src={article.author?.avatar || undefined}
+                    <Avatar
+                      src={article.author?.avatar}
                       alt={article.author?.name}
-                      className="size-8 rounded-full object-cover"
+                      name={article.author?.name}
+                      handle={article.author?.handle}
+                      size="sm"
                     />
                     <div>
                       <p className="text-xs font-semibold leading-tight">
@@ -404,19 +415,28 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
                       onClick={() => handleLike(article)}
                       className="flex items-center gap-1.5 text-xs font-semibold hover:text-amber-600 transition-colors"
                     >
-                      <Heart
-                        className="size-4"
-                        strokeWidth={1.8}
-                        fill={liked ? "#d97706" : "none"}
-                        color={liked ? "#d97706" : "currentColor"}
-                      />
+                      <span key={likeAnimKey} className={liked ? "ig-bounce" : ""}>
+                        <Heart
+                          className="size-4"
+                          strokeWidth={1.8}
+                          fill={liked ? "#d97706" : "none"}
+                          color={liked ? "#d97706" : "currentColor"}
+                        />
+                      </span>
                       <span>{likes.toLocaleString()}</span>
                     </button>
                     <button
                       onClick={() => toggleComment(article.id)}
-                      className="flex items-center gap-1.5 text-xs font-semibold hover:text-amber-600 transition-colors"
+                      className={`flex items-center gap-1.5 text-xs font-semibold transition-colors ${
+                        commented ? "text-amber-600 hover:text-amber-700" : "hover:text-amber-600"
+                      }`}
                     >
-                      <MessageCircle className="size-4" strokeWidth={1.8} />
+                      <MessageCircle
+                        className="size-4"
+                        strokeWidth={1.8}
+                        fill={commented ? "#d97706" : "none"}
+                        color={commented ? "#d97706" : "currentColor"}
+                      />
                       <span>{article.commentsCount || article.commentCount || 0}</span>
                     </button>
                     <button
@@ -430,12 +450,14 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
                     onClick={() => handleBookmark(article)}
                     className="hover:text-amber-600 transition-colors"
                   >
-                    <Bookmark
-                      className="size-4"
-                      strokeWidth={1.8}
-                      fill={saved ? "#d97706" : "none"}
-                      color={saved ? "#d97706" : "currentColor"}
-                    />
+                    <span key={bookmarkAnimKey} className={saved ? "ig-bounce" : ""}>
+                      <Bookmark
+                        className="size-4"
+                        strokeWidth={1.8}
+                        fill={saved ? "#d97706" : "none"}
+                        color={saved ? "#d97706" : "currentColor"}
+                      />
+                    </span>
                   </button>
                 </div>
 

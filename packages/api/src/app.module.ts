@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ArticlesModule } from './modules/articles/articles.module';
@@ -16,6 +17,8 @@ import { MediaModule } from './modules/media/media.module';
 import { SearchModule } from './modules/search/search.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { SupportModule } from './modules/support/support.module';
 import { HealthModule } from './modules/health/health.module';
 import { SuggestedModule } from './modules/suggested/suggested.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
@@ -51,8 +54,16 @@ import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware
     SearchModule,
     WebhooksModule,
     AdminModule,
+    RbacModule,
+    SupportModule,
     HealthModule,
     SuggestedModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {

@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useArticles, useCategories } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import type { Article, Category } from '@vellum/api-client/types';
+import { Avatar } from '../components/Avatar';
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -136,7 +137,7 @@ export default function DiscoverPage() {
                 {searchResults?.people.map((p) => (
                   <Link key={p.id} href={`/author/${p.handle}`} asChild>
                     <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <Image source={{ uri: p.avatar || 'https://via.placeholder.com/44' }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+                      <Avatar uri={p.avatar} name={p.name} handle={p.handle} size={44} />
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 14, fontWeight: '500', color: '#000000' }}>{p.name}</Text>
                         <Text style={{ fontSize: 12, color: '#666666' }}>{p.handle}</Text>

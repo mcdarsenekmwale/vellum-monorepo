@@ -1,7 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, ImagePlus, Sparkles } from 'lucide-react-native';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCategories } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
@@ -12,6 +12,7 @@ export default function ComposePage() {
   const [body, setBody] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const toolbarAnimation = useRef(new Animated.Value(0)).current;
 
   const { data: categories, isLoading, error, refetch } = useCategories();
 
@@ -20,6 +21,27 @@ export default function ComposePage() {
       setSelectedCategoryId(categories[0].id);
     }
   }, [categories, selectedCategoryId]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+      Animated.timing(toolbarAnimation, {
+        toValue: e.endCoordinates.height,
+        duration: e.duration || 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener('keyboardWillHide', (e) => {
+      Animated.timing(toolbarAnimation, {
+        toValue: 0,
+        duration: e.duration || 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [toolbarAnimation]);
 
   const wordCount = useMemo(() => {
     return body.trim() ? body.trim().split(/\s+/).length : 0;
@@ -84,7 +106,7 @@ export default function ComposePage() {
       <StatusBar barStyle="dark-content" backgroundColor="#faf8f4" />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: 10 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.cancelButton}
@@ -106,11 +128,17 @@ export default function ComposePage() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Cover Image Upload Area */}
         <TouchableOpacity style={styles.coverUpload} activeOpacity={0.7}>
           <ImagePlus size={28} color="#999999" strokeWidth={1.5} />
@@ -172,7 +200,7 @@ export default function ComposePage() {
       </ScrollView>
 
       {/* Bottom Toolbar */}
-      <View style={styles.bottomToolbar}>
+      <Animated.View style={[styles.bottomToolbar, { paddingBottom: toolbarAnimation }]}>
         <Text style={styles.wordCount}>{wordCount} WORDS</Text>
         <TouchableOpacity
           style={styles.suggestButton}
@@ -182,7 +210,8 @@ export default function ComposePage() {
           <Sparkles size={16} color="#d4653a" strokeWidth={2} />
           <Text style={styles.suggestText}>Suggest a title</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -191,6 +220,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#faf8f4',
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

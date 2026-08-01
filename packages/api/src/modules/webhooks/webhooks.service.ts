@@ -1,18 +1,27 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class WebhooksService {
   constructor(private prisma: PrismaService, private configService: ConfigService) {}
+
+  /** Deterministic HMAC-SHA256 hash for API keys (so we can look them up by hash). */
+  private hashApiKey(rawKey: string): string {
+    const secret = this.configService.get('API_KEY_SECRET') || this.configService.get('JWT_SECRET') || 'vellum-dev-secret-change-me';
+    return crypto.createHmac('sha256', secret).update(rawKey).digest('hex');
+  }
 
   async handleContentWebhook(body: any, apiKey: string) {
     if (!apiKey) {
       throw new UnauthorizedException('API key is required');
     }
 
+    // Hash incoming key before lookup (DB stores hashes, not raw keys)
+    const keyHash = this.hashApiKey(apiKey);
     const apiKeyRecord = await this.prisma.apiKey.findUnique({
-      where: { key: apiKey },
+      where: { key: keyHash },
       include: { user: true },
     });
 
@@ -184,16 +193,18 @@ export class WebhooksService {
   }
 
   async createApiKey(userId: string, name: string, scopes: string[]) {
-    const key = `sk-${Date.now()}-${Math.random().toString(36).substr(2, 24)}`;
-
-    return this.prisma.apiKey.create({
+    const rawKey = 'sk_' + crypto.randomBytes(24).toString('hex');
+    const keyHash = this.hashApiKey(rawKey);
+    const record = await this.prisma.apiKey.create({
       data: {
         name,
-        key,
+        key: keyHash,
         userId,
         scopes,
       },
     });
+    // Return raw key ONCE (only on creation — never stored)
+    return { ...record, rawKey };
   }
 
   async listApiKeys(userId: string) {

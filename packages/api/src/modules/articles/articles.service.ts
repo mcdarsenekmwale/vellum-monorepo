@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateArticleDto, UpdateArticleDto, ArticleQueryDto } from './dto/articles.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ArticlesService {
@@ -106,119 +107,48 @@ export class ArticlesService {
 
   async getArticles(query: ArticleQueryDto, userId?: string) {
     const page = query.page || 1;
-    const limit = query.limit || 10;
+    const limit = Math.min(query.limit || 10, 50); // cap at 50
     const skip = (page - 1) * limit;
 
-    let whereClause = `a."isPublished" = true AND a."deletedAt" IS NULL`;
+    // Use Prisma query builder exclusively — no raw SQL, no injection surface
+    const where: Prisma.ArticleWhereInput = { isPublished: true, deletedAt: null };
     if (query.category) {
-      whereClause += ` AND a."categoryId" IN (SELECT "id" FROM "Category" WHERE "slug" = '${query.category}')`;
+      where.category = { slug: query.category };
     }
     if (query.featured !== undefined) {
-      whereClause += ` AND a."featured" = ${query.featured}`;
+      where.featured = query.featured;
     }
 
-    let orderClause = `a."createdAt" DESC`;
+    let orderBy: Prisma.ArticleOrderByWithRelationInput = { createdAt: 'desc' };
     if (query.sort === 'trending') {
-      orderClause = `a."likesCount" DESC`;
+      orderBy = { likesCount: 'desc' };
     } else if (query.sort === 'views') {
-      orderClause = `a."views" DESC`;
+      orderBy = { views: 'desc' };
     }
 
-    try {
-      const articles = await this.prisma.$queryRawUnsafe(
-        `SELECT a."id", a."slug", a."title", a."excerpt", a."body", a."cover", a."readMinutes", a."categoryId", a."authorId", 
-                a."likesCount", a."views", a."featured", a."isPublished", a."publishedAt", a."createdAt", a."updatedAt", a."deletedAt",
-                u."id" as "author.id", u."name" as "author.name", u."handle" as "author.handle", u."avatar" as "author.avatar"
-         FROM "Article" a
-         LEFT JOIN "User" u ON a."authorId" = u."id"
-         WHERE ${whereClause} ORDER BY ${orderClause} OFFSET ${skip} LIMIT ${limit}`
-      ) as Array<{
-        id: string;
-        slug: string;
-        title: string;
-        excerpt: string;
-        body: string[];
-        cover: string;
-        readMinutes: number;
-        categoryId: string;
-        authorId: string;
-        likesCount: number;
-        views: number;
-        featured: boolean;
-        isPublished: boolean;
-        publishedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-        deletedAt: Date | null;
-        'author.id': string;
-        'author.name': string;
-        'author.handle': string;
-        'author.avatar': string | null;
-      }>;
-
-      const totalResult = await this.prisma.$queryRawUnsafe(
-        `SELECT COUNT(*) as count FROM "Article" a WHERE ${whereClause}`
-      );
-      const total = parseInt(totalResult[0].count);
-
-      const formattedArticles = articles.map((article: any) => ({
-        ...article,
-        author: {
-          id: article['author.id'],
-          name: article['author.name'],
-          handle: article['author.handle'],
-          avatar: article['author.avatar'],
-        },
-      }));
-
-      return {
-        data: formattedArticles,
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-      };
-    } catch (error: any) {
-      console.error('Raw query failed, falling back to Prisma query:', error.message);
-      
-      const where: any = { isPublished: true, deletedAt: null };
-      if (query.category) {
-        where.category = { slug: query.category };
-      }
-      if (query.featured !== undefined) {
-        where.featured = query.featured;
-      }
-
-      let orderBy: any = { createdAt: 'desc' };
-      if (query.sort === 'trending') {
-        orderBy = { likesCount: 'desc' };
-      } else if (query.sort === 'views') {
-        orderBy = { views: 'desc' };
-      }
-
-      const [articles, total] = await Promise.all([
-        this.prisma.article.findMany({
-          where,
-          orderBy,
-          skip,
-          take: limit,
-          include: {
-            author: {
-              select: { id: true, handle: true, name: true, avatar: true },
-            },
+    const [articles, total] = await Promise.all([
+      this.prisma.article.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          author: {
+            select: { id: true, handle: true, name: true, avatar: true },
           },
-        }),
-        this.prisma.article.count({ where }),
-      ]);
+          category: true,
+        },
+      }),
+      this.prisma.article.count({ where }),
+    ]);
 
-      return {
-        data: articles,
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-      };
-    }
+    return {
+      data: articles,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async getArticlesByAuthor(handle: string, page = 1, limit = 10) {

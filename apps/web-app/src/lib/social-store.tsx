@@ -13,6 +13,7 @@ type SocialState = {
   likes: Record<string, boolean>;
   bookmarks: Record<string, boolean>;
   comments: Record<string, ApiComment[]>;
+  commentedArticles: Record<string, boolean>;
   viewedStories: Record<string, number>;
   viewedArticles: Record<string, number>;
   shares: Record<string, number>;
@@ -22,6 +23,7 @@ type SocialState = {
 type SocialContextValue = SocialState & {
   isLiked: (slug: string) => boolean;
   isSaved: (slug: string) => boolean;
+  hasCommented: (slug: string) => boolean;
   toggleLike: (slug: string) => void;
   toggleBookmark: (slug: string) => void;
   shareArticle: (slug: string) => void;
@@ -54,6 +56,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     likes: {},
     bookmarks: {},
     comments: {},
+    commentedArticles: {},
     viewedStories: {},
     viewedArticles: {},
     shares: {},
@@ -156,6 +159,10 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           ...s.comments,
           [slug]: [...(s.comments[slug] || []), comment],
         },
+        commentedArticles: {
+          ...s.commentedArticles,
+          [slug]: true,
+        },
       }));
     } catch (err) {
       console.error("Failed to create comment:", err);
@@ -203,6 +210,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       ...state,
       isLiked: (slug: string) => !!state.likes[slug],
       isSaved: (slug: string) => !!state.bookmarks[slug],
+      hasCommented: (slug: string) => !!state.commentedArticles[slug],
       toggleLike,
       toggleBookmark,
       shareArticle,

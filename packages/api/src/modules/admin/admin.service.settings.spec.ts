@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { CacheService } from '../../shared/cache/cache.service';
 import { SETTINGS_DEFINITIONS, SETTINGS_VERSION } from './settings-definitions';
 
 /**
@@ -32,6 +34,24 @@ describe('AdminService — settings', () => {
       providers: [
         AdminService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, fallback?: any) => {
+              if (key === 'API_KEY_SECRET' || key === 'JWT_SECRET') return 'test-secret';
+              return fallback;
+            }),
+          },
+        },
+        {
+          provide: CacheService,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+            invalidatePattern: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

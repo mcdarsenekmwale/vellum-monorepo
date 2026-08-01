@@ -515,7 +515,7 @@ test.describe("AI Agent Browser Testing Workflow", () => {
       );
     }
 
-    const commentInput = page.locator('textarea', { hasPlaceholder: /comment|write a comment/i }).first();
+    const commentInput = page.getByPlaceholder(/comment|write a comment/i).first();
     const commentButton = page.locator('button', { hasText: /post|submit comment/i }).first();
 
     console.log(`  Comment input exists: ${await commentInput.count() > 0}`);
@@ -567,7 +567,7 @@ test.describe("AI Agent Browser Testing Workflow", () => {
           await replyButton.click();
           await page.waitForTimeout(500);
 
-          const replyInput = page.locator('textarea', { hasPlaceholder: /reply/i }).first();
+          const replyInput = page.getByPlaceholder(/reply/i).first();
           const testReply = `Test reply from AI agent - ${Date.now()}`;
 
           if (await replyInput.count() > 0) {

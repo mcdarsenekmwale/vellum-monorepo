@@ -32,7 +32,9 @@ export class RolesGuard implements CanActivate {
     });
 
     if (!hasRequiredRole) {
-      throw new ForbiddenException(`Insufficient permissions. Required role: ${requiredRoles.join(', ')}, your role: ${userRole}`);
+      // Do NOT echo the user's role back to the client — that leaks internal
+      // authorization state and aids reconnaissance.
+      throw new ForbiddenException('Insufficient permissions');
     }
 
     return true;

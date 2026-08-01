@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   TextInput,
@@ -12,6 +11,8 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  Animated,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -26,11 +27,13 @@ import {
   ChevronUp,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useArticle, useSocialActions, useAuthState } from '../../hooks/useApi';
 import { apiClient } from '../../lib/api';
 import type { Comment } from '@vellum/api-client/types';
 import ShimmerImage from '../../components/ShimmerImage';
+import { Avatar } from '../../components/Avatar';
+import { ArticleActions } from '../../components/ArticleActions';
 
 const { width } = Dimensions.get('window');
 
@@ -55,10 +58,34 @@ export default function ArticlePage() {
   const [showAiSummary, setShowAiSummary] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [likedOverride, setLikedOverride] = useState<boolean | null>(null);
+  const [bookmarkedOverride, setBookmarkedOverride] = useState<boolean | null>(null);
+  const [hasCommented, setHasCommented] = useState(false);
+  const composerAnimation = useRef(new Animated.Value(0)).current;
+  const likeAnim = useRef(new Animated.Value(1)).current;
+  const bookmarkAnim = useRef(new Animated.Value(1)).current;
 
-  const liked = article ? article.isLiked : false;
-  const saved = article ? article.isBookmarked : false;
-  const likeCount = article ? article.likesCount : 0;
+  const liked = likedOverride !== null ? likedOverride : (article ? article.isLiked : false);
+  const saved = bookmarkedOverride !== null ? bookmarkedOverride : (article ? article.isBookmarked : false);
+  const likeCount = article ? (liked && !article.isLiked ? article.likesCount + 1 : !liked && article.isLiked ? Math.max(0, article.likesCount - 1) : article.likesCount) : 0;
+
+  useEffect(() => {
+    if (liked) {
+      Animated.sequence([
+        Animated.timing(likeAnim, { toValue: 1.25, duration: 150, useNativeDriver: true }),
+        Animated.timing(likeAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [liked, likeAnim]);
+
+  useEffect(() => {
+    if (saved) {
+      Animated.sequence([
+        Animated.timing(bookmarkAnim, { toValue: 1.25, duration: 150, useNativeDriver: true }),
+        Animated.timing(bookmarkAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [saved, bookmarkAnim]);
 
   const aiSummary = useMemo(() => {
     if (!article) return null;
@@ -87,6 +114,27 @@ export default function ArticlePage() {
       loadComments();
     }
   }, [article?.slug]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+      Animated.timing(composerAnimation, {
+        toValue: e.endCoordinates.height,
+        duration: e.duration || 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener('keyboardWillHide', (e) => {
+      Animated.timing(composerAnimation, {
+        toValue: 0,
+        duration: e.duration || 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [composerAnimation]);
 
   const loadComments = async () => {
     if (!slug) return;
@@ -122,14 +170,26 @@ export default function ArticlePage() {
 
   const handleLike = async () => {
     if (!article) return;
-    await toggleLike(article.slug);
-    refetchArticle();
+    const next = !liked;
+    setLikedOverride(next);
+    const result = await toggleLike(article.slug);
+    if (typeof result === 'boolean') {
+      setLikedOverride(result);
+    } else {
+      setLikedOverride(null);
+    }
   };
 
   const handleBookmark = async () => {
     if (!article) return;
-    await toggleBookmark(article.slug);
-    refetchArticle();
+    const next = !saved;
+    setBookmarkedOverride(next);
+    const result = await toggleBookmark(article.slug);
+    if (typeof result === 'boolean') {
+      setBookmarkedOverride(result);
+    } else {
+      setBookmarkedOverride(null);
+    }
   };
 
   const submitComment = async () => {
@@ -137,6 +197,7 @@ export default function ArticlePage() {
     try {
       await apiClient.createComment({ articleSlug: article.slug, body: commentText });
       setCommentText('');
+      setHasCommented(true);
       await loadComments();
       await refetchArticle();
     } catch (err) {
@@ -187,12 +248,14 @@ export default function ArticlePage() {
           onPress={handleBookmark}
           activeOpacity={0.7}
         >
-          <Bookmark
-            size={20}
-            color={saved ? '#d4653a' : '#000000'}
-            fill={saved ? '#d4653a' : 'none'}
-            strokeWidth={1.8}
-          />
+          <Animated.View style={{ transform: [{ scale: bookmarkAnim }] }}>
+            <Bookmark
+              size={20}
+              color={saved ? '#d4653a' : '#000000'}
+              fill={saved ? '#d4653a' : 'none'}
+              strokeWidth={1.8}
+            />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -227,11 +290,11 @@ export default function ArticlePage() {
 
           {/* Author Row */}
           <View style={styles.authorRow}>
-            <ShimmerImage
-              source={article.author?.avatar}
-              style={styles.authorAvatar}
-              borderRadius={20}
-              aspectRatio={1}
+            <Avatar
+              uri={article.author?.avatar}
+              name={article.author?.name}
+              handle={article.author?.handle}
+              size={40}
             />
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{article.author?.name}</Text>
@@ -270,17 +333,19 @@ export default function ArticlePage() {
                 onPress={handleLike}
                 activeOpacity={0.7}
               >
-                <Heart
-                  size={20}
-                  color={liked ? '#d4653a' : '#666666'}
-                  fill={liked ? '#d4653a' : 'none'}
-                  strokeWidth={1.8}
-                />
+                <Animated.View style={{ transform: [{ scale: likeAnim }] }}>
+                  <Heart
+                    size={20}
+                    color={liked ? '#d4653a' : '#666666'}
+                    fill={liked ? '#d4653a' : 'none'}
+                    strokeWidth={1.8}
+                  />
+                </Animated.View>
                 <Text style={styles.actionCount}>{likeCount.toLocaleString()}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionItem} activeOpacity={0.7}>
-                <MessageCircle size={20} color="#666666" strokeWidth={1.8} />
+                <MessageCircle size={20} color={hasCommented ? '#d4653a' : '#666666'} strokeWidth={1.8} />
                 <Text style={styles.actionCount}>{comments.length}</Text>
               </TouchableOpacity>
             </View>
@@ -299,12 +364,14 @@ export default function ArticlePage() {
                 onPress={handleBookmark}
                 activeOpacity={0.7}
               >
-                <Bookmark
-                  size={20}
-                  color={saved ? '#d4653a' : '#666666'}
-                  fill={saved ? '#d4653a' : 'none'}
-                  strokeWidth={1.8}
-                />
+                <Animated.View style={{ transform: [{ scale: bookmarkAnim }] }}>
+                  <Bookmark
+                    size={20}
+                    color={saved ? '#d4653a' : '#666666'}
+                    fill={saved ? '#d4653a' : 'none'}
+                    strokeWidth={1.8}
+                  />
+                </Animated.View>
               </TouchableOpacity>
             </View>
           </View>
@@ -370,9 +437,11 @@ export default function ArticlePage() {
                 {threads.map(({ root, replies }) => (
                   <View key={root.id} style={styles.thread}>
                     <View style={styles.commentRow}>
-                      <Image
-                        source={{ uri: root.author?.avatar || 'https://via.placeholder.com/36' }}
-                        style={styles.commentAvatar}
+                      <Avatar
+                        uri={root.author?.avatar}
+                        name={root.author?.name}
+                        handle={root.author?.handle}
+                        size={36}
                       />
                       <View style={styles.commentBody}>
                         <View style={styles.commentMeta}>
@@ -395,9 +464,11 @@ export default function ArticlePage() {
                       <View style={styles.repliesContainer}>
                         {replies.map((r) => (
                           <View key={r.id} style={styles.replyRow}>
-                            <Image
-                              source={{ uri: r.author?.avatar || 'https://via.placeholder.com/28' }}
-                              style={styles.replyAvatar}
+                            <Avatar
+                              uri={r.author?.avatar}
+                              name={r.author?.name}
+                              handle={r.author?.handle}
+                              size={28}
                             />
                             <View style={styles.replyBody}>
                               <View style={styles.replyMeta}>
@@ -422,8 +493,8 @@ export default function ArticlePage() {
         </ScrollView>
 
         {/* Sticky Comment Composer */}
-        <View style={styles.composer}>
-          <Image source={{ uri: currentUser?.avatar || 'https://via.placeholder.com/32' }} style={styles.composerAvatar} />
+        <Animated.View style={[styles.composer, { paddingBottom: composerAnimation }]}>
+          <Avatar uri={currentUser?.avatar} name={currentUser?.name} handle={currentUser?.handle} size={32} />
           <TextInput
             value={commentText}
             onChangeText={setCommentText}
@@ -444,7 +515,7 @@ export default function ArticlePage() {
           >
             <Send size={16} color="#ffffff" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -862,7 +933,7 @@ const styles = StyleSheet.create({
   /* Composer */
   composer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 4,
     left: 0,
     right: 0,
     backgroundColor: '#ffffff',
@@ -870,7 +941,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e0d8',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

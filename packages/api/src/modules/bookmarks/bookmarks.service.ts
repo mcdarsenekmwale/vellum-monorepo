@@ -10,17 +10,48 @@ export class BookmarksService {
       throw new BadRequestException('Either articleSlug or highlightId is required');
     }
 
-    const existingBookmark = await this.prisma.bookmark.findFirst({
-      where: { userId, articleSlug, highlightId },
-    });
+    const where = { userId, articleSlug, highlightId };
+    const MAX_RETRIES = 2;
 
-    if (existingBookmark) {
-      await this.prisma.bookmark.delete({ where: { id: existingBookmark.id } });
-      return { bookmarked: false };
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const existingBookmark = await this.prisma.bookmark.findFirst({ where });
+
+        if (existingBookmark) {
+          try {
+            await this.prisma.bookmark.delete({ where: { id: existingBookmark.id } });
+          } catch (deleteError: any) {
+            if (deleteError?.code === 'P2025') {
+              return { bookmarked: false };
+            }
+            throw deleteError;
+          }
+          return { bookmarked: false };
+        }
+
+        try {
+          await this.prisma.bookmark.create({ data: { userId, articleSlug, highlightId } });
+        } catch (createError: any) {
+          if (createError?.code === 'P2002') {
+            return { bookmarked: true };
+          }
+          throw createError;
+        }
+        return { bookmarked: true };
+      } catch (error: any) {
+        const isRetryable =
+          error?.code === 'P2002' ||
+          error?.code === 'P2025' ||
+          error?.code === 'P2034';
+
+        if (isRetryable && attempt < MAX_RETRIES) {
+          continue;
+        }
+        throw error;
+      }
     }
 
-    await this.prisma.bookmark.create({ data: { userId, articleSlug, highlightId } });
-    return { bookmarked: true };
+    throw new Error('Failed to toggle bookmark after multiple attempts');
   }
 
   async getBookmarkedArticles(userId: string, page = 1, limit = 10) {

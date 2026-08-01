@@ -22,6 +22,13 @@ import type {
   SuggestedArticlesResponse,
   SuggestedAuthor,
   SuggestedAuthorsResponse,
+  HelpArticle,
+  SupportTicket,
+  TicketCategory,
+  TicketMessage,
+  CreateTicketRequest,
+  TicketListResponse,
+  TicketStatus,
 } from './types/index';
 
 // Storage interface for cross-platform compatibility
@@ -652,6 +659,49 @@ export class ApiClient {
   // Health check
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     return this.request<{ status: string; timestamp: string }>('/api/health');
+  }
+
+  // ─── Help Center ────────────────────────────────────────────────────────
+
+  // Knowledge Base (public)
+  async getHelpArticles(params?: { category?: string; search?: string }): Promise<HelpArticle[]> {
+    const query: Record<string, string | number | boolean> = {};
+    if (params?.category) query.category = params.category;
+    if (params?.search) query.search = params.search;
+    return this.request<HelpArticle[]>('/api/help/kb/articles', { query, skipAuth: true });
+  }
+
+  async getHelpArticle(slug: string): Promise<HelpArticle> {
+    return this.request<HelpArticle>(`/api/help/kb/articles/${slug}`, { skipAuth: true });
+  }
+
+  async getTicketCategories(): Promise<TicketCategory[]> {
+    return this.request<TicketCategory[]>('/api/help/categories', { skipAuth: true });
+  }
+
+  // User Tickets (authenticated)
+  async getMyTickets(page = 1, limit = 20, status?: TicketStatus): Promise<TicketListResponse> {
+    const query: Record<string, string | number | boolean> = { page, limit };
+    if (status) query.status = status;
+    return this.request<TicketListResponse>('/api/help/tickets', { query });
+  }
+
+  async getMyTicket(ticketId: string): Promise<SupportTicket> {
+    return this.request<SupportTicket>(`/api/help/tickets/${ticketId}`);
+  }
+
+  async createSupportTicket(data: CreateTicketRequest): Promise<SupportTicket> {
+    return this.request<SupportTicket>('/api/help/tickets', {
+      method: 'POST',
+      body: data as unknown as Record<string, unknown>,
+    });
+  }
+
+  async replyToTicket(ticketId: string, body: string): Promise<TicketMessage> {
+    return this.request<TicketMessage>(`/api/help/tickets/${ticketId}/messages`, {
+      method: 'POST',
+      body: { body },
+    });
   }
 }
 

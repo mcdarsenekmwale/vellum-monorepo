@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../lib/api';
 import type { User, Article } from '../../lib/api';
 import { BackButton } from 'app/_layout';
+import { Avatar } from '../../components/Avatar';
 
 interface AuthorProfile extends User {
   followerCount?: number;
@@ -209,12 +210,12 @@ export default function AuthorPage() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ paddingHorizontal: 24, paddingVertical: 24, alignItems: 'center' }}>
-          <Image
-            source={{ uri: author.avatar || '' }}
+          <Avatar
+            uri={author.avatar}
+            name={author.name}
+            handle={author.handle}
+            size={96}
             style={{
-              width: 96,
-              height: 96,
-              borderRadius: 48,
               borderWidth: 2,
               borderColor: '#d4653a',
             }}

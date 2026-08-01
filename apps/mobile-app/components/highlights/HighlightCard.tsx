@@ -176,6 +176,8 @@ const HighlightCard = memo(forwardRef<HighlightCardRef, HighlightCardProps>(func
       <HighlightOverlay
         handle={item.handle}
         authorAvatar={item.author?.avatar ?? item.cover}
+        authorName={item.author?.name}
+        authorHandle={item.author?.handle ?? item.handle}
         description={item.description}
         title={item.title}
         music={musicText}
@@ -199,6 +201,8 @@ const HighlightCard = memo(forwardRef<HighlightCardRef, HighlightCardProps>(func
         onBookmark={onBookmark}
         onMore={onMore}
         authorAvatar={item.author?.avatar ?? item.cover}
+        authorName={item.author?.name}
+        authorHandle={item.author?.handle ?? item.handle}
       />
     </View>
   );

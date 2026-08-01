@@ -1,14 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Heart, Bookmark, MessageCircle, Share2, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { toast } from "sonner";
 import { WebShell } from "@/components/WebShell";
+import { Avatar } from "@/components/Avatar";
 import ShimmerImage from "@/components/ShimmerImage";
 import { SuggestedForYou } from "@/components/SuggestedForYou";
+import { ArticleActions } from "@/components/ArticleActions";
+import { InfiniteScroll } from "@/components/InfiniteScroll";
 import { useSocial } from "@/lib/social-store";
-import { useArticles, useHighlights, useStories, useAuthState } from "@/hooks/useApi";
-import { useMemo } from "react";
+import { useInfiniteArticles, useHighlights, useStories, useAuthState } from "@/hooks/useApi";
+import { useMemo, useCallback } from "react";
 import type { Article, Highlight, Story } from "@/lib/api";
 import { useLoginPrompt } from "@/components/LoginPrompt";
+import { SmartState } from "@/components/SmartState";
+import { GuestGuard } from "@/components/GuestGuard";
+import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 
 const STORY_24H = 24 * 60 * 60 * 1000;
 
@@ -29,13 +35,20 @@ export const Route = createFileRoute("/")({
 });
 
 function FeedPage() {
-  const { data: articlesData, isLoading: articlesLoading, error: articlesError } = useArticles(1, 10);
+  const {
+    data: articles,
+    isLoading: articlesLoading,
+    error: articlesError,
+    loadMore,
+    hasMore,
+    isLoadingMore,
+    refetch,
+  } = useInfiniteArticles(10);
   const { data: highlightsData, isLoading: highlightsLoading } = useHighlights(1, 10);
   const { data: storiesData, isLoading: storiesLoading } = useStories();
   const { user, isAuthenticated } = useAuthState();
   const { promptLogin, LoginPromptComponent } = useLoginPrompt();
 
-  const articles = articlesData?.data || [];
   const highlights = highlightsData?.data || [];
   const stories = storiesData || [];
 
@@ -77,185 +90,229 @@ function FeedPage() {
     return authorStories.some((s) => !isStoryViewed(s.id));
   };
 
-  if (articlesError) {
-    return (
-      <WebShell>
-        <div className="max-w-[680px] mx-auto py-20 text-center">
-          <p className="text-muted-foreground">Failed to load feed. Please try again later.</p>
-        </div>
-      </WebShell>
-    );
-  }
-
-  console.log(isAuthenticated, user)
-
   return (
     <WebShell>
-      <LoginPromptComponent />
-      <div className="max-w-[680px] mx-auto">
-        {/* Stories Row */}
-        <section className="mb-8">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-3">
-            Stories
-          </h3>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar ">
-            {isAuthenticated && user && (
-              <Link to="/profile" className="flex-none flex flex-col items-center gap-1.5 w-16">
-                <div className="size-16 rounded-full p-0.5 ring-3 ring-amber-600 ring-offset-2 ring-offset-background">
-                  <img src={user.avatar || undefined} alt="You" className="size-full rounded-full object-cover" />
-                </div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground truncate w-full text-center">
-                  You
-                </span>
-              </Link>
-            )}
-            {storiesLoading ? (
-              <div className="flex gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex-none flex flex-col items-center gap-1.5 w-16">
-                    <div className="size-16 rounded-full bg-muted animate-pulse" />
-                    <div className="w-10 h-2 bg-muted animate-pulse rounded" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              activeStoryAuthors.map((author) => {
-                const unviewed = hasUnviewedStories(author.id);
-                const authorStories = getStoriesByAuthor(author.id).filter(
-                  (s) => Date.now() - new Date(s.createdAt).getTime() < STORY_24H
-                );
-                const firstStory = authorStories[0];
-                if (!firstStory) return null;
-                return (
-                  <Link
-                    key={author.id}
-                    to="/story/$authorId/$storyId"
-                    params={{ authorId: author.id, storyId: firstStory.id }}
-                    className="flex-none flex flex-col items-center gap-1.5 w-16"
-                  >
-                    <div className={`size-16 rounded-full p-0.5 ring-3 ring-offset-2 ring-offset-background transition-all ${
-                      unviewed ? "ring-amber-600" : "ring-muted-foreground/20"
-                    }`}>
-                      <img src={author.avatar || undefined} alt={author.name} className="size-full rounded-full object-cover" />
+      <EnhancedErrorBoundary>
+        <LoginPromptComponent />
+        <div className="max-w-[680px] mx-auto">
+          {/* Stories Row */}
+          <section className="mb-8">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-3">
+              Stories
+            </h3>
+            <SmartState
+              isLoading={storiesLoading}
+              isError={false}
+              data={activeStoryAuthors}
+              emptyTitle="No stories yet"
+              emptyDescription="Stories from authors you follow will appear here."
+            >
+              <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                <GuestGuard user={user} mode="hide">
+                  <Link to="/profile" className="flex-none flex flex-col items-center gap-1.5 w-16">
+                    <div className="size-16 rounded-full p-0.5 ring-3 ring-amber-600 ring-offset-2 ring-offset-background">
+                      <Avatar
+                        src={user?.avatar}
+                        alt="You"
+                        name={user?.name}
+                        handle={user?.handle}
+                        className="size-full text-xs"
+                      />
                     </div>
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider truncate w-full text-center ${
-                      unviewed ? "text-foreground" : "text-muted-foreground"
-                    }`}>
-                      {author.name.split(" ")[0]}
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground truncate w-full text-center">
+                      You
                     </span>
                   </Link>
-                );
-              })
-            )}
-          </div>
-        </section>
+                </GuestGuard>
+                {activeStoryAuthors.map((author) => {
+                  const unviewed = hasUnviewedStories(author.id);
+                  const authorStories = getStoriesByAuthor(author.id).filter(
+                    (s) => Date.now() - new Date(s.createdAt).getTime() < STORY_24H
+                  );
+                  const firstStory = authorStories[0];
+                  if (!firstStory) return null;
+                  return (
+                    <Link
+                      key={author.id}
+                      to="/story/$authorId/$storyId"
+                      params={{ authorId: author.id, storyId: firstStory.id }}
+                      className="flex-none flex flex-col items-center gap-1.5 w-16"
+                    >
+                      <div className={`size-16 rounded-full p-0.5 ring-3 ring-offset-2 ring-offset-background transition-all ${
+                        unviewed ? "ring-amber-600" : "ring-muted-foreground/20"
+                      }`}>
+                        <Avatar
+                          src={author.avatar}
+                          alt={author.name}
+                          name={author.name}
+                          handle={author.handle}
+                          className="size-full text-xs"
+                        />
+                      </div>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider truncate w-full text-center ${
+                        unviewed ? "text-foreground" : "text-muted-foreground"
+                      }`}>
+                        {author.name.split(" ")[0]}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </SmartState>
+          </section>
 
-        {/* Featured Post */}
-        <section className="mb-12">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">
-            Featured
-          </h3>
-          {articlesLoading || !featured ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="aspect-[4/5] bg-muted rounded-[2rem]" />
-              <div className="h-4 w-24 bg-muted rounded" />
-              <div className="h-10 w-3/4 bg-muted rounded" />
-              <div className="h-6 w-full bg-muted rounded" />
-            </div>
-          ) : (
-            <FeaturedPost article={featured} />
-          )}
-        </section>
-
-        {/* Reels / Atmospherics */}
-        <section className="mb-8">
-          <div className="flex justify-between items-end mb-3">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
-              Atmospherics
+          {/* Featured Post */}
+          <section className="mb-12">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">
+              Featured
             </h3>
-            <Link to="/highlights" className="text-xs font-semibold text-amber-600 hover:opacity-70">
-              Watch All →
-            </Link>
-          </div>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {highlightsLoading ? (
-              [1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex-none w-[140px] aspect-[9/16] bg-muted rounded-2xl animate-pulse" />
-              ))
-            ) : (
-              highlights.slice(0, 5).map((r) => (
-                <Link
-                  key={r.id}
-                  to="/highlights"
-                  className="flex-none w-[140px] aspect-[9/16] bg-muted rounded-2xl overflow-hidden relative group"
-                >
-                  <img src={r.cover || r.thumbnailUrl || undefined} alt={r.title} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="text-[10px] font-medium opacity-80">{r.author?.handle || r.handle}</p>
-                    <p className="text-xs font-bold leading-tight truncate">{r.title}</p>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Suggested for You */}
-        <SuggestedForYou limit={4} />
-
-        {/* Latest Articles */}
-        <section className="mb-8">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">
-            Latest
-          </h3>
-          <div className="space-y-6">
-            {articlesLoading ? (
-              [1, 2, 3].map((i) => (
-                <div key={i} className="space-y-3 animate-pulse">
-                  <div className="aspect-[16/10] bg-muted rounded-[1.5rem]" />
-                  <div className="h-3 w-20 bg-muted rounded" />
-                  <div className="h-8 w-2/3 bg-muted rounded" />
-                  <div className="h-4 w-full bg-muted rounded" />
+            <SmartState
+              isLoading={articlesLoading}
+              isError={!!articlesError}
+              error={articlesError}
+              data={featured}
+              useShimmer
+              emptyTitle="No featured article"
+              emptyDescription="Check back soon for featured content."
+              onRetry={refetch}
+              shimmerComponent={
+                <div className="space-y-4">
+                  <div className="aspect-[4/5] bg-muted rounded-[2rem] animate-pulse" />
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-10 w-3/4 bg-muted rounded animate-pulse" />
+                  <div className="h-6 w-full bg-muted rounded animate-pulse" />
                 </div>
-              ))
-            ) : (
-              rest.map((a) => (
-                <ArticleCard key={a.slug} article={a} />
-              ))
-            )}
-          </div>
-        </section>
-      </div>
+              }
+            >
+              {featured && <FeaturedPost article={featured} />}
+            </SmartState>
+          </section>
+
+          {/* Reels / Atmospherics */}
+          <section className="mb-8">
+            <div className="flex justify-between items-end mb-3">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
+                Atmospherics
+              </h3>
+              <Link to="/highlights" className="text-xs font-semibold text-amber-600 hover:opacity-70">
+                Watch All →
+              </Link>
+            </div>
+            <SmartState
+              isLoading={highlightsLoading}
+              isError={false}
+              data={highlights}
+              useShimmer
+              emptyTitle="No highlights yet"
+              emptyDescription="Highlights from the community will appear here."
+              shimmerComponent={
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex-none w-[140px] aspect-[9/16] bg-muted rounded-2xl animate-pulse" />
+                  ))}
+                </div>
+              }
+            >
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                {highlights.slice(0, 5).map((r) => (
+                  <Link
+                    key={r.id}
+                    to="/highlights"
+                    className="flex-none w-[140px] aspect-[9/16] bg-muted rounded-2xl overflow-hidden relative group"
+                  >
+                    <img src={r.cover || r.thumbnailUrl || undefined} alt={r.title} className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                      <p className="text-[10px] font-medium opacity-80">{r.author?.handle || r.handle}</p>
+                      <p className="text-xs font-bold leading-tight truncate">{r.title}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </SmartState>
+          </section>
+
+          {/* Suggested for You */}
+          <SuggestedForYou limit={4} />
+
+          {/* Latest Articles */}
+          <section className="mb-8">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">
+              Latest
+            </h3>
+            <SmartState
+              isLoading={articlesLoading}
+              isError={!!articlesError}
+              error={articlesError}
+              data={rest}
+              useShimmer
+              emptyTitle="No articles yet"
+              emptyDescription="New articles will appear here as they are published."
+              onRetry={refetch}
+              shimmerComponent={
+                <div className="space-y-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="aspect-[16/10] bg-muted rounded-[1.5rem] animate-pulse" />
+                      <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+                      <div className="h-8 w-2/3 bg-muted rounded animate-pulse" />
+                      <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              }
+            >
+              <InfiniteScroll
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                isLoading={isLoadingMore}
+              >
+                <div className="space-y-6">
+                  {rest.map((a) => (
+                    <ArticleCard key={a.slug} article={a} />
+                  ))}
+                </div>
+              </InfiniteScroll>
+            </SmartState>
+          </section>
+        </div>
+      </EnhancedErrorBoundary>
     </WebShell>
   );
 }
 
 function FeaturedPost({ article }: { article: Article }) {
-  const { isLiked, isSaved, toggleLike, toggleBookmark, commentsFor } = useSocial();
+  const { isLiked, isSaved, hasCommented, toggleLike, toggleBookmark, shareArticle, commentsFor } = useSocial();
   const { isAuthenticated } = useAuthState();
   const { promptLogin } = useLoginPrompt();
   const slug = article.slug;
   const liked = isLiked(slug);
   const saved = isSaved(slug);
+  const commented = hasCommented(slug);
   const likes = liked ? article.likesCount + 1 : article.likesCount;
   const commentCount = commentsFor(slug).length;
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     if (!isAuthenticated) {
       promptLogin("like this article");
       return;
     }
     toggleLike(slug);
-  };
+  }, [isAuthenticated, promptLogin, toggleLike, slug]);
 
-  const handleBookmark = () => {
+  const handleBookmark = useCallback(() => {
     if (!isAuthenticated) {
       promptLogin("bookmark this article");
       return;
     }
     toggleBookmark(slug);
-  };
+  }, [isAuthenticated, promptLogin, toggleBookmark, slug]);
+
+  const handleShare = useCallback(() => {
+    shareArticle(slug);
+    navigator.clipboard.writeText(window.location.origin + "/article/" + slug);
+    toast.success("Link copied to clipboard");
+  }, [shareArticle, slug]);
 
   return (
     <article>
@@ -303,12 +360,12 @@ function FeaturedPost({ article }: { article: Article }) {
             params={{ id: article.author?.handle || article.authorId }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-          <ShimmerImage
-            src={article.author?.avatar || undefined}
+          <Avatar
+            src={article.author?.avatar}
             alt=""
-            className="size-12 rounded-full object-cover"
-            wrapperClassName="size-12 rounded-full shrink-0"
-            aspectRatio="1/1"
+            name={article.author?.name}
+            handle={article.author?.handle}
+            size="lg"
           />
           <div>
             <p className="text-base font-semibold">
@@ -320,48 +377,22 @@ function FeaturedPost({ article }: { article: Article }) {
           </div>
         </Link>
 
-        <div className="flex items-center gap-5">
-          <button
-            onClick={handleLike}
-            className="flex items-center gap-2 text-base font-semibold hover:text-amber-600 transition-colors"
-          >
-            <Heart
-              className="size-6"
-              strokeWidth={1.8}
-              fill={liked ? "#d97706" : "none"}
-              color={liked ? "#d97706" : "currentColor"}
-            />
-            <span>{likes.toLocaleString()}</span>
-          </button>
-          <Link
-            to="/article/$slug"
-            params={{ slug }}
-            className="flex items-center gap-2 text-base font-semibold hover:text-amber-600 transition-colors"
-          >
-            <MessageCircle className="size-6" strokeWidth={1.8} />
-            <span>{commentCount}</span>
-          </Link>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.origin + "/article/" + slug);
-              toast.success("Link copied to clipboard");
-            }}
-            className="hover:text-amber-600 transition-colors"
-          >
-            <Share2 className="size-6" strokeWidth={1.8} />
-          </button>
-          <button
-            onClick={handleBookmark}
-            className="hover:text-amber-600 transition-colors"
-          >
-            <Bookmark
-              className="size-6"
-              strokeWidth={1.8}
-              fill={saved ? "#d97706" : "none"}
-              color={saved ? "#d97706" : "currentColor"}
-            />
-          </button>
-        </div>
+        <ArticleActions
+          articleSlug={slug}
+          isLiked={liked}
+          isBookmarked={saved}
+          isCommented={commented}
+          likesCount={likes}
+          commentsCount={commentCount}
+          onLikeToggle={handleLike}
+          onBookmarkToggle={handleBookmark}
+          onShare={handleShare}
+          size="lg"
+          variant="compact"
+          showShare={true}
+          showCounts={true}
+          activeTintColor="#d97706"
+        />
       </div>
 
       {/* View count */}
@@ -374,30 +405,37 @@ function FeaturedPost({ article }: { article: Article }) {
 }
 
 function ArticleCard({ article }: { article: Article }) {
-  const { isLiked, isSaved, toggleLike, toggleBookmark, commentsFor } = useSocial();
+  const { isLiked, isSaved, hasCommented, toggleLike, toggleBookmark, shareArticle, commentsFor } = useSocial();
   const { isAuthenticated } = useAuthState();
   const { promptLogin } = useLoginPrompt();
   const slug = article.slug;
   const liked = isLiked(slug);
   const saved = isSaved(slug);
+  const commented = hasCommented(slug);
   const likes = liked ? article.likesCount + 1 : article.likesCount;
   const commentCount = commentsFor(slug).length;
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     if (!isAuthenticated) {
       promptLogin("like this article");
       return;
     }
     toggleLike(slug);
-  };
+  }, [isAuthenticated, promptLogin, toggleLike, slug]);
 
-  const handleBookmark = () => {
+  const handleBookmark = useCallback(() => {
     if (!isAuthenticated) {
       promptLogin("bookmark this article");
       return;
     }
     toggleBookmark(slug);
-  };
+  }, [isAuthenticated, promptLogin, toggleBookmark, slug]);
+
+  const handleShare = useCallback(() => {
+    shareArticle(slug);
+    navigator.clipboard.writeText(window.location.origin + "/article/" + slug);
+    toast.success("Link copied to clipboard");
+  }, [shareArticle, slug]);
 
   return (
     <article>
@@ -438,10 +476,12 @@ function ArticleCard({ article }: { article: Article }) {
             params={{ id: article.author?.handle || article.authorId }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-          <img
-            src={article.author?.avatar || undefined}
+          <Avatar
+            src={article.author?.avatar}
             alt=""
-            className="size-10 rounded-full object-cover"
+            name={article.author?.name}
+            handle={article.author?.handle}
+            size="md"
           />
           <div>
             <p className="text-sm font-semibold">
@@ -453,48 +493,22 @@ function ArticleCard({ article }: { article: Article }) {
           </div>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleLike}
-            className="flex items-center gap-1.5 text-sm font-semibold hover:text-amber-600 transition-colors"
-          >
-            <Heart
-              className="size-5"
-              strokeWidth={1.8}
-              fill={liked ? "#d97706" : "none"}
-              color={liked ? "#d97706" : "currentColor"}
-            />
-            <span>{likes.toLocaleString()}</span>
-          </button>
-          <Link
-            to="/article/$slug"
-            params={{ slug }}
-            className="flex items-center gap-1.5 text-sm font-semibold hover:text-amber-600 transition-colors"
-          >
-            <MessageCircle className="size-5" strokeWidth={1.8} />
-            <span>{commentCount}</span>
-          </Link>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.origin + "/article/" + slug);
-              toast.success("Link copied to clipboard");
-            }}
-            className="hover:text-amber-600 transition-colors"
-          >
-            <Share2 className="size-5" strokeWidth={1.8} />
-          </button>
-          <button
-            onClick={handleBookmark}
-            className="hover:text-amber-600 transition-colors"
-          >
-            <Bookmark
-              className="size-5"
-              strokeWidth={1.8}
-              fill={saved ? "#d97706" : "none"}
-              color={saved ? "#d97706" : "currentColor"}
-            />
-          </button>
-        </div>
+        <ArticleActions
+          articleSlug={slug}
+          isLiked={liked}
+          isBookmarked={saved}
+          isCommented={commented}
+          likesCount={likes}
+          commentsCount={commentCount}
+          onLikeToggle={handleLike}
+          onBookmarkToggle={handleBookmark}
+          onShare={handleShare}
+          size="md"
+          variant="compact"
+          showShare={true}
+          showCounts={true}
+          activeTintColor="#d97706"
+        />
       </div>
 
       {/* View count */}
