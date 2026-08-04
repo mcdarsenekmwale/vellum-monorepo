@@ -116,6 +116,14 @@ import {
   type StorageStats,
   type SystemStatus,
   type RoleWithCount,
+  type AdminRoleOption,
+  type AdminRolesResponse,
+  type RoleKey,
+  type ValidLegacyRole,
+  VALID_LEGACY_ROLES,
+  collectRoleKeys,
+  normalizeRoleToUpperSnake,
+  toValidLegacyRole,
   type AISettings,
   type ModerationTestResult,
   type ReportTrendsResponse,
@@ -156,6 +164,9 @@ import {
   deleteCannedResponse,
   recordCannedResponseUsed,
   type CannedResponse,
+  getSupportDashboard,
+  getAgentLeaderboard,
+  type SupportDashboard,
 } from "./services";
 
 export type ListParams = {
@@ -217,7 +228,7 @@ export function useUserById(id: string | undefined) {
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { email: string; name: string; handle: string; role: string; password: string }) => createUser(data),
+    mutationFn: (data: { email: string; name: string; handle: string; role: string; password: string; permissions?: string[] }) => createUser(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -228,7 +239,7 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string } & Partial<User>) => updateUser(id, data),
+    mutationFn: ({ id, ...data }: { id: string; permissions?: string[] } & Partial<User>) => updateUser(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -1411,9 +1422,16 @@ export function useRemovePermissionOverride() {
 }
 
 export function useSupportDashboard() {
-  return useQuery({
+  return useQuery<SupportDashboard>({
     queryKey: ["support-dashboard"],
-    queryFn: () => import("./services").then((m) => m.getSupportDashboard()),
+    queryFn: getSupportDashboard,
+  });
+}
+
+export function useAgentLeaderboard() {
+  return useQuery({
+    queryKey: ["agent-leaderboard"],
+    queryFn: getAgentLeaderboard,
   });
 }
 
@@ -1446,6 +1464,10 @@ export type {
   StorageStats,
   SystemStatus,
   RoleWithCount,
+  AdminRoleOption,
+  AdminRolesResponse,
+  RoleKey,
+  ValidLegacyRole,
   Paginated,
   AISettings,
   ModerationTestResult,
@@ -1458,4 +1480,14 @@ export type {
   RbacPermission,
   UserRoleAssignment,
   UserEffectivePermissions,
+};
+
+// Runtime value exports — keep these OUTSIDE the `export type { }` block above
+// so callers can destructure them as first-class runtime values (e.g. spread
+// VALID_LEGACY_ROLES inside an array, or call normalizeRoleToUpperSnake()).
+export {
+  VALID_LEGACY_ROLES,
+  collectRoleKeys,
+  normalizeRoleToUpperSnake,
+  toValidLegacyRole,
 };

@@ -43,6 +43,11 @@ import {
   useUpdateUser,
   useDeleteUser,
   type User,
+  useRbacRoles,
+  useRoles,
+  type ValidLegacyRole,
+  type RoleKey,
+  VALID_LEGACY_ROLES,
 } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow, format } from "date-fns";
@@ -55,7 +60,16 @@ export const Route = createFileRoute("/_app/users/")({
   component: UsersList,
 });
 
-type RoleFilter = "all" | "USER" | "MODERATOR" | "CREATOR" | "DEVELOPER" | "EDITOR" | "ADMIN" | "SUPPORT_AGENT" | "SUPPORT_ADMIN" ;
+type RoleFilter =
+  | "all"
+  | "GUEST"
+  | "USER"
+  | "CREATOR"
+  | "MODERATOR"
+  | "SUPPORT_ADMIN"
+  | "ADMIN"
+  | "PLATFORM_ADMIN"
+  | "SUPER_ADMIN";
 type StatusFilter = "all" | "active" | "suspended";
 type TwoFAFilter = "all" | "enabled" | "disabled";
 
@@ -68,6 +82,19 @@ function UsersList() {
   const { can, user: currentUser } = useAuth();
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
+
+  // Enterprise RBAC roles list (role definitions + permission assignments)
+  const roleQuery = useRbacRoles({ search: "", includeInactive: false });
+  const roles = roleQuery.data ?? [];
+
+  // Assignable roles list — union of legacy enum values and custom RbacRole rows,
+  // used to populate the role picker in create/edit user dialogs.
+  const assignableRolesQuery = useRoles();
+  const assignableRoles = assignableRolesQuery.data ?? { legacy: [], custom: [] };
+  const allAssignableRoleKeys: RoleKey[] = [
+    ...assignableRoles.legacy.map((r) => r.key),
+    ...assignableRoles.custom.map((r) => r.key),
+  ];
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,13 +118,15 @@ function UsersList() {
   const [createEmail, setCreateEmail] = useState("");
   const [createName, setCreateName] = useState("");
   const [createHandle, setCreateHandle] = useState("");
-  const [createRole, setCreateRole] = useState("USER");
+  const [createRole, setCreateRole] = useState<RoleKey>("USER");
   const [createPassword, setCreatePassword] = useState("");
+  const [createPermissions, setCreatePermissions] = useState<string[]>([]);
 
   const [editEmail, setEditEmail] = useState("");
   const [editName, setEditName] = useState("");
   const [editHandle, setEditHandle] = useState("");
-  const [editRole, setEditRole] = useState("");
+  const [editRole, setEditRole] = useState<RoleKey>("");
+  const [editPermissions, setEditPermissions] = useState<string[]>([]);
 
   // UI states
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -220,6 +249,7 @@ function UsersList() {
         handle: createHandle.trim(),
         role: createRole,
         password: createPassword,
+        permissions: createPermissions,
       },
       {
         onSuccess: () => {
@@ -234,7 +264,7 @@ function UsersList() {
         },
       }
     );
-  }, [createEmail, createName, createHandle, createRole, createPassword, createUser, refetch, refetchStats]);
+  }, [createEmail, createName, createHandle, createRole, createPassword, createPermissions, createUser, refetch, refetchStats]);
 
   const resetCreateForm = () => {
     setCreateEmail("");
@@ -242,6 +272,7 @@ function UsersList() {
     setCreateHandle("");
     setCreateRole("USER");
     setCreatePassword("");
+    setCreatePermissions([]);
   };
 
   const handleEdit = useCallback(() => {
@@ -258,11 +289,13 @@ function UsersList() {
         name: editName.trim(),
         handle: editHandle.trim(),
         role: editRole,
+        permissions: editPermissions,
       },
       {
         onSuccess: () => {
           setIsEditOpen(false);
           setSelectedUser(null);
+          setEditPermissions([]);
           refetch();
           refetchStats();
           toast.success("User updated successfully");
@@ -272,7 +305,7 @@ function UsersList() {
         },
       }
     );
-  }, [selectedUser, editEmail, editName, editHandle, editRole, updateUser, refetch, refetchStats]);
+  }, [selectedUser, editEmail, editName, editHandle, editRole, editPermissions, updateUser, refetch, refetchStats]);
 
   const handleDelete = useCallback(() => {
     if (!selectedUser) return;
@@ -361,7 +394,12 @@ function UsersList() {
     setEditEmail(user.email);
     setEditName(user.name);
     setEditHandle(user.handle);
+    // Preserve the raw role value exactly as it was returned by the API.
+    // The backend now accepts legacy enum values OR a valid RbacRole.key
+    // (e.g. "support_admin") — do NOT coerce custom roles to USER here,
+    // otherwise admins lose the ability to see/edit a user's custom role.
     setEditRole(user.role);
+    setEditPermissions((user as any).permissions ?? []);
     setIsEditOpen(true);
   };
 
@@ -432,6 +470,9 @@ function UsersList() {
         setCreatePassword={setCreatePassword}
         handleCreate={handleCreate}
         createUserPending={createUser.isPending}
+        roles={roles}
+        selectedPermissions={createPermissions}
+        onPermissionsChange={setCreatePermissions}
       />
 
       <EditUserDialog
@@ -447,6 +488,9 @@ function UsersList() {
         setEditRole={setEditRole}
         handleEdit={handleEdit}
         updateUserPending={updateUser.isPending}
+        roles={roles}
+        selectedPermissions={editPermissions}
+        onPermissionsChange={setEditPermissions}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -588,13 +632,15 @@ function UsersList() {
                       <DropdownMenuContent align="start">
                         <DropdownMenuLabel>Filter by role</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {(["all", "USER", "MODERATOR", "CREATOR", "DEVELOPER", "EDITOR", "ADMIN", "SUPPORT_AGENT" , "SUPPORT_ADMIN"] as const).map((role) => (
+                        {(["all", ...VALID_LEGACY_ROLES] as const).map((role) => (
                           <DropdownMenuItem
                             key={role}
                             onClick={() => setRoleFilter(role)}
                             className={cn(roleFilter === role && "bg-accent")}
                           >
-                            {role === "all" ? "All roles" : role.charAt(0) + role.slice(1).toLowerCase()}
+                            {role === "all"
+                              ? "All roles"
+                              : role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                             {roleFilter === role && <Check className="ml-2 size-3.5" />}
                           </DropdownMenuItem>
                         ))}

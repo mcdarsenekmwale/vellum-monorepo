@@ -1,10 +1,14 @@
 import { useState, useCallback, useMemo } from "react";
+import { useRbacRoles, usePermissionGroups } from "@/lib/api/hooks";
+import type { RbacRole, PermissionGroup } from "@/lib/api/hooks";
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
   Dialog,
@@ -42,6 +46,7 @@ import {
 import {
   Loader2,
   AlertCircle,
+  AlertTriangle,
   Wand2,
   Eye,
   EyeOff,
@@ -60,15 +65,19 @@ import {
   ShieldCheck,
   ShieldAlert,
   UserCog,
-  AlertTriangle,
   AlignLeft,
   FileText,
   RefreshCw,
   Send,
   Tag,
+  UserX,
+  CheckSquare,
+  Square,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /* ─── Password Generator ─── */
 
@@ -104,19 +113,157 @@ function getPasswordStrength(password: string): { label: string; color: string; 
   return { label: "Weak", color: "bg-rose-500", width: "25%" };
 }
 
+/* ─── Role Types & Helpers ─── */
+
+export interface RoleOption {
+  key: string;
+  name: string;
+  id?: string;
+  description?: string;
+  isSystem?: boolean;
+  rank?: number;
+}
+
+const STATIC_ROLE_OPTIONS: RoleOption[] = [
+  { key: "SUPER_ADMIN", name: "Super Admin", rank: 100, isSystem: true },
+  { key: "PLATFORM_ADMIN", name: "Platform Admin", rank: 90, isSystem: true },
+  { key: "ADMIN", name: "Admin", rank: 80, isSystem: true },
+  { key: "SUPPORT_ADMIN", name: "Support Admin", rank: 70 },
+  { key: "MODERATOR", name: "Moderator", rank: 60 },
+  { key: "CREATOR", name: "Creator", rank: 40 },
+  { key: "USER", name: "User", rank: 10 },
+  { key: "GUEST", name: "Guest", rank: 0 },
+];
+
+const ROLE_ICON_MAP: Record<string, any> = {
+  SUPER_ADMIN: ShieldAlert,
+  PLATFORM_ADMIN: ShieldAlert,
+  ADMIN: ShieldAlert,
+  SUPPORT_ADMIN: ShieldCheck,
+  MODERATOR: Shield,
+  CREATOR: Sparkles,
+  GUEST: UserX,
+  USER: User,
+};
+
+const ROLE_COLOR_MAP: Record<string, string> = {
+  SUPER_ADMIN: "bg-rose-600/15 text-rose-600 border-rose-600/25",
+  PLATFORM_ADMIN: "bg-rose-500/15 text-rose-500 border-rose-500/25",
+  ADMIN: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+  SUPPORT_ADMIN: "bg-violet-500/10 text-violet-500 border-violet-500/20",
+  MODERATOR: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  CREATOR: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  GUEST: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
+  USER: "bg-muted text-muted-foreground border-muted",
+};
+
+export function mapRbacRolesToOptions(roles?: RbacRole[]): RoleOption[] {
+  if (!roles || roles.length === 0) return STATIC_ROLE_OPTIONS;
+  return roles
+    .filter((r) => r.isActive)
+    .sort((a, b) => a.rank - b.rank)
+    .map((r) => ({
+      key: r.key,
+      name: r.name,
+      id: r.id,
+      description: r.description ?? undefined,
+      isSystem: r.isSystem,
+      rank: r.rank,
+    }));
+}
+
+export function getRoleDisplayKey(role: string): string {
+  // Insert underscore word boundaries for PascalCase/camelCase ("SupportAdmin" →
+  // "Support_Admin"), normalize separators (dash/space/dot → _), collapse
+  // duplicate underscores, uppercase → produces the canonical UPPER_SNAKE key
+  // that we can compare against both the 8-value Prisma enum and the semantic
+  // grouping heuristics below.
+  const normalized = role
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[-\s.]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+
+  // 1) Exact match against the 8-level expanded Prisma enum.
+  if (
+    normalized === "SUPER_ADMIN" ||
+    normalized === "PLATFORM_ADMIN" ||
+    normalized === "ADMIN" ||
+    normalized === "SUPPORT_ADMIN" ||
+    normalized === "MODERATOR" ||
+    normalized === "CREATOR" ||
+    normalized === "USER" ||
+    normalized === "GUEST"
+  ) {
+    return normalized;
+  }
+  // 2) Semantic grouping fallbacks for unknown/custom role keys. Order is
+  //    important: most-specific checks first, broader "starts with / ends with
+  //    / includes" catch-alls last.
+  if (normalized.includes("SUPER") || normalized.includes("SYSADMIN")) return "SUPER_ADMIN";
+  if (
+    normalized.includes("PLATFORM") ||
+    normalized.startsWith("ORG_") ||
+    normalized.includes("ORGANIZATION")
+  )
+    return "PLATFORM_ADMIN";
+  // Exact SUPPORT_ADMIN key → SUPPORT_ADMIN tier. Other SUPPORT_* variants
+  // (SUPPORT_AGENT, CUSTOMER_SUPPORT, etc.) are MODERATOR tier.
+  if (normalized === "SUPPORT_ADMIN" || normalized.includes("SUPPORT_ADMIN")) return "SUPPORT_ADMIN";
+  if (normalized.endsWith("_ADMIN") || normalized.includes("ADMIN")) return "ADMIN";
+  if (
+    normalized.includes("MODERATOR") ||
+    normalized.includes("FLAG") ||
+    normalized.startsWith("SUPPORT_") ||
+    normalized.includes("CUSTOMER_SUPPORT")
+  )
+    return "MODERATOR";
+  if (normalized.includes("CREATOR") || normalized.includes("AUTHOR") || normalized.includes("EDITOR")) return "CREATOR";
+  if (normalized.includes("GUEST") || normalized.includes("ANONYMOUS")) return "GUEST";
+  return "USER";
+}
+
+export function useRoleOptions(providedRoles?: RbacRole[]) {
+  const rbacQuery = useRbacRoles({ includeInactive: false });
+  
+  const hasProvidedRoles = !!providedRoles;
+  const roles = providedRoles ?? rbacQuery.data;
+  const isLoading = hasProvidedRoles ? false : rbacQuery.isLoading;
+  const isError = hasProvidedRoles ? false : rbacQuery.isError;
+  const error = hasProvidedRoles ? undefined : rbacQuery.error;
+
+  const options = useMemo(() => mapRbacRolesToOptions(roles), [roles]);
+  const hasDynamicData = !!roles && roles.length > 0;
+  const isEmpty = !isLoading && !isError && options.length === 0;
+
+  return {
+    options,
+    isLoading,
+    isError,
+    error,
+    hasDynamicData,
+    isEmpty,
+  };
+}
+
 /* ─── Role Badge ─── */
 
-function RoleBadge({ role }: { role: string }) {
-  const config: Record<string, { icon: any; color: string; label: string }> = {
-    ADMIN: { icon: ShieldAlert, color: "bg-rose-500/10 text-rose-500 border-rose-500/20", label: "Admin" },
-    MODERATOR: { icon: Shield, color: "bg-amber-500/10 text-amber-500 border-amber-500/20", label: "Moderator" },
-    EDITOR: { icon: UserCog, color: "bg-blue-500/10 text-blue-500 border-blue-500/20", label: "Editor" },
-    CREATOR: { icon: Sparkles, color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", label: "Creator" },
-    DEVELOPER: { icon: ShieldCheck, color: "bg-purple-500/10 text-purple-500 border-purple-500/20", label: "Developer" },
-    USER: { icon: User, color: "bg-muted text-muted-foreground border-muted", label: "User" },
-  };
+function RoleBadge({ role, roles }: { role: string; roles?: RbacRole[] }) {
+  const displayKey = getRoleDisplayKey(role);
+  const Icon = ROLE_ICON_MAP[displayKey] ?? User;
+  const color = ROLE_COLOR_MAP[displayKey] ?? ROLE_COLOR_MAP.USER;
 
-  const { icon: Icon, color, label } = config[role] || config.USER;
+  let label: string | undefined;
+  if (roles) {
+    label = roles.find((r) => r.key === role || r.key === displayKey)?.name;
+  }
+  if (!label) {
+    label = STATIC_ROLE_OPTIONS.find((r) => r.key === displayKey)?.name;
+  }
+  if (!label) {
+    label = role;
+  }
 
   return (
     <Badge variant="outline" className={cn("gap-1 px-2 py-0.5 text-xs font-medium", color)}>
@@ -126,7 +273,308 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
+/* ─── Role Select ─── */
+
+interface RoleSelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  roles?: RbacRole[];
+  disabled?: boolean;
+  showSystem?: boolean;
+}
+
+function RoleSelect({ value, onValueChange, roles, disabled, showSystem }: RoleSelectProps) {
+  const { options, isLoading, isError, error, hasDynamicData, isEmpty } = useRoleOptions(roles);
+
+  // Ensure the current value is always visible/selectable, even if:
+  //  - it's a legacy enum value not present in the RbacRole table,
+  //  - it's a custom role key that was recently added, or
+  //  - the role definition was soft-deleted or filtered out.
+  // This guarantees admins can see what role a user currently has,
+  // regardless of API-side filtering or timing issues.
+  const augmentedOptions = useMemo(() => {
+    if (!value) return options;
+    const alreadyPresent = options.some((o) => o.key === value);
+    if (alreadyPresent) return options;
+
+    // Try to find a matching name in the static options first.
+    const staticMatch = STATIC_ROLE_OPTIONS.find((s) => s.key === value);
+    const inferredRole: RoleOption = staticMatch ?? {
+      key: value,
+      name: value,
+      description: "Custom role (not in roles list)",
+    };
+    return [inferredRole, ...options];
+  }, [options, value]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-background">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading roles...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    const fallback = value
+      ? [
+          { key: value, name: value },
+          ...STATIC_ROLE_OPTIONS.filter((s) => s.key !== value),
+        ]
+      : STATIC_ROLE_OPTIONS;
+    return (
+      <div className="space-y-1">
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="size-4" />
+          <AlertDescription className="text-xs">
+            Failed to load roles: {error instanceof Error ? error.message : "Unknown error"}
+          </AlertDescription>
+        </Alert>
+        <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+          <SelectTrigger className="focus-visible:ring-offset-0">
+            <SelectValue placeholder="Select a role" />
+          </SelectTrigger>
+          <SelectContent>
+            {fallback.map((role) => (
+              <SelectItem key={role.key} value={role.key}>
+                {role.name} <span className="text-muted-foreground text-xs">({role.key})</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
+  return (
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+      <SelectTrigger className="focus-visible:ring-offset-0">
+        <SelectValue placeholder="Select a role" />
+      </SelectTrigger>
+      <SelectContent>
+        {isEmpty ? (
+          <SelectItem value={value}>
+            {value || "No roles available"}
+          </SelectItem>
+        ) : (
+          augmentedOptions
+            .filter((role) => showSystem || role.isSystem !== false || role.key === value)
+            .map((role) => (
+              <SelectItem key={role.key} value={role.key}>
+                {role.name}
+                {hasDynamicData && role.rank !== undefined && (
+                  <span className="text-muted-foreground text-xs ml-2">Rank {role.rank}</span>
+                )}
+                {role.isSystem && (
+                  <Badge variant="secondary" className="ml-2 text-[9px]">System</Badge>
+                )}
+                {role.description?.includes("not in roles list") && (
+                  <Badge variant="outline" className="ml-2 text-[9px]">Custom</Badge>
+                )}
+              </SelectItem>
+            ))
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/* ─── Permission Editor ─── */
+
+interface PermissionEditorProps {
+  selectedPermissions: string[];
+  onPermissionsChange: (permissions: string[]) => void;
+  roleKey?: string;
+  disabled?: boolean;
+}
+
+function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, disabled }: PermissionEditorProps) {
+  const { data: permissionGroups, isLoading, isError, error } = usePermissionGroups();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handlePermissionToggle = useCallback(
+    (permissionId: string) => {
+      if (disabled) return;
+      onPermissionsChange(
+        selectedPermissions.includes(permissionId)
+          ? selectedPermissions.filter((id) => id !== permissionId)
+          : [...selectedPermissions, permissionId]
+      );
+    },
+    [selectedPermissions, onPermissionsChange, disabled]
+  );
+
+  const handleGroupToggle = useCallback(
+    (groupPermissions: string[], checked: boolean) => {
+      if (disabled) return;
+      const groupIds = groupPermissions;
+      if (checked) {
+        onPermissionsChange([...new Set([...selectedPermissions, ...groupIds])]);
+      } else {
+        onPermissionsChange(selectedPermissions.filter((id) => !groupIds.includes(id)));
+      }
+    },
+    [selectedPermissions, onPermissionsChange, disabled]
+  );
+
+  const getGroupSelectionState = useCallback(
+    (group: PermissionGroup) => {
+      const groupPermIds = group.permissions.map((p) => p.id);
+      const selectedInGroup = groupPermIds.filter((id) => selectedPermissions.includes(id));
+      if (selectedInGroup.length === 0) return "none";
+      if (selectedInGroup.length === groupPermIds.length) return "all";
+      return "partial";
+    },
+    [selectedPermissions]
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 h-9">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Loading permissions...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="destructive" className="py-2">
+        <AlertCircle className="size-4" />
+        <AlertDescription className="text-xs">
+          Failed to load permissions: {error instanceof Error ? error.message : "Unknown error"}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!permissionGroups || permissionGroups.length === 0) {
+    return (
+      <div className="text-center py-4">
+        <Lock className="size-6 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No permissions available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        disabled={disabled}
+      >
+        <ShieldCheck className="size-4" />
+        {isExpanded ? "Hide permissions" : "Edit permissions"}
+        {selectedPermissions.length > 0 && (
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {selectedPermissions.length}
+          </Badge>
+        )}
+        <ChevronDown className={cn("size-4 transition-transform", isExpanded && "rotate-180")} />
+      </button>
+
+      {isExpanded && (
+        <ScrollArea className="h-64 rounded-md border p-3">
+          <div className="space-y-4">
+            {permissionGroups.map((group) => {
+              const selectionState = getGroupSelectionState(group);
+              const groupPermIds = group.permissions.map((p) => p.id);
+
+              return (
+                <div key={group.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={`group-${group.id}`}
+                        checked={selectionState === "all"}
+                        disabled={disabled}
+                        onCheckedChange={(checked) =>
+                          handleGroupToggle(groupPermIds, checked === true)
+                        }
+                        data-state={selectionState === "partial" ? "indeterminate" : selectionState}
+                      />
+                      <label
+                        htmlFor={`group-${group.id}`}
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        {group.name}
+                      </label>
+                      {group.permissions.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({selectedPermissions.filter((id) => groupPermIds.includes(id)).length}/{group.permissions.length})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {group.description && (
+                    <p className="text-xs text-muted-foreground pl-6">{group.description}</p>
+                  )}
+
+                  <div className="pl-6 grid gap-1.5">
+                    {group.permissions.map((permission) => {
+                      const isChecked = selectedPermissions.includes(permission.id);
+                      return (
+                        <label
+                          key={permission.id}
+                          className={cn(
+                            "flex items-center gap-2 text-sm rounded-md px-2 py-1 cursor-pointer transition-colors",
+                            isChecked ? "bg-primary/5" : "hover:bg-muted/50",
+                            disabled && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            disabled={disabled}
+                            onCheckedChange={() => handlePermissionToggle(permission.id)}
+                          />
+                          <span className="flex-1">
+                            <span className="font-medium">{permission.name}</span>
+                            {permission.description && (
+                              <p className="text-xs text-muted-foreground">{permission.description}</p>
+                            )}
+                          </span>
+                          <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {permission.key}
+                          </code>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
+
 /* ─── Create User Sheet ─── */
+
+interface CreateUserSheetProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  createEmail: string;
+  setCreateEmail: (v: string) => void;
+  createName: string;
+  setCreateName: (v: string) => void;
+  createHandle: string;
+  setCreateHandle: (v: string) => void;
+  createRole: string;
+  setCreateRole: (v: string) => void;
+  createPassword: string;
+  setCreatePassword: (v: string) => void;
+  handleCreate: () => void;
+  createUserPending: boolean;
+  roles?: RbacRole[];
+  selectedPermissions?: string[];
+  onPermissionsChange?: (permissions: string[]) => void;
+}
 
 function CreateUserSheet({
   open,
@@ -143,25 +591,17 @@ function CreateUserSheet({
   setCreatePassword,
   handleCreate,
   createUserPending,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  createEmail: string;
-  setCreateEmail: (v: string) => void;
-  createName: string;
-  setCreateName: (v: string) => void;
-  createHandle: string;
-  setCreateHandle: (v: string) => void;
-  createRole: string;
-  setCreateRole: (v: string) => void;
-  createPassword: string;
-  setCreatePassword: (v: string) => void;
-  handleCreate: () => void;
-  createUserPending: boolean;
-}) {
+  roles,
+  selectedPermissions: externalSelectedPermissions,
+  onPermissionsChange,
+}: CreateUserSheetProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [internalPermissions, setInternalPermissions] = useState<string[]>([]);
+
+  const selectedPermissions = externalSelectedPermissions ?? internalPermissions;
+  const setSelectedPermissions = onPermissionsChange ?? setInternalPermissions;
 
   const handleGenerate = useCallback(() => {
     const pwd = generatePassword();
@@ -206,7 +646,6 @@ function CreateUserSheet({
                 </SheetDescription>
               </div>
             </div>
-            
           </div>
         </SheetHeader>
 
@@ -292,25 +731,27 @@ function CreateUserSheet({
               <Shield className="size-3.5" />
               Role
             </Label>
-            <Select value={createRole} onValueChange={setCreateRole}>
-              <SelectTrigger id="create-role" className="focus-visible:ring-offset-0">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="GUEST">Guest</SelectItem>
-                <SelectItem value="USER">User</SelectItem>
-                <SelectItem value="EDITOR">Editor</SelectItem>
-                <SelectItem value="MODERATOR">Moderator</SelectItem>
-                <SelectItem value="CREATOR">Creator</SelectItem>
-                <SelectItem value="DEVELOPER">Developer</SelectItem>
-                <SelectItem value="SUPPORT_AGENT">Support Agent</SelectItem>
-                <SelectItem value="SUPPORT_ADMIN">Support Admin</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+            <RoleSelect
+              value={createRole}
+              onValueChange={setCreateRole}
+              roles={roles}
+            />
             <div className="mt-1">
               <RoleBadge role={createRole} />
             </div>
+          </div>
+
+          {/* Permissions */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <ShieldCheck className="size-3.5" />
+              Permissions
+            </Label>
+            <PermissionEditor
+              selectedPermissions={selectedPermissions}
+              onPermissionsChange={setSelectedPermissions}
+              roleKey={createRole}
+            />
           </div>
 
           <Separator />
@@ -441,6 +882,24 @@ function CreateUserSheet({
 
 /* ─── Edit User Dialog ─── */
 
+interface EditUserDialogProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  editEmail: string;
+  setEditEmail: (v: string) => void;
+  editName: string;
+  setEditName: (v: string) => void;
+  editHandle: string;
+  setEditHandle: (v: string) => void;
+  editRole: string;
+  setEditRole: (v: string) => void;
+  handleEdit: () => void;
+  updateUserPending: boolean;
+  roles?: RbacRole[];
+  selectedPermissions?: string[];
+  onPermissionsChange?: (permissions: string[]) => void;
+}
+
 function EditUserDialog({
   open,
   onOpenChange,
@@ -454,21 +913,15 @@ function EditUserDialog({
   setEditRole,
   handleEdit,
   updateUserPending,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  editEmail: string;
-  setEditEmail: (v: string) => void;
-  editName: string;
-  setEditName: (v: string) => void;
-  editHandle: string;
-  setEditHandle: (v: string) => void;
-  editRole: string;
-  setEditRole: (v: string) => void;
-  handleEdit: () => void;
-  updateUserPending: boolean;
-}) {
+  roles,
+  selectedPermissions: externalSelectedPermissions,
+  onPermissionsChange,
+}: EditUserDialogProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [internalPermissions, setInternalPermissions] = useState<string[]>([]);
+
+  const selectedPermissions = externalSelectedPermissions ?? internalPermissions;
+  const setSelectedPermissions = onPermissionsChange ?? setInternalPermissions;
 
   const isValid = editEmail.trim() && editName.trim() && editHandle.trim();
 
@@ -487,7 +940,7 @@ function EditUserDialog({
             <div>
               <DialogTitle className="text-lg font-semibold">Edit user</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Update user details and role
+                Update user details, role, and permissions
               </DialogDescription>
             </div>
           </div>
@@ -563,24 +1016,26 @@ function EditUserDialog({
               <Shield className="size-3.5" />
               Role
             </Label>
-            <Select value={editRole} onValueChange={setEditRole}>
-              <SelectTrigger id="edit-role" className="focus-visible:ring-offset-0">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USER">User</SelectItem>
-                <SelectItem value="EDITOR">Editor</SelectItem>
-                <SelectItem value="MODERATOR">Moderator</SelectItem>
-                <SelectItem value="CREATOR">Creator</SelectItem>
-                <SelectItem value="DEVELOPER">Developer</SelectItem>
-                <SelectItem value="SUPPORT_AGENT">Support Agent</SelectItem>
-                <SelectItem value="SUPPORT_ADMIN">Support Admin</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+            <RoleSelect
+              value={editRole}
+              onValueChange={setEditRole}
+              roles={roles}
+            />
             <div className="mt-1">
               <RoleBadge role={editRole} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <ShieldCheck className="size-3.5" />
+              Permissions
+            </Label>
+            <PermissionEditor
+              selectedPermissions={selectedPermissions}
+              onPermissionsChange={setSelectedPermissions}
+              roleKey={editRole}
+            />
           </div>
         </div>
 
@@ -1414,5 +1869,7 @@ export {
   BulkDeleteDialog,
   generatePassword,
   RoleBadge,
-  EmailDialog
+  EmailDialog,
+  RoleSelect,
+  PermissionEditor,
 };

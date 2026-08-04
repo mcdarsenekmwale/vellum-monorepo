@@ -480,11 +480,14 @@ model BackgroundJob {
 }
 
 enum Role {
-  ADMIN
-  MODERATOR
-  CREATOR
-  USER
   GUEST
+  USER
+  CREATOR
+  MODERATOR
+  SUPPORT_ADMIN
+  ADMIN
+  PLATFORM_ADMIN
+  SUPER_ADMIN
 }
 
 enum NotificationKind {

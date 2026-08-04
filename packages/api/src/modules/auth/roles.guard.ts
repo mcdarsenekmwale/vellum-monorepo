@@ -25,9 +25,24 @@ export class RolesGuard implements CanActivate {
     }
 
     const hasRequiredRole = requiredRoles.some((role) => {
-      const roleOrder = [Role.GUEST, Role.USER, Role.CREATOR, Role.MODERATOR, Role.ADMIN];
+      // Role hierarchy (least → most privileged). Any role at a HIGHER index
+      // automatically inherits permissions of all lower-indexed roles, so
+      // e.g. @Roles(Role.MODERATOR) is also passed by SUPPORT_ADMIN, ADMIN,
+      // PLATFORM_ADMIN, and SUPER_ADMIN.
+      const roleOrder = [
+        Role.GUEST,
+        Role.USER,
+        Role.CREATOR,
+        Role.MODERATOR,
+        Role.SUPPORT_ADMIN,
+        Role.ADMIN,
+        Role.PLATFORM_ADMIN,
+        Role.SUPER_ADMIN,
+      ];
       const userRoleIndex = roleOrder.indexOf(userRole);
       const requiredRoleIndex = roleOrder.indexOf(role);
+      // Unknown roles default to -1 (insufficient) to avoid privilege escalation.
+      if (userRoleIndex === -1 || requiredRoleIndex === -1) return false;
       return userRoleIndex >= requiredRoleIndex;
     });
 

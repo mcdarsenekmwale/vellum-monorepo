@@ -9,11 +9,36 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type SettingCategory } from './settings-definitions';
 
+/**
+ * Canonical description of what a role-resolver call returns.
+ *
+ * `kind === 'legacy'`: the value matched a Prisma Role enum directly.
+ *  - `legacyRole` is what we write into User.role column
+ *  - `rbacRoleKey` is the matching RBAC key that syncLegacyRoleToRbacAssignments will target
+ *
+ * `kind === 'custom'`: the value matched a live RbacRole.key or RbacRole.name row.
+ *  - `legacyRole` is the nearest-matching fallback we store in the User.role column
+ *    (so legacy guards such as AdminGuard / RolesGuard keep working for things like ADMIN)
+ *  - `rbacRoleId` / `rbacRoleKey` are the actual custom role that will be assigned as primary
+ *    in UserRoleAssignment
+ */
+type ResolvedRole =
+  | { kind: 'legacy'; raw: string; legacyRole: Role; rbacRoleKey: string }
+  | {
+      kind: 'custom';
+      raw: string;
+      legacyRole: Role;
+      rbacRoleId: string;
+      rbacRoleKey: string;
+      rbacRoleName: string;
+    };
+
 @Injectable()
 export class AdminService {
   private settingsCache: Record<string, any[]> | null = null;
   private settingsCacheExpiry = 0;
   private readonly SETTINGS_CACHE_TTL = 60_000; // 1 minute
+  private readonly VALID_ROLES: ReadonlySet<Role> = new Set(Object.values(Role));
 
   constructor(
     private prisma: PrismaService,
@@ -34,13 +59,309 @@ export class AdminService {
   }
 
   // ─── Legacy Role → RBAC bidirectional sync ────────────────────────────────
-  private readonly LEGACY_TO_RBAC: Record<string, string> = {
-    ADMIN: 'super_admin',
-    MODERATOR: 'moderator',
-    CREATOR: 'author',
-    USER: 'registered_user',
-    GUEST: 'guest',
+  // MUST match rbac.service.assignDefaultRolesToUsers() mapping.
+  // 1:1 enum-level roles map directly to their matching RbacRole.key.
+  // SUPER_ADMIN is the highest rank (granted only to admin@vellum.com via the
+  // dedicated seeder path in assignDefaultRolesToUsers()).
+  private readonly LEGACY_TO_RBAC: Record<Role, string> = {
+    [Role.GUEST]: 'guest',
+    [Role.USER]: 'registered_user',
+    [Role.CREATOR]: 'author',
+    [Role.MODERATOR]: 'moderator',
+    [Role.SUPPORT_ADMIN]: 'support_admin',
+    [Role.ADMIN]: 'platform_admin',
+    [Role.PLATFORM_ADMIN]: 'platform_admin',
+    [Role.SUPER_ADMIN]: 'super_admin',
   };
+
+  /**
+   * Reverse mapping: RbacRole.key → the best matching legacy Role enum value.
+   *
+   * For role keys that now correspond DIRECTLY to a legacy enum value
+   * (support_admin → SUPPORT_ADMIN, platform_admin → PLATFORM_ADMIN,
+   * super_admin → SUPER_ADMIN, editor → CREATOR etc.) we return that exact
+   * enum so the User.role column carries a meaningful type-safe value instead
+   * of a lower approximation.
+   *
+   * For all other custom/ad-hoc roles defined in the RbacRole table, we fall
+   * back to the nearest legacy anchor based on the role's intended privilege
+   * bracket (Role.USER by default).
+   */
+  private readonly RBAC_TO_LEGACY: Record<string, Role> = {
+    super_admin: Role.SUPER_ADMIN,
+    platform_admin: Role.PLATFORM_ADMIN,
+    organization_admin: Role.ADMIN,
+    support_admin: Role.SUPPORT_ADMIN,
+    support_agent: Role.MODERATOR,
+    moderator: Role.MODERATOR,
+    editor: Role.CREATOR,
+    author: Role.CREATOR,
+    analyst: Role.USER,
+    marketing: Role.USER,
+    customer_support: Role.MODERATOR,
+    premium_user: Role.USER,
+    registered_user: Role.USER,
+    api_client: Role.GUEST,
+    guest: Role.GUEST,
+  };
+
+  /**
+   * Normalize a raw role string so the API accepts multiple common
+   * representations interchangeably:
+   *
+   *   - exact enum value    : "SUPPORT_ADMIN"  → "SUPPORT_ADMIN"
+   *   - snake_case lower    : "support_admin"  → "SUPPORT_ADMIN"
+   *   - UPPER_SNAKE_CASE    : "SUPPORT_ADMIN"  → "SUPPORT_ADMIN" (noop)
+   *   - kebab-case          : "support-admin"  → "SUPPORT_ADMIN"
+   *   - PascalCase          : "SupportAdmin"   → "SUPPORT_ADMIN"
+   *   - camelCase           : "supportAdmin"   → "SUPPORT_ADMIN"
+   *   - whitespace / spaces : "Support Admin"  → "SUPPORT_ADMIN"
+   *
+   * Returns the UPPER_SNAKE_CASE canonical form that we can then try to match
+   * against the Prisma Role enum. If the enum contains SUPPORT_ADMIN, any of
+   * the inputs above will now resolve to that enum value directly.
+   *
+   * NOTE: for truly custom RbacRole keys such as `organization_admin` (where
+   * the key itself is snake_case by design) we also need to do the reverse
+   * lookup (enum → lowercase snake_case) later in resolveRole.
+   */
+  private normalizeToUpperSnake(raw: string): string {
+    return raw
+      .trim()
+      // Insert a separator before any capital letter preceded by a lowercase
+      // letter (PascalCase / camelCase → word boundaries)
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      // Dashes, spaces, dots → underscores
+      .replace(/[-\s.]+/g, '_')
+      // Collapse multiple underscores
+      .replace(/_+/g, '_')
+      // Strip leading/trailing underscores
+      .replace(/^_+|_+$/g, '')
+      .toUpperCase();
+  }
+
+  /**
+   * PostgreSQL `22P02: invalid input value for enum "Role": "XXX"` surfaces
+   * from Prisma when the client-side enum (schema.prisma) lists values that
+   * the live database has not yet been ALTER TYPE'd to accept. Prisma wraps
+   * this in a P2010 / PrismaClientUnknownRequestError with the raw Postgres
+   * message embedded somewhere in the error stack/string.
+   */
+  private isUnsupportedRoleEnumError(err: unknown): boolean {
+    if (!err) return false;
+    const msg =
+      (err as any).message?.toString() ??
+      (err as any).meta?.message?.toString() ??
+      JSON.stringify(err);
+    return (
+      msg.includes('22P02') ||
+      (msg.includes('invalid input value for enum') && msg.includes('"Role"'))
+    );
+  }
+
+  /**
+   * Maps the 3 new enum values (SUPPORT_ADMIN, PLATFORM_ADMIN, SUPER_ADMIN)
+   * to the closest legacy-5 enum tier. Used as a best-effort fallback when a
+   * deploy environment has not yet run the `17_expand_role_enum` migration.
+   *
+   *   SUPPORT_ADMIN → MODERATOR (staff tier)
+   *   PLATFORM_ADMIN → ADMIN    (admin tier)
+   *   SUPER_ADMIN    → ADMIN    (admin tier — safest, does not demote below ADMIN)
+   */
+  private toClosestLegacy5EnumValue(role: Role): Role {
+    switch (role) {
+      case Role.SUPPORT_ADMIN:
+        return Role.MODERATOR;
+      case Role.PLATFORM_ADMIN:
+      case Role.SUPER_ADMIN:
+        return Role.ADMIN;
+      default:
+        return role;
+    }
+  }
+
+  /** Builds the union of valid legacy roles + custom RbacRole rows for error messages + APIs. */
+  private async collectValidRoleLabels(): Promise<{ legacy: Role[]; custom: { key: string; name: string }[] }> {
+    const custom = await this.prisma.rbacRole
+      .findMany({ where: { deletedAt: null, isActive: true }, select: { key: true, name: true } })
+      .catch(() => []);
+    return { legacy: [...this.VALID_ROLES], custom };
+  }
+
+  /**
+   * Accepts ANY common representation of a role value — UPPER_SNAKE_CASE
+   * (Prisma enum), snake_case (RbacRole.key), PascalCase/camelCase,
+   * kebab-case, or free-form name — and resolves it to a single ResolvedRole.
+   *
+   * Resolution order (first-match wins):
+   *   1. Exact or case-insensitive match against a Prisma Role enum.
+   *   2. Form-normalized match (normalizeToUpperSnake) against a Prisma Role
+   *      enum (e.g. support_admin → SUPPORT_ADMIN → enum hit).
+   *   3. RbacRole table lookup by: key OR case-insensitive name OR
+   *      UPPER_SNAKE form of key (so SUPPORT_ADMIN also finds the RbacRole
+   *      row `support_admin`).
+   *
+   * Returns a ResolvedRole describing both the legacy enum for User.role storage
+   * and the exact RBAC role id/key for UserRoleAssignment primary assignment.
+   *
+   * Throws BadRequestException if the value does not exist in EITHER list.
+   * The role is NEVER silently coerced to USER or any other default.
+   */
+  private async resolveRole(raw: string | undefined | null): Promise<ResolvedRole> {
+    if (!raw) {
+      const all = await this.collectValidRoleLabels();
+      const hint = [
+        ...all.legacy,
+        ...all.custom.map((r) => `${r.key} (${r.name})`),
+      ].join(', ');
+      throw new BadRequestException(`Role is required. Valid roles: ${hint}`);
+    }
+
+    const trimmed = raw.trim();
+
+    // ─── Stage 1: Prisma Role enum ──────────────────────────────────────────
+    // 1a) Exact case-sensitive match
+    if (this.VALID_ROLES.has(trimmed as Role)) {
+      const legacyRole = trimmed as Role;
+      const rbacRoleKey = this.LEGACY_TO_RBAC[legacyRole] ?? 'registered_user';
+      return { kind: 'legacy', raw: trimmed, legacyRole, rbacRoleKey };
+    }
+
+    // 1b) Case-insensitive match against enum values (e.g. "admin" → ADMIN)
+    const ciTrimmed = trimmed.toUpperCase();
+    for (const legacy of this.VALID_ROLES) {
+      if (legacy.toUpperCase() === ciTrimmed) {
+        const rbacRoleKey = this.LEGACY_TO_RBAC[legacy] ?? 'registered_user';
+        return { kind: 'legacy', raw: trimmed, legacyRole: legacy, rbacRoleKey };
+      }
+    }
+
+    // 1c) Form-normalized match (handles support_admin → SUPPORT_ADMIN,
+    // SupportAdmin → SUPPORT_ADMIN, support-admin → SUPPORT_ADMIN, etc.)
+    const normalized = this.normalizeToUpperSnake(trimmed);
+    if (this.VALID_ROLES.has(normalized as Role)) {
+      const legacyRole = normalized as Role;
+      const rbacRoleKey = this.LEGACY_TO_RBAC[legacyRole] ?? 'registered_user';
+      return { kind: 'legacy', raw: trimmed, legacyRole, rbacRoleKey };
+    }
+
+    // ─── Stage 2: RbacRole table ────────────────────────────────────────────
+    // Look up by exact key, then case-insensitive name, then UPPER_SNAKE→lower
+    // form of the key (so SUPPORT_ADMIN can also match a RbacRole row whose
+    // native key is stored as `support_admin`).
+    const byExactKey = await this.prisma.rbacRole.findFirst({
+      where: { key: trimmed, deletedAt: null, isActive: true },
+    });
+
+    const byLowerKey = byExactKey
+      ? null
+      : await this.prisma.rbacRole.findFirst({
+          where: { key: trimmed.toLowerCase(), deletedAt: null, isActive: true },
+        });
+
+    const byNormalizedRbacKey = byExactKey ?? byLowerKey
+      ? null
+      : await this.prisma.rbacRole.findFirst({
+          where: {
+            // Convert the UPPER_SNAKE normalized value back to lower_snake
+            // so an enum-style input can still be matched against a
+            // snake_case-native RbacRole.key in the database.
+            key: normalized.toLowerCase(),
+            deletedAt: null,
+            isActive: true,
+          },
+        });
+
+    const byName = (byExactKey ?? byLowerKey ?? byNormalizedRbacKey)
+      ? null
+      : await this.prisma.rbacRole.findFirst({
+          where: { name: { equals: trimmed, mode: 'insensitive' }, deletedAt: null, isActive: true },
+        });
+
+    const rbacRole = byExactKey ?? byLowerKey ?? byNormalizedRbacKey ?? byName;
+    if (rbacRole) {
+      const closestLegacy: Role = this.RBAC_TO_LEGACY[rbacRole.key] ?? Role.USER;
+      return {
+        kind: 'custom',
+        raw: trimmed,
+        legacyRole: closestLegacy,
+        rbacRoleId: rbacRole.id,
+        rbacRoleKey: rbacRole.key,
+        rbacRoleName: rbacRole.name,
+      };
+    }
+
+    // ─── Stage 3: Neither — error with combined valid-role hint ─────────────
+    const all = await this.collectValidRoleLabels();
+    const legacyList = all.legacy.join(', ');
+    const customList = all.custom.length
+      ? all.custom.map((r) => `${r.key} (${r.name})`).join(', ')
+      : '(none)';
+    throw new BadRequestException(
+      `Invalid role "${raw}". Valid legacy roles: ${legacyList}. Additional custom roles (from RbacRole table): ${customList}.`,
+    );
+  }
+
+  /**
+   * Apply the resolved role — writes legacyRole to user row, and upserts the
+   * correct RBAC assignment as primary. When ResolvedRole is kind=custom we
+   * skip the legacy→Rbac assignment for the matching legacy fallback key and
+   * instead directly use the resolved RbacRole.id. Keeps any other unrelated
+   * (non-legacy / non-primary) custom RBAC roles on the user untouched.
+   */
+  private async applyRole(
+    userId: string,
+    resolved: ResolvedRole,
+    opts?: { replacedBy?: string },
+  ) {
+    const reason = opts?.replacedBy ?? `admin role update → ${resolved.raw}`;
+    const legacyKeys = Object.values(this.LEGACY_TO_RBAC);
+
+    if (resolved.kind === 'legacy') {
+      await this.syncLegacyRoleToRbacAssignments(userId, resolved.legacyRole, opts);
+      return;
+    }
+
+    // kind === 'custom' → assign the exact RbacRole as primary, and remove
+    // only prior legacy-mapped RBAC assignments (keep unrelated custom roles).
+    // If the legacy fallback (RBAC_TO_LEGACY mapping) points to, say,
+    // MODERATOR then we still remove legacy 'moderator' assignment because
+    // this custom role is now the primary.
+    const existingLegacyAssignments = await this.prisma.userRoleAssignment.findMany({
+      where: { userId, role: { key: { in: legacyKeys } } },
+      include: { role: true },
+    });
+    for (const existing of existingLegacyAssignments) {
+      if (existing.roleId !== resolved.rbacRoleId) {
+        await this.prisma.userRoleAssignment.deleteMany({
+          where: { userId, roleId: existing.roleId },
+        });
+        await this.prisma.roleAssignmentHistory.create({
+          data: { userId, roleId: existing.roleId, action: 'removed', reason },
+        });
+      }
+    }
+
+    // Upsert custom RBAC role as primary
+    try {
+      await this.prisma.userRoleAssignment.upsert({
+        where: { userId_roleId: { userId, roleId: resolved.rbacRoleId } },
+        create: { userId, roleId: resolved.rbacRoleId, isPrimary: true },
+        update: { isPrimary: true },
+      });
+      await this.prisma.roleAssignmentHistory.create({
+        data: { userId, roleId: resolved.rbacRoleId, action: 'assigned', reason },
+      });
+    } catch {
+      // unique constraint race
+    }
+
+    try {
+      await this.cache.del(`rbac:permissions:${userId}`);
+    } catch {
+      // optional
+    }
+  }
 
   private async syncLegacyRoleToRbacAssignments(
     userId: string,
@@ -177,41 +498,74 @@ export class AdminService {
     return this.sanitizeUser(user);
   }
 
-  async createUser(email: string, name: string, handle: string, role: Role, password: string) {
+  async createUser(email: string, name: string, handle: string, role: Role | string, password: string) {
+    const resolved = await this.resolveRole(role);
     const passwordHash = await bcrypt.hash(password, 12);
+
+    let writtenRole = resolved.legacyRole;
     const created = await this.prisma.user.create({
       data: {
         email,
         name,
         handle,
-        role,
+        role: writtenRole,
         passwordHash,
       },
+    }).catch(async (err) => {
+      // Legacy DBs without migration 17 still have a 5-value "Role" enum.
+      // Demote the coarse role column to the closest legacy-5 value, then
+      // write the fine-grained RbacRole assignment via applyRole() below so
+      // permissions are still correct.
+      if (!this.isUnsupportedRoleEnumError(err)) throw err;
+      writtenRole = this.toClosestLegacy5EnumValue(resolved.legacyRole);
+      return this.prisma.user.create({
+        data: {
+          email,
+          name,
+          handle,
+          role: writtenRole,
+          passwordHash,
+        },
+      });
     });
-    // Sync legacy role → RBAC assignments
-    await this.syncLegacyRoleToRbacAssignments(created.id, role, { replacedBy: 'admin createUser' });
+
+    await this.applyRole(created.id, resolved, { replacedBy: 'admin createUser' });
     await this.prisma.userSettings.create({ data: { userId: created.id } }).catch(() => null);
     return this.sanitizeUser(created);
   }
 
-  async updateUser(id: string, data: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role; avatar?: string; publication?: string; isActive?: boolean }) {
+  async updateUser(id: string, data: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean }) {
+    const resolved = data.role !== undefined ? await this.resolveRole(data.role) : undefined;
+
+    const baseData = {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.handle !== undefined ? { handle: data.handle } : {}),
+      ...(data.bio !== undefined ? { bio: data.bio } : {}),
+      ...(data.website !== undefined ? { website: data.website } : {}),
+      ...(data.location !== undefined ? { location: data.location } : {}),
+      ...(data.email !== undefined ? { email: data.email } : {}),
+      ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
+      ...(data.publication !== undefined ? { publication: data.publication } : {}),
+      ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+    };
+
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
-        ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.handle !== undefined ? { handle: data.handle } : {}),
-        ...(data.bio !== undefined ? { bio: data.bio } : {}),
-        ...(data.website !== undefined ? { website: data.website } : {}),
-        ...(data.location !== undefined ? { location: data.location } : {}),
-        ...(data.email !== undefined ? { email: data.email } : {}),
-        ...(data.role !== undefined ? { role: data.role } : {}),
-        ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
-        ...(data.publication !== undefined ? { publication: data.publication } : {}),
-        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        ...baseData,
+        ...(resolved !== undefined ? { role: resolved.legacyRole } : {}),
       },
+    }).catch(async (err) => {
+      if (!this.isUnsupportedRoleEnumError(err) || resolved === undefined) throw err;
+      const fallbackRole = this.toClosestLegacy5EnumValue(resolved.legacyRole);
+      return this.prisma.user.update({
+        where: { id },
+        data: { ...baseData, role: fallbackRole },
+      });
     });
-    if (data.role !== undefined) {
-      await this.syncLegacyRoleToRbacAssignments(id, data.role, { replacedBy: 'admin updateUser' });
+
+    if (resolved !== undefined) {
+      await this.applyRole(id, resolved, { replacedBy: 'admin updateUser' });
     }
     return this.sanitizeUser(updated);
   }
@@ -224,12 +578,19 @@ export class AdminService {
     return this.sanitizeUser(updated);
   }
 
-  async updateUserRole(userId: string, role: Role) {
+  async updateUserRole(userId: string, role: Role | string) {
+    const resolved = await this.resolveRole(role);
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: { role: resolved.legacyRole },
+    }).catch(async (err) => {
+      if (!this.isUnsupportedRoleEnumError(err)) throw err;
+      return this.prisma.user.update({
+        where: { id: userId },
+        data: { role: this.toClosestLegacy5EnumValue(resolved.legacyRole) },
+      });
     });
-    await this.syncLegacyRoleToRbacAssignments(userId, role, { replacedBy: 'admin updateUserRole' });
+    await this.applyRole(userId, resolved, { replacedBy: 'admin updateUserRole' });
     return this.sanitizeUser(updated);
   }
 
@@ -1222,14 +1583,70 @@ export class AdminService {
     });
   }
 
+  /**
+   * Returns the combined list of roles an admin can assign to users:
+   *   - legacy:  the 5 Prisma Role enum values + user counts on the `role` column
+   *   - custom:  any active RbacRole row from the roles table (e.g. support_admin,
+   *              platform_admin) with counts based on primary UserRoleAssignments,
+   *              plus an `rbacKey` so the frontend can pass it as a string in APIs.
+   */
   async listRoles() {
-    const roles: Role[] = [Role.ADMIN, Role.MODERATOR, Role.CREATOR, Role.USER, Role.GUEST];
-    const counts = await Promise.all(
-      roles.map(role =>
-        this.prisma.user.count({ where: { role } }).then(count => ({ role, count })),
+    // Full hierarchy (least → most privileged) so counts render in a sensible order
+    // in any UI that displays legacy roles as a list.
+    const legacyEnums: Role[] = [
+      Role.GUEST,
+      Role.USER,
+      Role.CREATOR,
+      Role.MODERATOR,
+      Role.SUPPORT_ADMIN,
+      Role.ADMIN,
+      Role.PLATFORM_ADMIN,
+      Role.SUPER_ADMIN,
+    ];
+    const legacyCounts = await Promise.all(
+      legacyEnums.map((role) =>
+        this.prisma.user
+          .count({ where: { role } })
+          // PostgreSQL enums are runtime DDL types. If an environment has not
+          // yet run the migration that ALTER TYPEs "Role" with the 3 new
+          // values, the count() query will fail with Postgres 22P02. In that
+          // case, the database physically cannot contain rows for the enum
+          // value yet, so the true count is safely 0.
+          .catch((err) => (this.isUnsupportedRoleEnumError(err) ? 0 : Promise.reject(err)))
+          .then((count) => ({
+            id: `legacy-${role}`,
+            key: role,
+            name: role,
+            type: 'legacy' as const,
+            role,
+            description: `Legacy enum role (stored in User.role column)`,
+            count,
+          })),
       ),
     );
-    return counts;
+
+    const rbacRows = await this.prisma.rbacRole.findMany({
+      where: { deletedAt: null, isActive: true },
+      select: { id: true, key: true, name: true, description: true },
+      orderBy: [{ rank: 'desc' }, { name: 'asc' }],
+    });
+    const customCounts = await Promise.all(
+      rbacRows.map((rb) =>
+        this.prisma.userRoleAssignment
+          .count({ where: { roleId: rb.id } })
+          .then((count) => ({
+            id: rb.id,
+            key: rb.key,
+            name: rb.name,
+            type: 'custom' as const,
+            role: this.RBAC_TO_LEGACY[rb.key] ?? Role.USER,
+            description: rb.description ?? 'Custom RBAC role from RbacRole table',
+            count,
+          })),
+      ),
+    );
+
+    return { legacy: legacyCounts, custom: customCounts };
   }
 
   async listAuditLogs(page = 1, limit = 50) {

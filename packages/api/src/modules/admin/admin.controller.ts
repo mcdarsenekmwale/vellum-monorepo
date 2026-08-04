@@ -1,10 +1,18 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Role } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
+
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+// Role validation is handled by AdminService.resolveRole() / resolveRoleOrThrow
+// which accepts both legacy enum values AND custom RbacRole.key/name rows,
+// returning unified error messages with both lists. Keep the type import so
+// the Swagger generated schema still shows the enum in body examples.
+const _ = Role;
 
 @ApiTags('Admin')
 @Controller('api/admin')
@@ -43,21 +51,32 @@ export class AdminController {
     return this.adminService.getUserById(id);
   }
 
+  @Get('roles')
+  @ApiOperation({ summary: 'List all assignable roles: legacy Role enum + custom RBAC roles from RbacRole table' })
+  @ApiResponse({ status: 200, description: 'Roles retrieved (union of legacy + custom)' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  async listRoles() {
+    return this.adminService.listRoles();
+  }
+
   @Post('users')
   @ApiOperation({ summary: 'Create a user' })
   @ApiResponse({ status: 201, description: 'User created' })
+  @ApiResponse({ status: 400, description: 'Invalid role or missing required fields' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async createUser(@Body() body: { email: string; name: string; handle: string; role: Role; password: string }) {
+  async createUser(@Body() body: { email: string; name: string; handle: string; role: Role | string; password: string }) {
     return this.adminService.createUser(body.email, body.name, body.handle, body.role, body.password);
   }
 
   @Put('users/:id')
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User updated' })
+  @ApiResponse({ status: 400, description: 'Invalid role value' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   async updateUser(
     @Param('id') id: string,
-    @Body() body: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role; avatar?: string; publication?: string; isActive?: boolean },
+    @Body() body: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean },
   ) {
     return this.adminService.updateUser(id, body);
   }
@@ -71,10 +90,11 @@ export class AdminController {
   }
 
   @Put('users/:id/role')
-  @ApiOperation({ summary: 'Update user role' })
+  @ApiOperation({ summary: 'Update user role (accepts legacy Role enum OR a valid RbacRole.key / RbacRole.name from the roles table)' })
   @ApiResponse({ status: 200, description: 'Role updated' })
+  @ApiResponse({ status: 400, description: 'Invalid role value — not found in legacy enum or RbacRole table' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async updateUserRole(@Param('id') id: string, @Body() body: { role: Role }) {
+  async updateUserRole(@Param('id') id: string, @Body() body: { role: Role | string }) {
     return this.adminService.updateUserRole(id, body.role);
   }
 
@@ -645,14 +665,6 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   async deleteAIAgent(@Param('id') id: string) {
     return this.adminService.deleteAIAgent(id);
-  }
-
-  @Get('roles')
-  @ApiOperation({ summary: 'List roles with user counts' })
-  @ApiResponse({ status: 200, description: 'Roles retrieved' })
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async listRoles() {
-    return this.adminService.listRoles();
   }
 
   @Get('audit-logs')

@@ -409,7 +409,8 @@ export interface SystemStatus {
 }
 
 // ─── Roles ──────────────────────────────────────────────────────────────────
-
+// Legacy RoleWithCount is superseded by AdminRoleOption / AdminRolesResponse.
+// Retained temporarily for backward-compat type references in hooks.ts exports.
 export interface RoleWithCount {
   role: string;
   count: number;
@@ -435,11 +436,133 @@ export async function getCurrentUser(): Promise<User> {
   return api("/users/me");
 }
 
-export async function createUser(data: { email: string; name: string; handle: string; role: string; password: string }): Promise<User> {
+// Valid Prisma Role enum values — MUST match `enum Role` in schema.prisma
+// exactly.  The full 8-level hierarchy (least → most privileged):
+//   GUEST → USER → CREATOR → MODERATOR → SUPPORT_ADMIN → ADMIN → PLATFORM_ADMIN → SUPER_ADMIN
+//
+// Custom RBAC roles from the RbacRole table (e.g. "organization_admin",
+// "editor", "analyst") are NOT part of this enum — the backend stores them
+// as primary assignments in UserRoleAssignment, writing the nearest
+// matching legacy equivalent (via RBAC_TO_LEGACY mapping) to user.role.
+export const VALID_LEGACY_ROLES: readonly ValidLegacyRole[] = [
+  "GUEST",
+  "USER",
+  "CREATOR",
+  "MODERATOR",
+  "SUPPORT_ADMIN",
+  "ADMIN",
+  "PLATFORM_ADMIN",
+  "SUPER_ADMIN",
+];
+export type ValidLegacyRole =
+  | "GUEST"
+  | "USER"
+  | "CREATOR"
+  | "MODERATOR"
+  | "SUPPORT_ADMIN"
+  | "ADMIN"
+  | "PLATFORM_ADMIN"
+  | "SUPER_ADMIN";
+
+/**
+ * Any assignable role key passed to `/admin/users/:id` and related endpoints.
+ * It can be either a legacy enum ("ADMIN"…) or a custom RbacRole.key string
+ * (e.g. "support_admin").  The backend validates the value against both lists
+ * and returns 400 if it does not exist in either.
+ */
+export type RoleKey = ValidLegacyRole | string;
+
+/** One entry returned by `GET /admin/roles` (custom roles). */
+export interface AdminRoleOption {
+  id: string;
+  key: RoleKey;
+  name: string;
+  type: "legacy" | "custom";
+  /** The nearest-matching legacy enum. Always one of VALID_LEGACY_ROLES. */
+  role: ValidLegacyRole;
+  description: string;
+  count: number;
+}
+
+/** Full shape of `GET /admin/roles` response. */
+export interface AdminRolesResponse {
+  legacy: AdminRoleOption[];
+  custom: AdminRoleOption[];
+}
+
+/**
+ * Mirrors the backend normalizeToUpperSnake() in admin.service.ts:
+ *   - PascalCase / camelCase → word boundaries
+ *   - kebab-case / spaces / dots → underscores
+ *   - collapse multiple underscores, strip leading/trailing, toUpperCase
+ *
+ * Use this to build a UI-side enum matcher so that "support_admin",
+ * "SupportAdmin", "support-admin" etc. all resolve to SUPPORT_ADMIN when
+ * displayed on a badge or filtered in a role picker.
+ */
+export function normalizeRoleToUpperSnake(raw: string): string {
+  return raw
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[-\s.]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+}
+
+/**
+ * Normalises a role candidate to a legacy enum — only used for rendering a
+ * best-effort UI fallback / badge tint when a user's current `role` column
+ * is read.  NEVER use this to coerce a role that will be sent back to the
+ * backend — we send role keys as-is so the backend can validate them
+ * against the live RbacRole table instead of silently demoting to USER.
+ *
+ * Tries, in order:
+ *   1. exact case-sensitive match
+ *   2. case-insensitive match against VALID_LEGACY_ROLES
+ *   3. form-normalized match (normalizeRoleToUpperSnake)
+ *   4. fallback only when all three fail
+ */
+export function toValidLegacyRole(
+  raw: string | null | undefined,
+  fallback: ValidLegacyRole = "USER",
+): ValidLegacyRole {
+  if (!raw) return fallback;
+  const trimmed = raw.trim();
+  if ((VALID_LEGACY_ROLES as readonly string[]).includes(trimmed)) {
+    return trimmed as ValidLegacyRole;
+  }
+  const ci = trimmed.toUpperCase();
+  for (const v of VALID_LEGACY_ROLES) {
+    if (v.toUpperCase() === ci) return v;
+  }
+  const normalized = normalizeRoleToUpperSnake(trimmed);
+  if ((VALID_LEGACY_ROLES as readonly string[]).includes(normalized)) {
+    return normalized as ValidLegacyRole;
+  }
+  return fallback;
+}
+
+/** Flatten the AdminRolesResponse into a list of role keys accepted by the API. */
+export function collectRoleKeys(resp: AdminRolesResponse): RoleKey[] {
+  return [...resp.legacy.map((r) => r.key), ...resp.custom.map((r) => r.key)];
+}
+
+/**
+ * Admin user-role APIs: accept any RoleKey string (legacy enum OR custom
+ * RbacRole.key) and pass it straight to the backend. The backend resolves
+ * the value via AdminService.resolveRole() (checks legacy enum first, then
+ * RbacRole table by key/name) and throws 400 if neither matches.
+ */
+export async function listRoles(): Promise<AdminRolesResponse> {
+  return api("/admin/roles");
+}
+
+export async function createUser(data: { email: string; name: string; handle: string; role: RoleKey; password: string }): Promise<User> {
   return api("/admin/users", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateUser(id: string, data: Partial<User>): Promise<User> {
+export async function updateUser(id: string, data: Partial<User> & { role?: RoleKey }): Promise<User> {
   return api(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -447,7 +570,7 @@ export async function deleteUser(id: string): Promise<void> {
   return api(`/admin/users/${id}`, { method: "DELETE" });
 }
 
-export async function updateUserRole(id: string, role: string): Promise<User> {
+export async function updateUserRole(id: string, role: RoleKey): Promise<User> {
   return api(`/admin/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) });
 }
 
@@ -1219,7 +1342,9 @@ export interface AuditLogEntry {
 }
 
 // Roles
-export async function getRoles(): Promise<RoleWithCount[]> {
+// Returns the union of legacy Prisma Role enum values + custom RBAC roles
+// defined in the RbacRole table. Use this to populate role pickers in the UI.
+export async function getRoles(): Promise<AdminRolesResponse> {
   return api("/admin/roles");
 }
 
