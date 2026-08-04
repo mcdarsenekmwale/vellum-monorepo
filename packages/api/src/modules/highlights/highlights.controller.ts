@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Requ
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HighlightsService } from './highlights.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/jwt-optional-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
@@ -23,6 +24,7 @@ export class HighlightsController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get a highlight by ID' })
   @ApiResponse({ status: 200, description: 'Highlight found' })
   @ApiResponse({ status: 404, description: 'Highlight not found' })
@@ -32,6 +34,7 @@ export class HighlightsController {
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get highlights list' })
   @ApiResponse({ status: 200, description: 'Highlights retrieved' })
   async getHighlights(@Query('page') page?: number, @Query('limit') limit?: number, @Request() req?: any) {

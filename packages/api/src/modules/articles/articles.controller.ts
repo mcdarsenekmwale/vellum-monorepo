@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Requ
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/jwt-optional-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
@@ -24,6 +25,7 @@ export class ArticlesController {
   }
 
   @Get(':slug')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get an article by slug' })
   @ApiResponse({ status: 200, description: 'Article found' })
   @ApiResponse({ status: 404, description: 'Article not found' })
@@ -33,6 +35,7 @@ export class ArticlesController {
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get articles list' })
   @ApiResponse({ status: 200, description: 'Articles retrieved' })
   async getArticles(@Query() query: ArticleQueryDto, @Request() req?: any) {

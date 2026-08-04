@@ -2,9 +2,11 @@ import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SuggestedService } from './suggested.service';
 import { SuggestedQueryDto } from './dto/suggested.dto';
+import { OptionalJwtAuthGuard } from '../auth/jwt-optional-auth.guard';
 
 @ApiTags('Suggested')
 @Controller('api/suggested')
+@UseGuards(OptionalJwtAuthGuard)
 export class SuggestedController {
   constructor(private suggestedService: SuggestedService) {}
 
