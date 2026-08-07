@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { AdminService } from "./admin.service";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "../../shared/prisma/prisma.service";
 import { Role } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
@@ -112,5 +112,68 @@ describe("AdminService self-role-change prohibition", () => {
         service.updateUserRole(mockUserA.id, mockUserA.id, variant),
       ).rejects.toBeInstanceOf(ForbiddenException);
     }
+  });
+
+  describe("Missing/invalid actorId → 401 Unauthorized (never 500)", () => {
+    // Regression tests for:
+    //   TypeError: Cannot read properties of undefined (reading 'trim')
+    //   at ensureActorIsNotTarget (admin.service.ts:530)
+    //
+    // Any falsy / non-string actorId (undefined, null, "", "   ") must throw
+    // UnauthorizedException cleanly. This guarantees the fix holds even if
+    // a malformed JWT slips past the guard or a controller forgets req.user.sub.
+
+    const BAD_ACTOR_IDS = [undefined, null, "", "   "] as const;
+
+    it("updateUser(role) throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.updateUser(bad as any, mockUserB.id, { role: Role.SUPPORT_ADMIN }),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
+
+    it("updateUser(isActive) throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.updateUser(bad as any, mockUserB.id, { isActive: false }),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
+
+    it("updateUserRole throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.updateUserRole(bad as any, mockUserB.id, Role.SUPPORT_ADMIN),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
+
+    it("toggleUserStatus throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.toggleUserStatus(bad as any, mockUserB.id),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
+
+    it("deleteUser throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.deleteUser(bad as any, mockUserB.id),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
+
+    it("createUser throws UnauthorizedException for each bad actorId (not 500)", async () => {
+      jest.spyOn(service as any, "resolveRole").mockResolvedValue({
+        kind: "legacy", legacyRole: Role.USER, rbacRoleId: "x", raw: "USER", rank: 1,
+      });
+      for (const bad of BAD_ACTOR_IDS) {
+        await expect(
+          service.createUser(bad as any, "e@x.com", "E", "e", Role.USER, "p@ssw0rd1234"),
+        ).rejects.toBeInstanceOf(UnauthorizedException);
+      }
+    });
   });
 });

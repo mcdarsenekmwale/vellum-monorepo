@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
@@ -512,21 +512,44 @@ export class AdminService {
   }
 
   /**
+   * Cheap assert that `actorId` came through the auth pipeline. If this fails,
+   * either the JWT was malformed (Guard should have rejected but didn't — rare)
+   * or the controller forgot to forward `req.user.sub`. Either way, respond
+   * with 401 and log — never 500.
+   */
+  private assertActorAuthenticated(
+    actorId: string | undefined | null,
+    action: string,
+  ): asserts actorId is string {
+    if (!actorId || typeof actorId !== 'string' || !actorId.trim()) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[SECURITY] Admin call with missing/invalid actorId (action=${action})`,
+      );
+      throw new UnauthorizedException(
+        'Authentication context is missing the subject claim. Re-authenticate and retry.',
+      );
+    }
+  }
+
+  /**
    * Critical security guard (§1): Admin endpoints that accept a role- or
    * permission-altering payload MUST refuse when the actor equals the
    * target user — regardless of the role they're trying to set. We also
-   * prohibit self-creation (which would make no sense), self-deletion, and
-   * self-activation toggling. Attempts are logged to stderr for audit
-   * review, but no sensitive values are printed.
+   * prohibit self-deletion and self-activation toggling. Attempts are logged
+   * to stderr for audit review, but no sensitive values are printed.
    *
-   * Returns silently if everything is fine. Throws ForbiddenException if the
-   * actor is tampering with themselves.
+   * Implicitly calls assertActorAuthenticated first.
+   *
+   * @throws UnauthorizedException actorId missing/invalid.
+   * @throws ForbiddenException actor === target.
    */
   private ensureActorIsNotTarget(
-    actorId: string,
+    actorId: string | undefined | null,
     targetUserId: string,
     action: string,
-  ): void {
+  ): asserts actorId is string {
+    this.assertActorAuthenticated(actorId, action);
     if (actorId.trim() === targetUserId.trim()) {
       // eslint-disable-next-line no-console
       console.error(
@@ -546,6 +569,7 @@ export class AdminService {
     role: Role | string,
     password: string,
   ) {
+    this.assertActorAuthenticated(actorId, 'createUser');
     const resolved = await this.resolveRole(role);
     const passwordHash = await bcrypt.hash(password, 12);
 
