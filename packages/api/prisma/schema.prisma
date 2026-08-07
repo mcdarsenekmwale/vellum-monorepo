@@ -60,6 +60,9 @@ model User {
   ticketStatusChanges TicketStatusHistory[] @relation("TicketStatusChanger")
   activityLogs    ActivityLog[]  @relation("ActivityLogUser")
   helpArticleVersions HelpArticleVersion[] @relation("HelpArticleVersionAuthor")
+  roleRequestsSubmitted RolePermissionRequest[] @relation("RoleRequestRequester")
+  roleRequestsReviewed  RolePermissionRequest[] @relation("RoleRequestReviewer")
+  roleRequestEvents     RolePermissionRequestEvent[]
 
   @@index([handle])
   @@index([email])
@@ -498,6 +501,22 @@ enum NotificationKind {
   BOOKMARK
   MENTION
   SYSTEM
+  ROLE_REQUEST_SUBMITTED
+  ROLE_REQUEST_APPROVED
+  ROLE_REQUEST_REJECTED
+  ROLE_REQUEST_EXPIRED
+}
+
+enum RolePermissionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum RolePermissionRequestType {
+  PERMANENT
+  TEMPORARY
 }
 
 enum MediaType {
@@ -697,6 +716,54 @@ model RoleAssignmentHistory {
 
   @@index([userId])
   @@index([roleId])
+  @@index([createdAt])
+}
+
+// ─── Role / Permission Request Center ──────────────────────────────────────────
+
+model RolePermissionRequest {
+  id                 String                        @id @default(uuid())
+  requesterId        String
+  reviewerId         String?
+  requestedRoleKey   String
+  type               RolePermissionRequestType
+  status             RolePermissionRequestStatus  @default(PENDING)
+  justification      String                        @db.Text
+  adminJustification String?                       @db.Text
+  startsAt           DateTime?
+  expiresAt          DateTime?
+  reviewedAt         DateTime?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  // Reverse pointer to any assignments created on APPROVED (auditability)
+  resultingAssignmentId String?
+  history            RolePermissionRequestEvent[]
+  requester          User                          @relation("RoleRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer           User?                         @relation("RoleRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([requesterId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([expiresAt])
+  // Avoid duplicate open requests for the same role
+  @@unique([requesterId, requestedRoleKey, status], name: "RolePermissionRequest_requester_rolekey_status_unique")
+}
+
+model RolePermissionRequestEvent {
+  id        String                       @id @default(uuid())
+  requestId String
+  actorId   String?
+  transition RolePermissionRequestStatus // resulting status after event
+  reason    String?                      @db.Text
+  metadata  Json?
+  createdAt DateTime                     @default(now())
+  request   RolePermissionRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor     User?                        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([requestId])
+  @@index([actorId])
   @@index([createdAt])
 }
 

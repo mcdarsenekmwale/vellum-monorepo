@@ -1,9 +1,9 @@
 import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Role } from '@prisma/client';
+import { Role, RolePermissionRequestStatus, RolePermissionRequestType } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -13,6 +13,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 // returning unified error messages with both lists. Keep the type import so
 // the Swagger generated schema still shows the enum in body examples.
 const _ = Role;
+const __unused = [RolePermissionRequestStatus, RolePermissionRequestType]; // silence lint
 
 @ApiTags('Admin')
 @Controller('api/admin')
@@ -64,46 +65,59 @@ export class AdminController {
   @ApiOperation({ summary: 'Create a user' })
   @ApiResponse({ status: 201, description: 'User created' })
   @ApiResponse({ status: 400, description: 'Invalid role or missing required fields' })
+  @ApiResponse({ status: 403, description: 'Self-creation not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async createUser(@Body() body: { email: string; name: string; handle: string; role: Role | string; password: string }) {
-    return this.adminService.createUser(body.email, body.name, body.handle, body.role, body.password);
+  async createUser(
+    @Req() req: any,
+    @Body() body: { email: string; name: string; handle: string; role: Role | string; password: string },
+  ) {
+    return this.adminService.createUser(req.user.sub, body.email, body.name, body.handle, body.role, body.password);
   }
 
   @Put('users/:id')
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User updated' })
   @ApiResponse({ status: 400, description: 'Invalid role value' })
+  @ApiResponse({ status: 403, description: 'Self-role/status edit not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   async updateUser(
+    @Req() req: any,
     @Param('id') id: string,
     @Body() body: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean },
   ) {
-    return this.adminService.updateUser(id, body);
+    return this.adminService.updateUser(req.user.sub, id, body);
   }
 
   @Delete('users/:id')
   @ApiOperation({ summary: 'Soft-delete a user' })
   @ApiResponse({ status: 200, description: 'User deleted' })
+  @ApiResponse({ status: 403, description: 'Self-deletion not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  async deleteUser(@Req() req: any, @Param('id') id: string) {
+    return this.adminService.deleteUser(req.user.sub, id);
   }
 
   @Put('users/:id/role')
   @ApiOperation({ summary: 'Update user role (accepts legacy Role enum OR a valid RbacRole.key / RbacRole.name from the roles table)' })
   @ApiResponse({ status: 200, description: 'Role updated' })
   @ApiResponse({ status: 400, description: 'Invalid role value — not found in legacy enum or RbacRole table' })
+  @ApiResponse({ status: 403, description: 'Self-role edit not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async updateUserRole(@Param('id') id: string, @Body() body: { role: Role | string }) {
-    return this.adminService.updateUserRole(id, body.role);
+  async updateUserRole(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { role: Role | string },
+  ) {
+    return this.adminService.updateUserRole(req.user.sub, id, body.role);
   }
 
   @Put('users/:id/status')
   @ApiOperation({ summary: 'Toggle user status' })
   @ApiResponse({ status: 200, description: 'Status updated' })
+  @ApiResponse({ status: 403, description: 'Self-status edit not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async toggleUserStatus(@Param('id') id: string) {
-    return this.adminService.toggleUserStatus(id);
+  async toggleUserStatus(@Req() req: any, @Param('id') id: string) {
+    return this.adminService.toggleUserStatus(req.user.sub, id);
   }
 
   @Post('users/:id/avatar')

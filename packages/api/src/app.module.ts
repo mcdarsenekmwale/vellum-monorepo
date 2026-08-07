@@ -17,6 +17,7 @@ import { MediaModule } from './modules/media/media.module';
 import { SearchModule } from './modules/search/search.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RoleRequestsModule } from './modules/role-requests/role-requests.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { SupportModule } from './modules/support/support.module';
 import { HealthModule } from './modules/health/health.module';
@@ -54,6 +55,7 @@ import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware
     SearchModule,
     WebhooksModule,
     AdminModule,
+    RoleRequestsModule,
     RbacModule,
     SupportModule,
     HealthModule,

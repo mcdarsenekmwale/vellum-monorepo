@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
@@ -312,7 +312,7 @@ export class AdminService {
   private async applyRole(
     userId: string,
     resolved: ResolvedRole,
-    opts?: { replacedBy?: string },
+    opts?: { replacedBy?: string; assignedBy?: string; expiresAt?: Date },
   ) {
     const reason = opts?.replacedBy ?? `admin role update → ${resolved.raw}`;
     const legacyKeys = Object.values(this.LEGACY_TO_RBAC);
@@ -322,11 +322,6 @@ export class AdminService {
       return;
     }
 
-    // kind === 'custom' → assign the exact RbacRole as primary, and remove
-    // only prior legacy-mapped RBAC assignments (keep unrelated custom roles).
-    // If the legacy fallback (RBAC_TO_LEGACY mapping) points to, say,
-    // MODERATOR then we still remove legacy 'moderator' assignment because
-    // this custom role is now the primary.
     const existingLegacyAssignments = await this.prisma.userRoleAssignment.findMany({
       where: { userId, role: { key: { in: legacyKeys } } },
       include: { role: true },
@@ -337,20 +332,29 @@ export class AdminService {
           where: { userId, roleId: existing.roleId },
         });
         await this.prisma.roleAssignmentHistory.create({
-          data: { userId, roleId: existing.roleId, action: 'removed', reason },
+          data: { userId, roleId: existing.roleId, action: 'removed', reason, assignedBy: opts?.assignedBy },
         });
       }
     }
 
-    // Upsert custom RBAC role as primary
     try {
       await this.prisma.userRoleAssignment.upsert({
         where: { userId_roleId: { userId, roleId: resolved.rbacRoleId } },
-        create: { userId, roleId: resolved.rbacRoleId, isPrimary: true },
-        update: { isPrimary: true },
+        create: {
+          userId,
+          roleId: resolved.rbacRoleId,
+          isPrimary: true,
+          assignedBy: opts?.assignedBy,
+          expiresAt: opts?.expiresAt,
+        },
+        update: {
+          isPrimary: true,
+          assignedBy: opts?.assignedBy,
+          expiresAt: opts?.expiresAt ?? null,
+        },
       });
       await this.prisma.roleAssignmentHistory.create({
-        data: { userId, roleId: resolved.rbacRoleId, action: 'assigned', reason },
+        data: { userId, roleId: resolved.rbacRoleId, action: 'assigned', reason, assignedBy: opts?.assignedBy },
       });
     } catch {
       // unique constraint race
@@ -366,7 +370,7 @@ export class AdminService {
   private async syncLegacyRoleToRbacAssignments(
     userId: string,
     legacyRole: string,
-    opts?: { replacedBy?: string },
+    opts?: { replacedBy?: string; assignedBy?: string; expiresAt?: Date },
   ) {
     const targetKey = this.LEGACY_TO_RBAC[legacyRole] ?? 'registered_user';
     const targetRole = await this.prisma.rbacRole.findFirst({
@@ -376,8 +380,6 @@ export class AdminService {
     if (!targetRole) return;
 
     const legacyKeys = Object.values(this.LEGACY_TO_RBAC);
-    // Remove previous legacy-mapped RBAC assignments (only the ones mapped from legacy roles)
-    // so we don't accumulate. Keep custom RBAC-only roles intact.
     const existingAssignments = await this.prisma.userRoleAssignment.findMany({
       where: { userId, role: { key: { in: legacyKeys } } },
       include: { role: true },
@@ -392,25 +394,36 @@ export class AdminService {
             userId,
             roleId: existing.roleId,
             action: 'removed',
+            assignedBy: opts?.assignedBy,
             reason: opts?.replacedBy ?? `sync from legacy role → ${legacyRole}`,
           },
         });
       }
     }
-    // Upsert target
     const hasCurrent = existingAssignments.some((a) => a.role.key === targetKey);
     if (!hasCurrent) {
       try {
         await this.prisma.userRoleAssignment.upsert({
           where: { userId_roleId: { userId, roleId: targetRole.id } },
-          create: { userId, roleId: targetRole.id, isPrimary: true },
-          update: { isPrimary: true },
+          create: {
+            userId,
+            roleId: targetRole.id,
+            isPrimary: true,
+            assignedBy: opts?.assignedBy,
+            expiresAt: opts?.expiresAt,
+          },
+          update: {
+            isPrimary: true,
+            assignedBy: opts?.assignedBy,
+            expiresAt: opts?.expiresAt ?? null,
+          },
         });
         await this.prisma.roleAssignmentHistory.create({
           data: {
             userId,
             roleId: targetRole.id,
             action: 'assigned',
+            assignedBy: opts?.assignedBy,
             reason: opts?.replacedBy ?? `sync from legacy role → ${legacyRole}`,
           },
         });
@@ -498,7 +511,41 @@ export class AdminService {
     return this.sanitizeUser(user);
   }
 
-  async createUser(email: string, name: string, handle: string, role: Role | string, password: string) {
+  /**
+   * Critical security guard (§1): Admin endpoints that accept a role- or
+   * permission-altering payload MUST refuse when the actor equals the
+   * target user — regardless of the role they're trying to set. We also
+   * prohibit self-creation (which would make no sense), self-deletion, and
+   * self-activation toggling. Attempts are logged to stderr for audit
+   * review, but no sensitive values are printed.
+   *
+   * Returns silently if everything is fine. Throws ForbiddenException if the
+   * actor is tampering with themselves.
+   */
+  private ensureActorIsNotTarget(
+    actorId: string,
+    targetUserId: string,
+    action: string,
+  ): void {
+    if (actorId.trim() === targetUserId.trim()) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[SECURITY] Admin self-edition attempt blocked: actor=${actorId} action=${action}`,
+      );
+      throw new ForbiddenException(
+        'Administrators may not modify their own role, status, or account via admin endpoints. Ask another administrator to perform the requested change.',
+      );
+    }
+  }
+
+  async createUser(
+    actorId: string,
+    email: string,
+    name: string,
+    handle: string,
+    role: Role | string,
+    password: string,
+  ) {
     const resolved = await this.resolveRole(role);
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -512,10 +559,6 @@ export class AdminService {
         passwordHash,
       },
     }).catch(async (err) => {
-      // Legacy DBs without migration 17 still have a 5-value "Role" enum.
-      // Demote the coarse role column to the closest legacy-5 value, then
-      // write the fine-grained RbacRole assignment via applyRole() below so
-      // permissions are still correct.
       if (!this.isUnsupportedRoleEnumError(err)) throw err;
       writtenRole = this.toClosestLegacy5EnumValue(resolved.legacyRole);
       return this.prisma.user.create({
@@ -529,12 +572,25 @@ export class AdminService {
       });
     });
 
-    await this.applyRole(created.id, resolved, { replacedBy: 'admin createUser' });
+    await this.applyRole(created.id, resolved, { replacedBy: 'admin createUser', assignedBy: actorId });
     await this.prisma.userSettings.create({ data: { userId: created.id } }).catch(() => null);
     return this.sanitizeUser(created);
   }
 
-  async updateUser(id: string, data: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean }) {
+  async updateUser(
+    actorId: string,
+    id: string,
+    data: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean },
+  ) {
+    // §1 — If payload contains role/permission-related fields AND actor is
+    // targeting themself, deny with ForbiddenException. Non-role edits
+    // (name/bio/avatar/etc.) of one's own profile via the ADMIN endpoint are
+    // allowed; but role/isActive must always require a different actor.
+    const roleOrStatusRequested = data.role !== undefined || data.isActive !== undefined;
+    if (roleOrStatusRequested) {
+      this.ensureActorIsNotTarget(actorId, id, 'updateUser(role|isActive)');
+    }
+
     const resolved = data.role !== undefined ? await this.resolveRole(data.role) : undefined;
 
     const baseData = {
@@ -565,12 +621,13 @@ export class AdminService {
     });
 
     if (resolved !== undefined) {
-      await this.applyRole(id, resolved, { replacedBy: 'admin updateUser' });
+      await this.applyRole(id, resolved, { replacedBy: 'admin updateUser', assignedBy: actorId });
     }
     return this.sanitizeUser(updated);
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(actorId: string, id: string) {
+    this.ensureActorIsNotTarget(actorId, id, 'deleteUser');
     const updated = await this.prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -578,7 +635,8 @@ export class AdminService {
     return this.sanitizeUser(updated);
   }
 
-  async updateUserRole(userId: string, role: Role | string) {
+  async updateUserRole(actorId: string, userId: string, role: Role | string) {
+    this.ensureActorIsNotTarget(actorId, userId, 'updateUserRole');
     const resolved = await this.resolveRole(role);
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -590,11 +648,72 @@ export class AdminService {
         data: { role: this.toClosestLegacy5EnumValue(resolved.legacyRole) },
       });
     });
-    await this.applyRole(userId, resolved, { replacedBy: 'admin updateUserRole' });
+    await this.applyRole(userId, resolved, { replacedBy: 'admin updateUserRole', assignedBy: actorId });
     return this.sanitizeUser(updated);
   }
 
-  async toggleUserStatus(userId: string) {
+  /**
+   * Public wrapper used by RoleRequestsService during request approval.
+   * Resolves a role key → applies assignment (with optional expiresAt for
+   * temporary grants) → returns the newly-created UserRoleAssignment.id so
+   * the request row can point at it (and expireDueRequests can clean it up).
+   *
+   * Note: no actorId-vs-target guard here because this is only called from
+   * the approval flow, where RoleRequestsService already enforces that
+   * reviewerId !== requesterId and AdminGuard protects the endpoint.
+   */
+  async applyRoleForAssignment(
+    userId: string,
+    roleKey: string,
+    opts: { assignedBy: string; expiresAt?: Date },
+  ): Promise<{ assignmentId?: string }> {
+    const resolved = await this.resolveRole(roleKey);
+    // Write legacy role sync
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: resolved.legacyRole },
+    }).catch(async (err) => {
+      if (!this.isUnsupportedRoleEnumError(err)) throw err;
+      return this.prisma.user.update({
+        where: { id: userId },
+        data: { role: this.toClosestLegacy5EnumValue(resolved.legacyRole) },
+      });
+    });
+    // Upsert assignment and return id — we need the actual row id written.
+    const legacyKeys = Object.values(this.LEGACY_TO_RBAC);
+    let targetRoleId: string;
+    if (resolved.kind === 'legacy') {
+      const key = this.LEGACY_TO_RBAC[resolved.legacyRole] ?? 'registered_user';
+      const r = await this.prisma.rbacRole.findFirst({
+        where: { key, deletedAt: null, isActive: true },
+        select: { id: true },
+      });
+      if (!r) return {};
+      targetRoleId = r.id;
+    } else {
+      targetRoleId = resolved.rbacRoleId;
+    }
+    // Clean out legacy-mapped other assignments first (mirror applyRole behavior)
+    const existingLegacy = await this.prisma.userRoleAssignment.findMany({
+      where: { userId, role: { key: { in: legacyKeys } } },
+    });
+    for (const existing of existingLegacy) {
+      if (existing.roleId !== targetRoleId) {
+        await this.prisma.userRoleAssignment.deleteMany({ where: { userId, roleId: existing.roleId } });
+      }
+    }
+    const written = await this.prisma.userRoleAssignment.upsert({
+      where: { userId_roleId: { userId, roleId: targetRoleId } },
+      create: { userId, roleId: targetRoleId, isPrimary: true, assignedBy: opts.assignedBy, expiresAt: opts.expiresAt },
+      update: { isPrimary: true, assignedBy: opts.assignedBy, expiresAt: opts.expiresAt ?? null },
+      select: { id: true },
+    });
+    try { await this.cache.del(`rbac:permissions:${userId}`); } catch { /* optional */ }
+    return { assignmentId: written.id };
+  }
+
+  async toggleUserStatus(actorId: string, userId: string) {
+    this.ensureActorIsNotTarget(actorId, userId, 'toggleUserStatus');
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     const updated = await this.prisma.user.update({

@@ -8,5 +8,6 @@ import { CacheModule } from '../../shared/cache/cache.module';
   imports: [PrismaModule, CacheModule],
   controllers: [AdminController],
   providers: [AdminService],
+  exports: [AdminService],
 })
 export class AdminModule {}
