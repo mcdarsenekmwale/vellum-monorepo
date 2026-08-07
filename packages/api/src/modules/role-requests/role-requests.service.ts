@@ -526,4 +526,113 @@ export class RoleRequestsService {
     }
     return n;
   }
+
+  async bulkApproveMany(
+    requestIds: string[],
+    reviewerId: string,
+    adminJustification: string,
+    assignRole: (params: {
+      userId: string;
+      requestedRoleKey: string;
+      assignedBy: string;
+      expiresAt?: Date;
+    }) => Promise<{ assignmentId?: string }>,
+  ) {
+    if (!Array.isArray(requestIds) || requestIds.length === 0) {
+      throw new BadRequestException('requestIds must be a non-empty array.');
+    }
+    if (!adminJustification || adminJustification.trim().length < 5) {
+      throw new BadRequestException('Admin justification is required (min 5 characters).');
+    }
+
+    const updated: string[] = [];
+    const requests: any[] = [];
+    const uniqueIds = Array.from(new Set(requestIds));
+
+    for (const requestId of uniqueIds) {
+      try {
+        const result = await this.approveRequest({
+          requestId,
+          reviewerId,
+          adminJustification,
+          assignRole,
+        });
+        updated.push(requestId);
+        requests.push(result);
+      } catch (err) {
+        const request = await this.prisma.rolePermissionRequest.findUnique({
+          where: { id: requestId },
+          include: {
+            requester: { select: { id: true, name: true, handle: true, avatar: true, email: true } },
+            reviewer: { select: { id: true, name: true, handle: true, avatar: true } },
+            history: { orderBy: { createdAt: 'asc' } },
+          },
+        });
+        if (request) {
+          requests.push({
+            ...request,
+            bulkError: (err as Error).message,
+          });
+        } else {
+          requests.push({
+            id: requestId,
+            bulkError: (err as Error).message || 'Request not found',
+          });
+        }
+      }
+    }
+
+    return { updated, requests };
+  }
+
+  async bulkRejectMany(
+    requestIds: string[],
+    reviewerId: string,
+    adminJustification: string,
+  ) {
+    if (!Array.isArray(requestIds) || requestIds.length === 0) {
+      throw new BadRequestException('requestIds must be a non-empty array.');
+    }
+    if (!adminJustification || adminJustification.trim().length < 5) {
+      throw new BadRequestException('Admin justification is required (min 5 characters).');
+    }
+
+    const updated: string[] = [];
+    const requests: any[] = [];
+    const uniqueIds = Array.from(new Set(requestIds));
+
+    for (const requestId of uniqueIds) {
+      try {
+        const result = await this.rejectRequest({
+          requestId,
+          reviewerId,
+          adminJustification,
+        });
+        updated.push(requestId);
+        requests.push(result);
+      } catch (err) {
+        const request = await this.prisma.rolePermissionRequest.findUnique({
+          where: { id: requestId },
+          include: {
+            requester: { select: { id: true, name: true, handle: true, avatar: true, email: true } },
+            reviewer: { select: { id: true, name: true, handle: true, avatar: true } },
+            history: { orderBy: { createdAt: 'asc' } },
+          },
+        });
+        if (request) {
+          requests.push({
+            ...request,
+            bulkError: (err as Error).message,
+          });
+        } else {
+          requests.push({
+            id: requestId,
+            bulkError: (err as Error).message || 'Request not found',
+          });
+        }
+      }
+    }
+
+    return { updated, requests };
+  }
 }

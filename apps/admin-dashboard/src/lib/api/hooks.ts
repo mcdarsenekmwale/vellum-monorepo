@@ -192,6 +192,9 @@ export type ListParams = {
   except?: string;
 };
 
+const STALE_TIME = import.meta.env.PROD ? 60_000 : 10_000;
+const CACHE_TIME = import.meta.env.PROD ? 600_000 : 60_000;
+
 // ─── Dashboard ──────────────────────────────────────────────────────────────
 
 export function useDashboardStats() {
@@ -214,6 +217,8 @@ export function useUsers(params: ListParams = {}) {
   return useQuery({
     queryKey: ["users", params],
     placeholderData: keepPreviousData,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const result = await getUsers({
         page: params.page ?? 1,
@@ -429,6 +434,8 @@ export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -743,6 +750,8 @@ export function useTags() {
   return useQuery({
     queryKey: ["tags"],
     queryFn: getTags,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -777,6 +786,8 @@ export function useFeatureFlags() {
   return useQuery({
     queryKey: ["feature-flags"],
     queryFn: getFeatureFlags,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -812,6 +823,8 @@ export function useSystemSettings() {
   return useQuery({
     queryKey: ["system-settings"],
     queryFn: getSystemSettings,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -964,6 +977,8 @@ export function useAIAgents() {
   return useQuery({
     queryKey: ["ai-agents"],
     queryFn: getAIAgents,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -1003,6 +1018,8 @@ export function useWebhooks() {
   return useQuery({
     queryKey: ["webhooks"],
     queryFn: getWebhooks,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -1068,6 +1085,8 @@ export function useAuditLogs(params: ListParams = {}) {
   return useQuery({
     queryKey: ["audit-logs", params],
     placeholderData: keepPreviousData,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
     queryFn: async () => {
       const result = await getAuditLogs({
         page: params.page ?? 1,
@@ -1095,6 +1114,8 @@ export function useRoles() {
   return useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -1302,6 +1323,8 @@ export function useRbacRoles(params?: { search?: string; includeInactive?: boole
   return useQuery({
     queryKey: ["rbac-roles", params],
     queryFn: () => getRbacRoles(params),
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -1388,6 +1411,8 @@ export function usePermissionGroups() {
   return useQuery({
     queryKey: ["permission-groups"],
     queryFn: getPermissionGroups,
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 
@@ -1395,6 +1420,8 @@ export function useRbacPermissions(params?: { groupId?: string; search?: string 
   return useQuery({
     queryKey: ["rbac-permissions", params],
     queryFn: () => getRbacPermissions(params),
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
   });
 }
 

@@ -8,6 +8,12 @@ import {
 } from './rbac.constants';
 
 const CACHE_TTL = 300; // 5 minutes
+const CACHE_KEY_ROLES = 'rbac:roles';
+const CACHE_KEY_PERMISSIONS = 'rbac:permissions';
+const CACHE_KEY_GROUPS = 'rbac:groups';
+const CACHE_TTL_ROLES = 300; // 5 minutes
+const CACHE_TTL_PERMISSIONS = 300; // 5 minutes
+const CACHE_TTL_GROUPS = 600; // 10 minutes
 
 @Injectable()
 export class RbacService {
@@ -155,6 +161,12 @@ export class RbacService {
   // ─── Role CRUD ─────────────────────────────────────────────────────────────
 
   async listRoles(params?: { search?: string; includeInactive?: boolean }) {
+    const useCache = !params || (!params.search && !params.includeInactive);
+    if (useCache) {
+      const cached = await this.cache.get<any[]>(CACHE_KEY_ROLES);
+      if (cached) return cached;
+    }
+
     const where: Record<string, unknown> = { deletedAt: null };
     if (!params?.includeInactive) where.isActive = true;
     if (params?.search) {
@@ -177,11 +189,17 @@ export class RbacService {
       orderBy: [{ rank: 'desc' }, { name: 'asc' }],
     });
 
-    return roles.map((r) => ({
+    const result = roles.map((r) => ({
       ...r,
       userCount: r._count.userAssignments,
       permissionCount: r._count.permissions,
     }));
+
+    if (useCache) {
+      await this.cache.set(CACHE_KEY_ROLES, result, CACHE_TTL_ROLES);
+    }
+
+    return result;
   }
 
   async getRole(id: string) {
@@ -224,6 +242,7 @@ export class RbacService {
       await this.assignPermissionsToRole(role.id, data.permissionIds);
     }
 
+    try { await this.cache.del(CACHE_KEY_ROLES); } catch { /* optional */ }
     return this.getRole(role.id);
   }
 
@@ -241,6 +260,7 @@ export class RbacService {
     }
 
     await this.prisma.rbacRole.update({ where: { id }, data });
+    try { await this.cache.del(CACHE_KEY_ROLES); } catch { /* optional */ }
     return this.getRole(id);
   }
 
@@ -252,6 +272,7 @@ export class RbacService {
     await this.prisma.rbacRole.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
     const users = await this.prisma.userRoleAssignment.findMany({ where: { roleId: id }, select: { userId: true } });
     await Promise.all(users.map((u) => this.invalidateUserCache(u.userId)));
+    try { await this.cache.del(CACHE_KEY_ROLES); } catch { /* optional */ }
     return { success: true };
   }
 
@@ -262,6 +283,7 @@ export class RbacService {
     await this.prisma.rbacRole.update({ where: { id }, data: { deletedAt: null, isActive: true } });
     const users = await this.prisma.userRoleAssignment.findMany({ where: { roleId: id }, select: { userId: true } });
     await Promise.all(users.map((u) => this.invalidateUserCache(u.userId)));
+    try { await this.cache.del(CACHE_KEY_ROLES); } catch { /* optional */ }
     return this.getRole(id);
   }
 
@@ -310,6 +332,11 @@ export class RbacService {
     const users = await this.prisma.userRoleAssignment.findMany({ where: { roleId }, select: { userId: true } });
     await Promise.all(users.map((u) => this.invalidateUserCache(u.userId)));
 
+    try {
+      await this.cache.del(CACHE_KEY_PERMISSIONS);
+      await this.cache.del(CACHE_KEY_GROUPS);
+    } catch { /* optional */ }
+
     await this.audit(changedById ?? null, 'UPDATE_ROLE_PERMISSIONS', 'RolePermission', {
       resourceId: roleId,
       details: { roleId, roleName: role.name, roleKey: role.key, permissionCount: uniquePermissionIds.length },
@@ -327,16 +354,28 @@ export class RbacService {
   // ─── Permission CRUD ───────────────────────────────────────────────────────
 
   async listPermissionGroups() {
-    return this.prisma.permissionGroup.findMany({
+    const cached = await this.cache.get<any[]>(CACHE_KEY_GROUPS);
+    if (cached) return cached;
+
+    const result = await this.prisma.permissionGroup.findMany({
       where: { deletedAt: null },
       include: {
         permissions: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
       },
       orderBy: { sortOrder: 'asc' },
     });
+
+    await this.cache.set(CACHE_KEY_GROUPS, result, CACHE_TTL_GROUPS);
+    return result;
   }
 
   async listPermissions(params?: { groupId?: string; search?: string }) {
+    const useCache = !params || (!params.groupId && !params.search);
+    if (useCache) {
+      const cached = await this.cache.get<any[]>(CACHE_KEY_PERMISSIONS);
+      if (cached) return cached;
+    }
+
     const where: Record<string, unknown> = { deletedAt: null };
     if (params?.groupId) where.groupId = params.groupId;
     if (params?.search) {
@@ -345,11 +384,17 @@ export class RbacService {
         { name: { contains: params.search, mode: 'insensitive' } },
       ];
     }
-    return this.prisma.permission.findMany({
+    const result = await this.prisma.permission.findMany({
       where,
       include: { group: true },
       orderBy: [{ group: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
     });
+
+    if (useCache) {
+      await this.cache.set(CACHE_KEY_PERMISSIONS, result, CACHE_TTL_PERMISSIONS);
+    }
+
+    return result;
   }
 
   async getPermission(id: string) {
@@ -374,7 +419,7 @@ export class RbacService {
     const group = await this.prisma.permissionGroup.findFirst({ where: { id: data.groupId, deletedAt: null } });
     if (!group) throw new NotFoundException('Permission group not found');
 
-    return this.prisma.permission.create({
+    const result = await this.prisma.permission.create({
       data: {
         key: data.key,
         name: data.name,
@@ -384,6 +429,13 @@ export class RbacService {
       },
       include: { group: true },
     });
+
+    try {
+      await this.cache.del(CACHE_KEY_PERMISSIONS);
+      await this.cache.del(CACHE_KEY_GROUPS);
+    } catch { /* optional */ }
+
+    return result;
   }
 
   async updatePermission(
@@ -410,6 +462,11 @@ export class RbacService {
     });
     await Promise.all(impactedUsers.map((user) => this.invalidateUserCache(user.userId)));
 
+    try {
+      await this.cache.del(CACHE_KEY_PERMISSIONS);
+      await this.cache.del(CACHE_KEY_GROUPS);
+    } catch { /* optional */ }
+
     return updated;
   }
 
@@ -426,6 +483,11 @@ export class RbacService {
     await this.prisma.rolePermission.deleteMany({ where: { permissionId: id } });
     await this.prisma.userPermissionOverride.deleteMany({ where: { permissionId: id } });
     await Promise.all(impactedUsers.map((user) => this.invalidateUserCache(user.userId)));
+
+    try {
+      await this.cache.del(CACHE_KEY_PERMISSIONS);
+      await this.cache.del(CACHE_KEY_GROUPS);
+    } catch { /* optional */ }
 
     return { success: true };
   }
@@ -619,6 +681,12 @@ export class RbacService {
         }
       }
     }
+
+    try {
+      await this.cache.del(CACHE_KEY_ROLES);
+      await this.cache.del(CACHE_KEY_PERMISSIONS);
+      await this.cache.del(CACHE_KEY_GROUPS);
+    } catch { /* optional */ }
 
     return { groups: DEFAULT_PERMISSION_GROUPS.length, roles: DEFAULT_ROLES.length };
   }

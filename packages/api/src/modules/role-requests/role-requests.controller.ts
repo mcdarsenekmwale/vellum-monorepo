@@ -175,6 +175,52 @@ export class RoleRequestsController {
     });
   }
 
+  @Post('admin/bulk-approve')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[ADMIN] Bulk approve multiple PENDING role requests' })
+  @ApiResponse({ status: 200, description: 'Bulk processed; see updated count and requests array' })
+  @ApiResponse({ status: 400, description: 'Missing ids / adminJustification' })
+  @ApiResponse({ status: 403, description: 'Admin privileges required' })
+  async bulkApprove(
+    @Request() req: any,
+    @Body() body: { ids: string[]; adminJustification: string },
+  ) {
+    const reviewerId = req.user.sub ?? req.user.id;
+    return this.service.bulkApproveMany(
+      body.ids,
+      reviewerId,
+      body.adminJustification,
+      async ({ userId, requestedRoleKey, assignedBy, expiresAt }) => {
+        const { assignmentId } = await (this.adminService as any).applyRoleForAssignment?.(
+          userId,
+          requestedRoleKey,
+          { assignedBy, expiresAt },
+        ) ?? this.applyViaAdminService(userId, requestedRoleKey, assignedBy, expiresAt);
+        return { assignmentId };
+      },
+    );
+  }
+
+  @Post('admin/bulk-reject')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[ADMIN] Bulk reject multiple PENDING role requests' })
+  @ApiResponse({ status: 200, description: 'Bulk processed; see updated count and requests array' })
+  @ApiResponse({ status: 400, description: 'Missing ids / adminJustification' })
+  @ApiResponse({ status: 403, description: 'Admin privileges required' })
+  async bulkReject(
+    @Request() req: any,
+    @Body() body: { ids: string[]; adminJustification: string },
+  ) {
+    const reviewerId = req.user.sub ?? req.user.id;
+    return this.service.bulkRejectMany(
+      body.ids,
+      reviewerId,
+      body.adminJustification,
+    );
+  }
+
   /**
    * Fallback adapter: if applyRoleForAssignment helper isn't present yet in
    * AdminService, route through updateUserRole which ultimately calls
