@@ -97,7 +97,7 @@ export interface Comment {
   repliesCount: number;
   createdAt: string;
   updatedAt: string;
-  author?: { id: string; handle: string; name: string ; avatar: string | null };
+  author?: { id: string; handle: string; name: string; avatar: string | null };
 }
 
 // ─── Notifications ──────────────────────────────────────────────────────────
@@ -120,8 +120,8 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   updatedAt: string;
-  user?: { id: string; handle: string; name: string ; avatar: string | null ; email: string };
-  actor?: { id: string; handle: string; name: string ; avatar: string | null ; email: string };
+  user?: { id: string; handle: string; name: string; avatar: string | null; email: string };
+  actor?: { id: string; handle: string; name: string; avatar: string | null; email: string };
 }
 
 // ─── Highlights ─────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ export interface Highlight {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  author?: { id: string; handle: string; name: string ; avatar: string | null };
+  author?: { id: string; handle: string; name: string; avatar: string | null };
 }
 
 // ─── Media ──────────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ export interface MediaAsset {
   height: number | null;
   uploadedBy: string;
   createdAt: string;
-  uploader?: { id: string; handle: string; name: string ; avatar: string | null   };
+  uploader?: { id: string; handle: string; name: string; avatar: string | null };
 }
 
 // ─── Follows ────────────────────────────────────────────────────────────────
@@ -173,8 +173,8 @@ export interface FollowRecord {
   followerId: string;
   followingId: string;
   createdAt: string;
-  follower?: { id: string; handle: string; name: string ; avatar: string | null   };
-  following?: { id: string; handle: string; name: string ; avatar: string | null   };
+  follower?: { id: string; handle: string; name: string; avatar: string | null };
+  following?: { id: string; handle: string; name: string; avatar: string | null };
 }
 
 // ─── Reports ────────────────────────────────────────────────────────────────
@@ -424,7 +424,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 // Users
-export async function getUsers(params?: { page?: number; limit?: number; sort?: string; filter?: string; except?: string }): Promise<Paginated<User>> {
+export async function getUsers(params?: {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  filter?: string;
+  except?: string;
+}): Promise<Paginated<User>> {
   return api("/admin/users", { query: params });
 }
 
@@ -558,11 +564,20 @@ export async function listRoles(): Promise<AdminRolesResponse> {
   return api("/admin/roles");
 }
 
-export async function createUser(data: { email: string; name: string; handle: string; role: RoleKey; password: string }): Promise<User> {
+export async function createUser(data: {
+  email: string;
+  name: string;
+  handle: string;
+  role: RoleKey;
+  password: string;
+}): Promise<User> {
   return api("/admin/users", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateUser(id: string, data: Partial<User> & { role?: RoleKey }): Promise<User> {
+export async function updateUser(
+  id: string,
+  data: Partial<User> & { role?: RoleKey },
+): Promise<User> {
   return api(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -627,7 +642,10 @@ export async function toggleUserStatus(id: string): Promise<User> {
 }
 
 // Articles
-export async function getArticles(params?: { page?: number; limit?: number }): Promise<Paginated<Article>> {
+export async function getArticles(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Article>> {
   return api("/admin/articles", { query: params });
 }
 
@@ -635,7 +653,18 @@ export async function getArticleById(id: string): Promise<Article> {
   return api(`/admin/articles/${id}`);
 }
 
-export async function createArticle(data: { title: string; slug: string; excerpt: string; body: string[]; categoryId: string; authorId: string; isPublished?: boolean; featured?: boolean; cover?: string | null; readMinutes?: number }): Promise<Article> {
+export async function createArticle(data: {
+  title: string;
+  slug: string;
+  excerpt: string;
+  body: string[];
+  categoryId: string;
+  authorId: string;
+  isPublished?: boolean;
+  featured?: boolean;
+  cover?: string | null;
+  readMinutes?: number;
+}): Promise<Article> {
   return api("/admin/articles", { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -656,7 +685,10 @@ export async function createCategory(name: string, slug: string, tint: string): 
   return api("/admin/categories", { method: "POST", body: JSON.stringify({ name, slug, tint }) });
 }
 
-export async function updateCategory(id: string, data: { name?: string; slug?: string; tint?: string }): Promise<Category> {
+export async function updateCategory(
+  id: string,
+  data: { name?: string; slug?: string; tint?: string },
+): Promise<Category> {
   return api(`/admin/categories/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -665,7 +697,10 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 // Comments
-export async function getComments(params?: { page?: number; limit?: number }): Promise<Paginated<Comment>> {
+export async function getComments(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Comment>> {
   return api("/admin/comments", { query: params });
 }
 
@@ -674,7 +709,10 @@ export async function deleteComment(id: string): Promise<void> {
 }
 
 // Highlights
-export async function getHighlights(params?: { page?: number; limit?: number }): Promise<Paginated<Highlight>> {
+export async function getHighlights(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Highlight>> {
   return api("/admin/highlights", { query: params });
 }
 
@@ -682,7 +720,18 @@ export async function getHighlightById(id: string): Promise<Highlight> {
   return api(`/admin/highlights/${id}`);
 }
 
-export async function createHighlight(data: { title: string; handle: string; description?: string | null; cover?: string | null; videoUrl?: string | null; thumbnailUrl?: string | null; authorId?: string | null; isPublished?: boolean; aspectRatio?: number | null; duration?: number | null }): Promise<Highlight> {
+export async function createHighlight(data: {
+  title: string;
+  handle: string;
+  description?: string | null;
+  cover?: string | null;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  authorId?: string | null;
+  isPublished?: boolean;
+  aspectRatio?: number | null;
+  duration?: number | null;
+}): Promise<Highlight> {
   return api("/admin/highlights", { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -695,7 +744,10 @@ export async function deleteHighlight(id: string): Promise<void> {
 }
 
 // Media
-export async function getMedia(params?: { page?: number; limit?: number }): Promise<Paginated<MediaAsset>> {
+export async function getMedia(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<MediaAsset>> {
   return api("/admin/media", { query: params });
 }
 
@@ -704,7 +756,10 @@ export async function deleteMedia(id: string): Promise<void> {
 }
 
 // Notifications (admin — all users)
-export async function getAdminNotifications(params?: { page?: number; limit?: number }): Promise<Paginated<Notification>> {
+export async function getAdminNotifications(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Notification>> {
   return api("/admin/notifications", { query: params });
 }
 
@@ -720,7 +775,12 @@ export async function deleteNotification(id: string): Promise<void> {
   return api(`/admin/notifications/${id}`, { method: "DELETE" });
 }
 
-export async function createNotification(data: { userId: string; kind: string; body: string; title?: string }): Promise<Notification> {
+export async function createNotification(data: {
+  userId: string;
+  kind: string;
+  body: string;
+  title?: string;
+}): Promise<Notification> {
   return api("/admin/notifications", { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -730,12 +790,18 @@ export async function getUnreadNotificationCount(): Promise<{ count: number }> {
 }
 
 // Follows
-export async function getFollows(params?: { page?: number; limit?: number }): Promise<Paginated<FollowRecord>> {
+export async function getFollows(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<FollowRecord>> {
   return api("/admin/follows", { query: params });
 }
 
 // Reports
-export async function getReports(params?: { page?: number; limit?: number }): Promise<Paginated<Report>> {
+export async function getReports(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Report>> {
   return api("/admin/reports", { query: params });
 }
 
@@ -743,8 +809,15 @@ export async function getReportById(id: string): Promise<Report> {
   return api(`/admin/reports/${id}`);
 }
 
-export async function updateReportStatus(id: string, status: string, note?: string): Promise<Report> {
-  return api(`/admin/reports/${id}/status`, { method: "PUT", body: JSON.stringify({ status, note }) });
+export async function updateReportStatus(
+  id: string,
+  status: string,
+  note?: string,
+): Promise<Report> {
+  return api(`/admin/reports/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status, note }),
+  });
 }
 
 export async function deleteReport(id: string): Promise<void> {
@@ -773,7 +846,10 @@ export interface HelpArticle {
   updatedAt: string;
 }
 
-export async function getHelpArticles(params?: { category?: string; search?: string }): Promise<HelpArticle[]> {
+export async function getHelpArticles(params?: {
+  category?: string;
+  search?: string;
+}): Promise<HelpArticle[]> {
   return api("/admin/help/articles", { query: params });
 }
 
@@ -836,9 +912,27 @@ export interface SupportTicket {
   assignee?: { id: string; email: string; name: string; handle: string; avatar: string | null };
   department?: { id: string; name: string; key: string };
   category?: { id: string; name: string; key: string };
-  messages?: Array<{ id: string; body: string; isInternal: boolean; createdAt: string; author: { id: string; name: string; avatar: string | null } }>;
-  internalNotes?: Array<{ id: string; body: string; createdAt: string; author: { id: string; name: string; avatar?: string | null } }>;
-  statusHistory?: Array<{ id: string; fromStatus: string | null; toStatus: string; reason: string | null; createdAt: string; changedBy: { id: string; name: string } }>;
+  messages?: Array<{
+    id: string;
+    body: string;
+    isInternal: boolean;
+    createdAt: string;
+    author: { id: string; name: string; avatar: string | null };
+  }>;
+  internalNotes?: Array<{
+    id: string;
+    body: string;
+    createdAt: string;
+    author: { id: string; name: string; avatar?: string | null };
+  }>;
+  statusHistory?: Array<{
+    id: string;
+    fromStatus: string | null;
+    toStatus: string;
+    reason: string | null;
+    createdAt: string;
+    changedBy: { id: string; name: string };
+  }>;
 }
 
 export async function createSupportTicket(data: {
@@ -862,8 +956,14 @@ export async function getSupportTicket(id: string): Promise<SupportTicket> {
   return api(`/admin/support-tickets/${id}`);
 }
 
-export async function updateSupportTicketStatus(id: string, status: string): Promise<SupportTicket> {
-  return api(`/admin/support-tickets/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+export async function updateSupportTicketStatus(
+  id: string,
+  status: string,
+): Promise<SupportTicket> {
+  return api(`/admin/support-tickets/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
 }
 
 // ─── Enterprise RBAC API ────────────────────────────────────────────────────
@@ -924,7 +1024,10 @@ export interface UserEffectivePermissions {
   }>;
 }
 
-export async function getRbacRoles(params?: { search?: string; includeInactive?: boolean }): Promise<RbacRole[]> {
+export async function getRbacRoles(params?: {
+  search?: string;
+  includeInactive?: boolean;
+}): Promise<RbacRole[]> {
   return api("/rbac/roles", { query: params });
 }
 
@@ -945,7 +1048,13 @@ export async function createRbacRole(data: {
 
 export async function updateRbacRole(
   id: string,
-  data: { name?: string; description?: string; parentId?: string | null; rank?: number; isActive?: boolean },
+  data: {
+    name?: string;
+    description?: string;
+    parentId?: string | null;
+    rank?: number;
+    isActive?: boolean;
+  },
 ): Promise<RbacRole> {
   return api(`/rbac/roles/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
@@ -958,19 +1067,31 @@ export async function restoreRbacRole(id: string): Promise<RbacRole> {
   return api(`/rbac/roles/${id}/restore`, { method: "POST" });
 }
 
-export async function duplicateRbacRole(id: string, data: { key: string; name: string }): Promise<RbacRole> {
+export async function duplicateRbacRole(
+  id: string,
+  data: { key: string; name: string },
+): Promise<RbacRole> {
   return api(`/rbac/roles/${id}/duplicate`, { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function assignRolePermissions(roleId: string, permissionIds: string[]): Promise<RbacRole> {
-  return api(`/rbac/roles/${roleId}/permissions`, { method: "PUT", body: JSON.stringify({ permissionIds }) });
+export async function assignRolePermissions(
+  roleId: string,
+  permissionIds: string[],
+): Promise<RbacRole> {
+  return api(`/rbac/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissionIds }),
+  });
 }
 
 export async function getPermissionGroups(): Promise<PermissionGroup[]> {
   return api("/rbac/permission-groups");
 }
 
-export async function getRbacPermissions(params?: { groupId?: string; search?: string }): Promise<RbacPermission[]> {
+export async function getRbacPermissions(params?: {
+  groupId?: string;
+  search?: string;
+}): Promise<RbacPermission[]> {
   return api("/rbac/permissions", { query: params });
 }
 
@@ -1003,7 +1124,12 @@ export async function getUserRoles(userId: string): Promise<UserRoleAssignment[]
   return api(`/rbac/users/${userId}/roles`);
 }
 
-export async function assignUserRole(userId: string, roleId: string, isPrimary?: boolean, expiresAt?: string) {
+export async function assignUserRole(
+  userId: string,
+  roleId: string,
+  isPrimary?: boolean,
+  expiresAt?: string,
+) {
   return api(`/rbac/users/${userId}/roles`, {
     method: "POST",
     body: JSON.stringify({ roleId, isPrimary, expiresAt }),
@@ -1021,7 +1147,9 @@ export async function bulkAssignUserRole(userIds: string[], roleId: string) {
   });
 }
 
-export async function getUserEffectivePermissions(userId: string): Promise<UserEffectivePermissions> {
+export async function getUserEffectivePermissions(
+  userId: string,
+): Promise<UserEffectivePermissions> {
   return api(`/rbac/users/${userId}/effective-permissions`);
 }
 
@@ -1057,7 +1185,15 @@ export async function seedRbac() {
 // ─── Enterprise Support API ─────────────────────────────────────────────────
 
 export interface SupportDashboard {
-  summary: { openTickets: number; unassigned: number; inProgress: number; escalated: number; resolved: number; closed: number; onlineAgents: number };
+  summary: {
+    openTickets: number;
+    unassigned: number;
+    inProgress: number;
+    escalated: number;
+    resolved: number;
+    closed: number;
+    onlineAgents: number;
+  };
   byPriority: Array<{ priority: string; _count: number }>;
   byStatus: Array<{ status: string; _count: number }>;
 }
@@ -1082,23 +1218,41 @@ export async function getSupportAgents(): Promise<SupportAgent[]> {
 }
 
 export async function assignTicket(ticketId: string, agentId: string, reason?: string) {
-  return api(`/support/tickets/${ticketId}/assign`, { method: "POST", body: JSON.stringify({ agentId, reason }) });
+  return api(`/support/tickets/${ticketId}/assign`, {
+    method: "POST",
+    body: JSON.stringify({ agentId, reason }),
+  });
 }
 
 export async function addTicketMessage(ticketId: string, body: string, isInternal?: boolean) {
-  return api(`/support/tickets/${ticketId}/messages`, { method: "POST", body: JSON.stringify({ body, isInternal }) });
+  return api(`/support/tickets/${ticketId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body, isInternal }),
+  });
 }
 
 export async function addTicketNote(ticketId: string, body: string) {
-  return api(`/support/tickets/${ticketId}/notes`, { method: "POST", body: JSON.stringify({ body }) });
+  return api(`/support/tickets/${ticketId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
 }
 
 export async function escalateTicket(ticketId: string, reason?: string) {
-  return api(`/support/tickets/${ticketId}/escalate`, { method: "POST", body: JSON.stringify({ reason }) });
+  return api(`/support/tickets/${ticketId}/escalate`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
 }
 
 export async function getSupportTicketsV2(params?: {
-  page?: number; limit?: number; status?: string; priority?: string; assigneeId?: string; unassigned?: boolean; search?: string;
+  page?: number;
+  limit?: number;
+  status?: string;
+  priority?: string;
+  assigneeId?: string;
+  unassigned?: boolean;
+  search?: string;
 }): Promise<Paginated<SupportTicket>> {
   return api("/support/tickets", { query: params });
 }
@@ -1107,8 +1261,15 @@ export async function getSupportTicketV2(id: string): Promise<SupportTicket> {
   return api(`/support/tickets/${id}`);
 }
 
-export async function updateTicketStatusV2(id: string, status: string, reason?: string): Promise<SupportTicket> {
-  return api(`/support/tickets/${id}/status`, { method: "PUT", body: JSON.stringify({ status, reason }) });
+export async function updateTicketStatusV2(
+  id: string,
+  status: string,
+  reason?: string,
+): Promise<SupportTicket> {
+  return api(`/support/tickets/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status, reason }),
+  });
 }
 
 export interface CannedResponse {
@@ -1132,14 +1293,24 @@ export async function getCannedResponse(id: string): Promise<CannedResponse> {
 }
 
 export async function createCannedResponse(data: {
-  title: string; body: string; category?: string; shortcut?: string;
+  title: string;
+  body: string;
+  category?: string;
+  shortcut?: string;
 }): Promise<CannedResponse> {
   return api("/support/canned-responses", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateCannedResponse(id: string, data: {
-  title?: string; body?: string; category?: string; shortcut?: string; isActive?: boolean;
-}): Promise<CannedResponse> {
+export async function updateCannedResponse(
+  id: string,
+  data: {
+    title?: string;
+    body?: string;
+    category?: string;
+    shortcut?: string;
+    isActive?: boolean;
+  },
+): Promise<CannedResponse> {
   return api(`/support/canned-responses/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -1155,9 +1326,15 @@ export async function getAgentLeaderboard() {
   return api("/support/agents/leaderboard");
 }
 
-
-export async function bulkUpdateReportStatus(ids: string[], status: string, note?: string): Promise<{ updated: number; reports: Report[] }> {
-  return api("/admin/reports/bulk/status", { method: "PUT", body: JSON.stringify({ ids, status, note }) });
+export async function bulkUpdateReportStatus(
+  ids: string[],
+  status: string,
+  note?: string,
+): Promise<{ updated: number; reports: Report[] }> {
+  return api("/admin/reports/bulk/status", {
+    method: "PUT",
+    body: JSON.stringify({ ids, status, note }),
+  });
 }
 
 // Tags
@@ -1182,11 +1359,19 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
   return api("/admin/flags");
 }
 
-export async function createFeatureFlag(data: { key: string; description: string; enabled: boolean; rollout: number }): Promise<FeatureFlag> {
+export async function createFeatureFlag(data: {
+  key: string;
+  description: string;
+  enabled: boolean;
+  rollout: number;
+}): Promise<FeatureFlag> {
   return api("/admin/flags", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateFeatureFlag(id: string, data: { enabled?: boolean; rollout?: number }): Promise<FeatureFlag> {
+export async function updateFeatureFlag(
+  id: string,
+  data: { enabled?: boolean; rollout?: number },
+): Promise<FeatureFlag> {
   return api(`/admin/flags/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -1247,20 +1432,34 @@ export async function resetSettings(): Promise<{ success: boolean; message: stri
 }
 
 // Background Jobs
-export async function getJobs(params?: { page?: number; limit?: number }): Promise<Paginated<BackgroundJob>> {
+export async function getJobs(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<BackgroundJob>> {
   return api("/admin/jobs", { query: params });
 }
 
 // Advertisements
-export async function getAdvertisements(params?: { page?: number; limit?: number }): Promise<Paginated<Advertisement>> {
+export async function getAdvertisements(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<Advertisement>> {
   return api("/admin/advertisements", { query: params });
 }
 
-export async function createAdvertisement(data: { name: string; status: string; startsAt?: string | null; endsAt?: string | null }): Promise<Advertisement> {
+export async function createAdvertisement(data: {
+  name: string;
+  status: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+}): Promise<Advertisement> {
   return api("/admin/advertisements", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateAdvertisement(id: string, data: Partial<Advertisement>): Promise<Advertisement> {
+export async function updateAdvertisement(
+  id: string,
+  data: Partial<Advertisement>,
+): Promise<Advertisement> {
   return api(`/admin/advertisements/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -1273,7 +1472,13 @@ export async function getAIAgents(): Promise<AIAgent[]> {
   return api("/admin/ai-agents");
 }
 
-export async function createAIAgent(data: { name: string; description?: string | null; model: string; status: string; config?: any }): Promise<AIAgent> {
+export async function createAIAgent(data: {
+  name: string;
+  description?: string | null;
+  model: string;
+  status: string;
+  config?: any;
+}): Promise<AIAgent> {
   return api("/admin/ai-agents", { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -1290,11 +1495,19 @@ export async function getWebhooks(): Promise<WebhookConfig[]> {
   return api("/admin/webhooks");
 }
 
-export async function createWebhook(data: { name: string; url: string; events: string[]; isActive?: boolean }): Promise<WebhookConfig> {
+export async function createWebhook(data: {
+  name: string;
+  url: string;
+  events: string[];
+  isActive?: boolean;
+}): Promise<WebhookConfig> {
   return api("/admin/webhooks", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function updateWebhook(id: string, data: Partial<WebhookConfig>): Promise<WebhookConfig> {
+export async function updateWebhook(
+  id: string,
+  data: Partial<WebhookConfig>,
+): Promise<WebhookConfig> {
   return api(`/admin/webhooks/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
@@ -1307,7 +1520,12 @@ export async function getApiKeys(): Promise<ApiKey[]> {
   return api("/admin/api-keys");
 }
 
-export async function createApiKey(data: { name: string; scopes: string[]; userId?: string | null; expiresAt?: string | null }): Promise<ApiKey> {
+export async function createApiKey(data: {
+  name: string;
+  scopes: string[];
+  userId?: string | null;
+  expiresAt?: string | null;
+}): Promise<ApiKey> {
   return api("/admin/api-keys", { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -1316,7 +1534,10 @@ export async function deleteApiKey(id: string): Promise<void> {
 }
 
 // Audit Logs
-export async function getAuditLogs(params?: { page?: number; limit?: number }): Promise<Paginated<AuditLogEntry>> {
+export async function getAuditLogs(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<AuditLogEntry>> {
   return api("/admin/audit-logs", { query: params });
 }
 
@@ -1431,10 +1652,130 @@ export async function updateAISettings(settings: AISettings): Promise<Record<str
   return api("/admin/ai/settings", { method: "PUT", body: JSON.stringify(settings) });
 }
 
-export async function testAIModeration(content: string, thresholds?: { high: number; medium: number }): Promise<ModerationTestResult> {
-  return api("/admin/ai/moderation/test", { method: "POST", body: JSON.stringify({ content, thresholds }) });
+export async function testAIModeration(
+  content: string,
+  thresholds?: { high: number; medium: number },
+): Promise<ModerationTestResult> {
+  return api("/admin/ai/moderation/test", {
+    method: "POST",
+    body: JSON.stringify({ content, thresholds }),
+  });
 }
 
 export async function getReportTrends(days?: number): Promise<ReportTrendsResponse> {
   return api("/admin/reports/trends", { query: { days } });
+}
+
+// ─── Role Requests ──────────────────────────────────────────────────────────
+
+export type RoleRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type RoleRequestType = "PERMANENT" | "TEMPORARY";
+
+export interface RoleRequestEvent {
+  id: string;
+  requestId: string;
+  actorId?: string | null;
+  transition: RoleRequestStatus;
+  reason?: string | null;
+  createdAt: string;
+  actor?: { id: string; name: string; email: string } | null;
+  metadata?: Record<string, any> | null;
+}
+
+export interface RoleRequest {
+  id: string;
+  requesterId: string;
+  reviewerId?: string | null;
+  requestedRoleKey: string;
+  type: RoleRequestType;
+  status: RoleRequestStatus;
+  justification: string;
+  adminJustification?: string | null;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  reviewedAt?: string | null;
+  resultingAssignmentId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  requester?: { id: string; name: string; email: string; avatar?: string | null } | null;
+  reviewer?: { id: string; name: string; email: string } | null;
+  history?: RoleRequestEvent[];
+}
+
+export interface PaginatedRoleRequests {
+  data: RoleRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function createRoleRequest(data: {
+  requestedRoleKey: string;
+  type: RoleRequestType;
+  justification: string;
+  startsAt?: string;
+  expiresAt?: string;
+}): Promise<RoleRequest> {
+  return api("/role-requests", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getRoleRequests(params?: {
+  status?: RoleRequestStatus | "ALL";
+  page?: number;
+  limit?: number;
+  requesterId?: string;
+}): Promise<PaginatedRoleRequests> {
+  return api("/role-requests", { query: params });
+}
+
+export async function getRoleRequestById(id: string): Promise<RoleRequest> {
+  return api(`/role-requests/${id}`);
+}
+
+export async function approveRoleRequest(
+  id: string,
+  args?: {
+    adminJustification?: string;
+    expiresAtOverride?: string;
+    startsAtOverride?: string;
+  },
+): Promise<RoleRequest> {
+  return api(`/role-requests/${id}/approve`, {
+    method: "PUT",
+    body: JSON.stringify(args ?? {}),
+  });
+}
+
+export async function rejectRoleRequest(
+  id: string,
+  adminJustification: string,
+): Promise<RoleRequest> {
+  return api(`/role-requests/${id}/reject`, {
+    method: "PUT",
+    body: JSON.stringify({ adminJustification }),
+  });
+}
+
+export async function cancelRoleRequest(id: string): Promise<RoleRequest> {
+  return api(`/role-requests/${id}/cancel`, { method: "PUT" });
+}
+
+export async function bulkApproveRoleRequests(
+  ids: string[],
+  adminJustification?: string,
+): Promise<{ updated: number; requests: RoleRequest[] }> {
+  return api("/role-requests/admin/bulk-approve", {
+    method: "POST",
+    body: JSON.stringify({ ids, adminJustification }),
+  });
+}
+
+export async function bulkRejectRoleRequests(
+  ids: string[],
+  adminJustification: string,
+): Promise<{ updated: number; requests: RoleRequest[] }> {
+  return api("/role-requests/admin/bulk-reject", {
+    method: "POST",
+    body: JSON.stringify({ ids, adminJustification }),
+  });
 }

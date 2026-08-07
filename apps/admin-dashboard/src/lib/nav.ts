@@ -33,6 +33,7 @@ import {
   Headphones,
   Ticket,
   BookOpen,
+  FileKey,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,6 +56,7 @@ export const NAV: NavGroup[] = [
     items: [
       { title: "Users", to: "/users", icon: Users },
       { title: "Roles", to: "/roles", icon: Shield },
+      { title: "Role Requests", to: "/role-requests", icon: FileKey },
       { title: "Permissions", to: "/permissions", icon: KeyRound },
     ],
   },

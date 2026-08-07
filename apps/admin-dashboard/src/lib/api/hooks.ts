@@ -1,172 +1,185 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { Paginated } from "./client";
 import {
-  getDashboardStats,
-  getUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-  getArticles,
-  getArticleById,
-  createArticle,
-  updateArticle,
-  deleteArticle,
-  getCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  getComments,
-  deleteComment,
-  getCurrentUser,
-  getHighlights,
-  getHighlightById,
-  createHighlight,
-  updateHighlight,
-  deleteHighlight,
-  updateUserRole,
-  toggleUserStatus,
-  getMedia,
-  deleteMedia,
-  getAdminNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-  deleteNotification,
-  createNotification,
-  getUnreadNotificationCount,
-  getFollows,
-  getReports,
-  getReportById,
-  updateReportStatus,
-  deleteReport,
-  getReportStats,
+  approveRoleRequest,
+  assignRolePermissions,
+  assignUserRole,
+  bulkApproveRoleRequests,
+  bulkRejectRoleRequests,
   bulkUpdateReportStatus,
-  getTags,
-  createTag,
-  deleteTag,
-  updateTag,
-  getFeatureFlags,
+  cancelRoleRequest,
+  collectRoleKeys,
+  createAdvertisement,
+  createApiKey,
+  createArticle,
+  createAIAgent,
+  createCannedResponse,
+  createCategory,
   createFeatureFlag,
-  updateFeatureFlag,
+  createHelpArticle,
+  createHighlight,
+  createNotification,
+  createRbacRole,
+  createRoleRequest,
+  createSupportTicket,
+  createTag,
+  createUser,
+  createWebhook,
+  deleteAdvertisement,
+  deleteApiKey,
+  deleteArticle,
+  deleteAIAgent,
+  deleteCannedResponse,
+  deleteCategory,
+  deleteComment,
   deleteFeatureFlag,
-  getSystemSettings,
-  updateSystemSetting,
-  seedSystemSettings,
+  deleteHelpArticle,
+  deleteHighlight,
+  deleteMedia,
+  deleteNotification,
+  deleteRbacRole,
+  deleteReport,
+  deleteTag,
+  deleteUser,
+  deleteWebhook,
+  deleteWorkspace,
+  duplicateRbacRole,
+  getAIAgents,
+  getAISettings,
+  getAdminNotifications,
+  getAdvertisements,
+  getAgentLeaderboard,
   getAnalyticsOverview,
   getAnalyticsTimeseries,
-  getTrafficSources,
-  getStorageStats,
-  getSystemStatus,
-  getJobs,
-  getAdvertisements,
-  createAdvertisement,
-  updateAdvertisement,
-  deleteAdvertisement,
-  getAIAgents,
-  createAIAgent,
-  updateAIAgent,
-  deleteAIAgent,
-  getWebhooks,
-  createWebhook,
-  updateWebhook,
-  deleteWebhook,
   getApiKeys,
-  createApiKey,
-  deleteApiKey,
+  getArticles,
+  getArticleById,
   getAuditLogs,
   getAuditLogById,
-  getRoles,
-  getAISettings,
-  updateAISettings,
-  testAIModeration,
-  getReportTrends,
-  getHelpArticles,
-  getHelpArticleBySlug,
+  getCategories,
+  getCannedResponse,
+  getCannedResponses,
+  getComments,
+  getCurrentUser,
+  getDashboardStats,
+  getFeatureFlags,
+  getFollows,
   getHelpArticleById,
-  createHelpArticle,
-  updateHelpArticle,
-  deleteHelpArticle,
-  createSupportTicket,
-  getSupportTickets,
+  getHelpArticleBySlug,
+  getHelpArticles,
+  getHighlights,
+  getHighlightById,
+  getJobs,
+  getMedia,
+  getPermissionGroups,
+  getRbacPermissions,
+  getRbacRole,
+  getRbacRoles,
+  getReportById,
+  getReportStats,
+  getReportTrends,
+  getReports,
+  getRoleRequestById,
+  getRoleRequests,
+  getRoles,
+  getStorageStats,
+  getSupportDashboard,
   getSupportTicket,
+  getSupportTickets,
+  getSystemSettings,
+  getSystemStatus,
+  getTags,
+  getTrafficSources,
+  getUnreadNotificationCount,
+  getUserById,
+  getUserEffectivePermissions,
+  getUserRoles,
+  getUserRoleHistory,
+  getUsers,
+  getUserSettings,
+  getWebhooks,
+  markAllNotificationsRead,
+  markNotificationRead,
+  normalizeRoleToUpperSnake,
+  recordCannedResponseUsed,
+  rejectRoleRequest,
+  removeAvatar,
+  removePermissionOverride,
+  removeUserRole,
+  resetSettings,
+  seedSystemSettings,
+  setPermissionOverride,
+  testAIModeration,
+  toggleUserStatus,
+  toValidLegacyRole,
+  updateAdvertisement,
+  updateAIAgent,
+  updateAISettings,
+  updateArticle,
+  updateCannedResponse,
+  updateCategory,
+  updateFeatureFlag,
+  updateHelpArticle,
+  updateHighlight,
+  updateReportStatus,
+  updateRbacRole,
   updateSupportTicketStatus,
-  type User,
-  type Article,
-  type Category,
-  type Comment,
-  type Highlight,
-  type DashboardStats,
-  type MediaAsset,
-  type Notification,
-  type FollowRecord,
-  type Report,
-  type Tag,
-  type FeatureFlag,
-  type SystemSetting,
+  updateSystemSetting,
+  updateTag,
+  updateUser,
+  updateUserRole,
+  updateUserSettings,
+  updateWebhook,
+  uploadAvatar,
+  VALID_LEGACY_ROLES,
+  type AdminRoleOption,
+  type AdminRolesResponse,
   type Advertisement,
   type AIAgent,
-  type BackgroundJob,
-  type WebhookConfig,
-  type ApiKey,
-  type AuditLogEntry,
+  type AISettings,
   type AnalyticsOverview,
+  type ApiKey,
+  type Article,
+  type AuditLogEntry,
+  type BackgroundJob,
+  type CannedResponse,
+  type Category,
+  type Comment,
+  type DashboardStats,
+  type FeatureFlag,
+  type FollowRecord,
+  type HelpArticle,
+  type Highlight,
+  type MediaAsset,
+  type ModerationTestResult,
+  type Notification,
+  type PaginatedRoleRequests,
+  type PermissionGroup,
+  type RbacPermission,
+  type RbacRole,
+  type Report,
+  type ReportTrendsResponse,
+  type RoleKey,
+  type RoleRequest,
+  type RoleRequestEvent,
+  type RoleRequestStatus,
+  type RoleRequestType,
+  type RoleWithCount,
+  type StorageStats,
+  type SupportDashboard,
+  type SupportTicket,
+  type SystemSetting,
+  type SystemStatus,
+  type Tag,
   type TimeseriesPoint,
   type TrafficSourceItem,
   type TrafficSourcesResponse,
-  type StorageStats,
-  type SystemStatus,
-  type RoleWithCount,
-  type AdminRoleOption,
-  type AdminRolesResponse,
-  type RoleKey,
-  type ValidLegacyRole,
-  VALID_LEGACY_ROLES,
-  collectRoleKeys,
-  normalizeRoleToUpperSnake,
-  toValidLegacyRole,
-  type AISettings,
-  type ModerationTestResult,
-  type ReportTrendsResponse,
-  type HelpArticle,
-  type SupportTicket,
-  uploadAvatar,
-  removeAvatar,
-  getUserSettings,
-  updateUserSettings,
-  type UserSettings,
-  deleteWorkspace,
-  resetSettings,
-  getRbacRoles,
-  getRbacRole,
-  createRbacRole,
-  updateRbacRole,
-  deleteRbacRole,
-  duplicateRbacRole,
-  assignRolePermissions,
-  getPermissionGroups,
-  getRbacPermissions,
-  getUserRoles,
-  assignUserRole,
-  removeUserRole,
-  getUserEffectivePermissions,
-  getUserRoleHistory,
-  setPermissionOverride,
-  removePermissionOverride,
-  type RbacRole,
-  type PermissionGroup,
-  type RbacPermission,
-  type UserRoleAssignment,
+  type User,
   type UserEffectivePermissions,
-  getCannedResponses,
-  getCannedResponse,
-  createCannedResponse,
-  updateCannedResponse,
-  deleteCannedResponse,
-  recordCannedResponseUsed,
-  type CannedResponse,
-  getSupportDashboard,
-  getAgentLeaderboard,
-  type SupportDashboard,
+  type UserRoleAssignment,
+  type UserSettings,
+  type ValidLegacyRole,
+  type WebhookConfig,
 } from "./services";
 
 export type ListParams = {
@@ -228,7 +241,14 @@ export function useUserById(id: string | undefined) {
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { email: string; name: string; handle: string; role: string; password: string; permissions?: string[] }) => createUser(data),
+    mutationFn: (data: {
+      email: string;
+      name: string;
+      handle: string;
+      role: string;
+      password: string;
+      permissions?: string[];
+    }) => createUser(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -239,7 +259,8 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; permissions?: string[] } & Partial<User>) => updateUser(id, data),
+    mutationFn: ({ id, ...data }: { id: string; permissions?: string[] } & Partial<User>) =>
+      updateUser(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -349,7 +370,18 @@ export function useArticleById(id: string | undefined) {
 export function useCreateArticle() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title: string; slug: string; excerpt: string; body: string[]; categoryId: string; authorId: string; isPublished?: boolean; featured?: boolean; cover?: string | null; readMinutes?: number }) => createArticle(data),
+    mutationFn: (data: {
+      title: string;
+      slug: string;
+      excerpt: string;
+      body: string[];
+      categoryId: string;
+      authorId: string;
+      isPublished?: boolean;
+      featured?: boolean;
+      cover?: string | null;
+      readMinutes?: number;
+    }) => createArticle(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["articles"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -403,7 +435,8 @@ export function useCategories() {
 export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, slug, tint }: { name: string; slug: string; tint: string }) => createCategory(name, slug, tint),
+    mutationFn: ({ name, slug, tint }: { name: string; slug: string; tint: string }) =>
+      createCategory(name, slug, tint),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
   });
 }
@@ -411,7 +444,8 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; name?: string; slug?: string; tint?: string }) => updateCategory(id, data),
+    mutationFn: ({ id, ...data }: { id: string; name?: string; slug?: string; tint?: string }) =>
+      updateCategory(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
   });
 }
@@ -484,7 +518,18 @@ export function useHighlightById(id: string | undefined) {
 export function useCreateHighlight() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title: string; handle: string; description?: string | null; cover?: string | null; videoUrl?: string | null; thumbnailUrl?: string | null; authorId?: string | null; isPublished?: boolean; aspectRatio?: number | null; duration?: number | null }) => createHighlight(data),
+    mutationFn: (data: {
+      title: string;
+      handle: string;
+      description?: string | null;
+      cover?: string | null;
+      videoUrl?: string | null;
+      thumbnailUrl?: string | null;
+      authorId?: string | null;
+      isPublished?: boolean;
+      aspectRatio?: number | null;
+      duration?: number | null;
+    }) => createHighlight(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["highlights"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -662,7 +707,8 @@ export function useReport(id: string) {
 export function useUpdateReportStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) => updateReportStatus(id, status, note),
+    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) =>
+      updateReportStatus(id, status, note),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
   });
 }
@@ -685,7 +731,8 @@ export function useReportStats() {
 export function useBulkUpdateReportStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ ids, status, note }: { ids: string[]; status: string; note?: string }) => bulkUpdateReportStatus(ids, status, note),
+    mutationFn: ({ ids, status, note }: { ids: string[]; status: string; note?: string }) =>
+      bulkUpdateReportStatus(ids, status, note),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
   });
 }
@@ -718,12 +765,11 @@ export function useDeleteTag() {
 export function useUpdateTag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, name, slug }: { id: string; name: string; slug: string }) => updateTag(id, name, slug),
+    mutationFn: ({ id, name, slug }: { id: string; name: string; slug: string }) =>
+      updateTag(id, name, slug),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tags"] }),
   });
 }
-
-
 
 // ─── Feature Flags ──────────────────────────────────────────────────────────
 
@@ -737,7 +783,8 @@ export function useFeatureFlags() {
 export function useCreateFeatureFlag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { key: string; description: string; enabled: boolean; rollout: number }) => createFeatureFlag(data),
+    mutationFn: (data: { key: string; description: string; enabled: boolean; rollout: number }) =>
+      createFeatureFlag(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["feature-flags"] }),
   });
 }
@@ -884,7 +931,12 @@ export function useAdvertisements(params: ListParams = {}) {
 export function useCreateAdvertisement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; status: string; startsAt?: string | null; endsAt?: string | null }) => createAdvertisement(data),
+    mutationFn: (data: {
+      name: string;
+      status: string;
+      startsAt?: string | null;
+      endsAt?: string | null;
+    }) => createAdvertisement(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["advertisements"] }),
   });
 }
@@ -892,7 +944,8 @@ export function useCreateAdvertisement() {
 export function useUpdateAdvertisement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string } & Partial<Advertisement>) => updateAdvertisement(id, data),
+    mutationFn: ({ id, ...data }: { id: string } & Partial<Advertisement>) =>
+      updateAdvertisement(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["advertisements"] }),
   });
 }
@@ -917,7 +970,13 @@ export function useAIAgents() {
 export function useCreateAIAgent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; description?: string | null; model: string; status: string; config?: any }) => createAIAgent(data),
+    mutationFn: (data: {
+      name: string;
+      description?: string | null;
+      model: string;
+      status: string;
+      config?: any;
+    }) => createAIAgent(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-agents"] }),
   });
 }
@@ -950,7 +1009,8 @@ export function useWebhooks() {
 export function useCreateWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; url: string; events: string[]; isActive?: boolean }) => createWebhook(data),
+    mutationFn: (data: { name: string; url: string; events: string[]; isActive?: boolean }) =>
+      createWebhook(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["webhooks"] }),
   });
 }
@@ -958,7 +1018,8 @@ export function useCreateWebhook() {
 export function useUpdateWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string } & Partial<WebhookConfig>) => updateWebhook(id, data),
+    mutationFn: ({ id, ...data }: { id: string } & Partial<WebhookConfig>) =>
+      updateWebhook(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["webhooks"] }),
   });
 }
@@ -983,7 +1044,12 @@ export function useApiKeys() {
 export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; scopes: string[]; userId?: string | null; expiresAt?: string | null }) => createApiKey(data),
+    mutationFn: (data: {
+      name: string;
+      scopes: string[];
+      userId?: string | null;
+      expiresAt?: string | null;
+    }) => createApiKey(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["api-keys"] }),
   });
 }
@@ -1051,8 +1117,13 @@ export function useUpdateAISettings() {
 
 export function useTestAIModeration() {
   return useMutation({
-    mutationFn: ({ content, thresholds }: { content: string; thresholds?: { high: number; medium: number } }) =>
-      testAIModeration(content, thresholds),
+    mutationFn: ({
+      content,
+      thresholds,
+    }: {
+      content: string;
+      thresholds?: { high: number; medium: number };
+    }) => testAIModeration(content, thresholds),
   });
 }
 
@@ -1435,6 +1506,103 @@ export function useAgentLeaderboard() {
   });
 }
 
+// ─── Role Requests ──────────────────────────────────────────────────────────
+
+export function useRoleRequests(params?: {
+  status?: RoleRequestStatus | "ALL";
+  page?: number;
+  limit?: number;
+  search?: string;
+  requesterId?: string;
+}) {
+  return useQuery({
+    queryKey: ["role-requests", params ?? {}],
+    queryFn: () => getRoleRequests(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useRoleRequest(id: string) {
+  return useQuery({
+    queryKey: ["role-requests", id],
+    queryFn: () => getRoleRequestById(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateRoleRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createRoleRequest,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
+export function useApproveRoleRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: {
+      id: string;
+      adminJustification?: string;
+      expiresAtOverride?: string;
+      startsAtOverride?: string;
+    }) =>
+      approveRoleRequest(args.id, {
+        adminJustification: args.adminJustification,
+        expiresAtOverride: args.expiresAtOverride,
+        startsAtOverride: args.startsAtOverride,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
+export function useRejectRoleRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; adminJustification: string }) =>
+      rejectRoleRequest(args.id, args.adminJustification),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
+export function useCancelRoleRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => cancelRoleRequest(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
+export function useBulkApproveRoleRequests() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { ids: string[]; adminJustification?: string }) =>
+      bulkApproveRoleRequests(args.ids, args.adminJustification),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
+export function useBulkRejectRoleRequests() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { ids: string[]; adminJustification: string }) =>
+      bulkRejectRoleRequests(args.ids, args.adminJustification),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-requests"] });
+    },
+  });
+}
+
 // ─── Re-exports ─────────────────────────────────────────────────────────────
 
 export type {
@@ -1480,14 +1648,14 @@ export type {
   RbacPermission,
   UserRoleAssignment,
   UserEffectivePermissions,
+  RoleRequest,
+  RoleRequestEvent,
+  RoleRequestStatus,
+  RoleRequestType,
+  PaginatedRoleRequests,
 };
 
 // Runtime value exports — keep these OUTSIDE the `export type { }` block above
 // so callers can destructure them as first-class runtime values (e.g. spread
 // VALID_LEGACY_ROLES inside an array, or call normalizeRoleToUpperSnake()).
-export {
-  VALID_LEGACY_ROLES,
-  collectRoleKeys,
-  normalizeRoleToUpperSnake,
-  toValidLegacyRole,
-};
+export { VALID_LEGACY_ROLES, collectRoleKeys, normalizeRoleToUpperSnake, toValidLegacyRole };

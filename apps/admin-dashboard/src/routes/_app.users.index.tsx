@@ -15,7 +15,8 @@ import {
   UserX,
   Calendar,
   ChevronDown,
-  Loader2} from "lucide-react";
+  Loader2,
+} from "lucide-react";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { ListPage } from "@/components/dashboard/list-page";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -30,11 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import {
   useUsers,
@@ -53,7 +50,13 @@ import { useAuth } from "@/lib/auth/context";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { CreateUserSheet, EditUserDialog, DeleteUserDialog, BulkDeleteDialog, EmailDialog } from "@/components/dashboard/users_action_components";
+import {
+  CreateUserSheet,
+  EditUserDialog,
+  DeleteUserDialog,
+  BulkDeleteDialog,
+  EmailDialog,
+} from "@/components/dashboard/users_action_components";
 
 export const Route = createFileRoute("/_app/users/")({
   head: () => ({ meta: [{ title: "Users · Vellum Admin" }] }),
@@ -140,11 +143,12 @@ function UsersList() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter((user) =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.handle.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query)
+      result = result.filter(
+        (user) =>
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          user.handle.toLowerCase().includes(query) ||
+          user.role.toLowerCase().includes(query),
       );
     }
 
@@ -156,7 +160,7 @@ function UsersList() {
     // Status filter
     if (statusFilter !== "all") {
       result = result.filter((user) =>
-        statusFilter === "active" ? user.isActive : !user.isActive
+        statusFilter === "active" ? user.isActive : !user.isActive,
       );
     }
 
@@ -171,7 +175,8 @@ function UsersList() {
     return result;
   }, [rows, searchQuery, roleFilter, statusFilter, twoFAFilter]);
 
-  const hasActiveFilters = searchQuery || roleFilter !== "all" || statusFilter !== "all" || twoFAFilter !== "all";
+  const hasActiveFilters =
+    searchQuery || roleFilter !== "all" || statusFilter !== "all" || twoFAFilter !== "all";
 
   // Stats
   const activeUsers = stats?.activeUsers ?? 0;
@@ -201,7 +206,17 @@ function UsersList() {
 
     setIsExporting(true);
     try {
-      const headers = ["ID", "Name", "Email", "Handle", "Role", "Status", "2FA", "Created At", "Last Login"];
+      const headers = [
+        "ID",
+        "Name",
+        "Email",
+        "Handle",
+        "Role",
+        "Status",
+        "2FA",
+        "Created At",
+        "Last Login",
+      ];
       const csvRows = [headers.join(",")];
 
       for (const user of dataToExport) {
@@ -237,7 +252,12 @@ function UsersList() {
   }, [filteredRows, rows]);
 
   const handleCreate = useCallback(() => {
-    if (!createEmail.trim() || !createName.trim() || !createHandle.trim() || !createPassword.trim()) {
+    if (
+      !createEmail.trim() ||
+      !createName.trim() ||
+      !createHandle.trim() ||
+      !createPassword.trim()
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -262,9 +282,19 @@ function UsersList() {
         onError: (error) => {
           toast.error("Failed to create user: " + (error.message || "Unknown error"));
         },
-      }
+      },
     );
-  }, [createEmail, createName, createHandle, createRole, createPassword, createPermissions, createUser, refetch, refetchStats]);
+  }, [
+    createEmail,
+    createName,
+    createHandle,
+    createRole,
+    createPassword,
+    createPermissions,
+    createUser,
+    refetch,
+    refetchStats,
+  ]);
 
   const resetCreateForm = () => {
     setCreateEmail("");
@@ -303,9 +333,19 @@ function UsersList() {
         onError: (error) => {
           toast.error("Failed to update user: " + (error.message || "Unknown error"));
         },
-      }
+      },
     );
-  }, [selectedUser, editEmail, editName, editHandle, editRole, editPermissions, updateUser, refetch, refetchStats]);
+  }, [
+    selectedUser,
+    editEmail,
+    editName,
+    editHandle,
+    editRole,
+    editPermissions,
+    updateUser,
+    refetch,
+    refetchStats,
+  ]);
 
   const handleDelete = useCallback(() => {
     if (!selectedUser) return;
@@ -329,13 +369,14 @@ function UsersList() {
 
     try {
       toast.loading(`Deleting ${selectedIds.length} users...`);
-      const deletePromises = selectedIds.map((id) =>
-        new Promise<void>((resolve, reject) => {
-          deleteUser.mutate(id, {
-            onSuccess: () => resolve(),
-            onError: () => reject(),
-          });
-        })
+      const deletePromises = selectedIds.map(
+        (id) =>
+          new Promise<void>((resolve, reject) => {
+            deleteUser.mutate(id, {
+              onSuccess: () => resolve(),
+              onError: () => reject(),
+            });
+          }),
       );
       await Promise.all(deletePromises);
       toast.success(`${selectedIds.length} users deleted`);
@@ -491,6 +532,9 @@ function UsersList() {
         roles={roles}
         selectedPermissions={editPermissions}
         onPermissionsChange={setEditPermissions}
+        disableRoleAssignment={
+          !!(currentUser && selectedUser && selectedUser.id === currentUser.id)
+        }
       />
 
       {/* Delete Confirmation Dialog */}
@@ -511,9 +555,8 @@ function UsersList() {
         handleBulkDelete={handleBulkDelete}
       />
 
-
       {/* Email Dialog */}
-      <EmailDialog 
+      <EmailDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
         user={selectedUser}
@@ -566,22 +609,38 @@ function UsersList() {
                   ) : (
                     <Download className="size-4" />
                   )}
-                  <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export"}</span>
+                  <span className="hidden sm:inline">
+                    {isExporting ? "Exporting..." : "Export"}
+                  </span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Export users to CSV</TooltipContent>
             </Tooltip>
 
             {selectedIds.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setIsBulkDeleteOpen(true)}
-              >
-                <Trash2 className="size-4" />
-                <span className="hidden sm:inline">Delete {selectedIds.length}</span>
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setIsBulkDeleteOpen(true)}
+                      disabled={
+                        !can("users", "delete") || selectedIds.includes(currentUser?.id ?? "")
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                      <span className="hidden sm:inline">Delete {selectedIds.length}</span>
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedIds.includes(currentUser?.id ?? "")
+                    ? "You can't bulk-delete your own account. Deselect yourself first."
+                    : `Permanently delete ${selectedIds.length} selected account(s)`}
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {can("users", "write") && (
@@ -664,7 +723,9 @@ function UsersList() {
                             onClick={() => setStatusFilter(status)}
                             className={cn(statusFilter === status && "bg-accent")}
                           >
-                            {status === "all" ? "All statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                            {status === "all"
+                              ? "All statuses"
+                              : status.charAt(0).toUpperCase() + status.slice(1)}
                             {statusFilter === status && <Check className="ml-2 size-3.5" />}
                           </DropdownMenuItem>
                         ))}
@@ -688,7 +749,9 @@ function UsersList() {
                             onClick={() => setTwoFAFilter(twoFA)}
                             className={cn(twoFAFilter === twoFA && "bg-accent")}
                           >
-                            {twoFA === "all" ? "All" : twoFA.charAt(0).toUpperCase() + twoFA.slice(1)}
+                            {twoFA === "all"
+                              ? "All"
+                              : twoFA.charAt(0).toUpperCase() + twoFA.slice(1)}
                             {twoFAFilter === twoFA && <Check className="ml-2 size-3.5" />}
                           </DropdownMenuItem>
                         ))}
@@ -703,19 +766,31 @@ function UsersList() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs text-muted-foreground">Active filters:</span>
                       {roleFilter !== "all" && (
-                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setRoleFilter("all")}>
+                        <Badge
+                          variant="secondary"
+                          className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted"
+                          onClick={() => setRoleFilter("all")}
+                        >
                           Role: {roleFilter}
                           <X className="size-3" />
                         </Badge>
                       )}
                       {statusFilter !== "all" && (
-                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setStatusFilter("all")}>
+                        <Badge
+                          variant="secondary"
+                          className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted"
+                          onClick={() => setStatusFilter("all")}
+                        >
                           Status: {statusFilter}
                           <X className="size-3" />
                         </Badge>
                       )}
                       {twoFAFilter !== "all" && (
-                        <Badge variant="secondary" className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted" onClick={() => setTwoFAFilter("all")}>
+                        <Badge
+                          variant="secondary"
+                          className="gap-1 h-5 text-xs cursor-pointer hover:bg-muted"
+                          onClick={() => setTwoFAFilter("all")}
+                        >
                           2FA: {twoFAFilter}
                           <X className="size-3" />
                         </Badge>
@@ -761,7 +836,9 @@ function UsersList() {
           {
             key: "handle",
             header: "Handle",
-            cell: (u) => <span className="font-mono text-xs text-muted-foreground">@{u.handle}</span>
+            cell: (u) => (
+              <span className="font-mono text-xs text-muted-foreground">@{u.handle}</span>
+            ),
           },
           {
             key: "role",
@@ -770,23 +847,25 @@ function UsersList() {
               <Badge variant="outline" className="text-xs capitalize rounded-sm">
                 {u.role.toLocaleUpperCase()}
               </Badge>
-            )
+            ),
           },
           {
             key: "status",
             header: "Status",
-            cell: (u) => <StatusBadge status={u.isActive ? "active" : "suspended"} />
+            cell: (u) => <StatusBadge status={u.isActive ? "active" : "suspended"} />,
           },
           {
             key: "2fa",
             header: "2F Auth",
             cell: (u) => (
-              <span className={cn(
-                "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
-                (u as any).twoFactorEnabled
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-muted text-muted-foreground"
-              )}>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+                  (u as any).twoFactorEnabled
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
                 {(u as any).twoFactorEnabled ? "Enabled" : "Disabled"}
               </span>
             ),
@@ -801,9 +880,7 @@ function UsersList() {
                     {formatDistanceToNow(new Date(u.createdAt), { addSuffix: true })}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>
-                  {format(new Date(u.createdAt), "PPP p")}
-                </TooltipContent>
+                <TooltipContent>{format(new Date(u.createdAt), "PPP p")}</TooltipContent>
               </Tooltip>
             ),
           },
@@ -830,13 +907,20 @@ function UsersList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 hover:text-primary"
+                    className={cn(
+                      "size-8",
+                      u.id === currentUser?.id ? "hover:text-amber-600" : "hover:text-primary",
+                    )}
                     onClick={() => openEdit(u)}
                   >
                     <Pencil className="size-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Edit user</TooltipContent>
+                <TooltipContent>
+                  {u.id === currentUser?.id
+                    ? "Edit profile (role & permissions are disabled for your own account)"
+                    : "Edit user"}
+                </TooltipContent>
               </Tooltip>
             )}
 

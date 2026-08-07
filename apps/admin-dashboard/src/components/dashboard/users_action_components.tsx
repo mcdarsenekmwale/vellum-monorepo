@@ -1,12 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRbacRoles, usePermissionGroups } from "@/lib/api/hooks";
 import type { RbacRole, PermissionGroup } from "@/lib/api/hooks";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -38,11 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Loader2,
   AlertCircle,
@@ -210,7 +201,8 @@ export function getRoleDisplayKey(role: string): string {
     return "PLATFORM_ADMIN";
   // Exact SUPPORT_ADMIN key → SUPPORT_ADMIN tier. Other SUPPORT_* variants
   // (SUPPORT_AGENT, CUSTOMER_SUPPORT, etc.) are MODERATOR tier.
-  if (normalized === "SUPPORT_ADMIN" || normalized.includes("SUPPORT_ADMIN")) return "SUPPORT_ADMIN";
+  if (normalized === "SUPPORT_ADMIN" || normalized.includes("SUPPORT_ADMIN"))
+    return "SUPPORT_ADMIN";
   if (normalized.endsWith("_ADMIN") || normalized.includes("ADMIN")) return "ADMIN";
   if (
     normalized.includes("MODERATOR") ||
@@ -219,14 +211,19 @@ export function getRoleDisplayKey(role: string): string {
     normalized.includes("CUSTOMER_SUPPORT")
   )
     return "MODERATOR";
-  if (normalized.includes("CREATOR") || normalized.includes("AUTHOR") || normalized.includes("EDITOR")) return "CREATOR";
+  if (
+    normalized.includes("CREATOR") ||
+    normalized.includes("AUTHOR") ||
+    normalized.includes("EDITOR")
+  )
+    return "CREATOR";
   if (normalized.includes("GUEST") || normalized.includes("ANONYMOUS")) return "GUEST";
   return "USER";
 }
 
 export function useRoleOptions(providedRoles?: RbacRole[]) {
   const rbacQuery = useRbacRoles({ includeInactive: false });
-  
+
   const hasProvidedRoles = !!providedRoles;
   const roles = providedRoles ?? rbacQuery.data;
   const isLoading = hasProvidedRoles ? false : rbacQuery.isLoading;
@@ -318,10 +315,7 @@ function RoleSelect({ value, onValueChange, roles, disabled, showSystem }: RoleS
 
   if (isError) {
     const fallback = value
-      ? [
-          { key: value, name: value },
-          ...STATIC_ROLE_OPTIONS.filter((s) => s.key !== value),
-        ]
+      ? [{ key: value, name: value }, ...STATIC_ROLE_OPTIONS.filter((s) => s.key !== value)]
       : STATIC_ROLE_OPTIONS;
     return (
       <div className="space-y-1">
@@ -354,9 +348,7 @@ function RoleSelect({ value, onValueChange, roles, disabled, showSystem }: RoleS
       </SelectTrigger>
       <SelectContent>
         {isEmpty ? (
-          <SelectItem value={value}>
-            {value || "No roles available"}
-          </SelectItem>
+          <SelectItem value={value}>{value || "No roles available"}</SelectItem>
         ) : (
           augmentedOptions
             .filter((role) => showSystem || role.isSystem !== false || role.key === value)
@@ -367,10 +359,14 @@ function RoleSelect({ value, onValueChange, roles, disabled, showSystem }: RoleS
                   <span className="text-muted-foreground text-xs ml-2">Rank {role.rank}</span>
                 )}
                 {role.isSystem && (
-                  <Badge variant="secondary" className="ml-2 text-[9px]">System</Badge>
+                  <Badge variant="secondary" className="ml-2 text-[9px]">
+                    System
+                  </Badge>
                 )}
                 {role.description?.includes("not in roles list") && (
-                  <Badge variant="outline" className="ml-2 text-[9px]">Custom</Badge>
+                  <Badge variant="outline" className="ml-2 text-[9px]">
+                    Custom
+                  </Badge>
                 )}
               </SelectItem>
             ))
@@ -389,7 +385,12 @@ interface PermissionEditorProps {
   disabled?: boolean;
 }
 
-function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, disabled }: PermissionEditorProps) {
+function PermissionEditor({
+  selectedPermissions,
+  onPermissionsChange,
+  roleKey,
+  disabled,
+}: PermissionEditorProps) {
   const { data: permissionGroups, isLoading, isError, error } = usePermissionGroups();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -399,10 +400,10 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
       onPermissionsChange(
         selectedPermissions.includes(permissionId)
           ? selectedPermissions.filter((id) => id !== permissionId)
-          : [...selectedPermissions, permissionId]
+          : [...selectedPermissions, permissionId],
       );
     },
-    [selectedPermissions, onPermissionsChange, disabled]
+    [selectedPermissions, onPermissionsChange, disabled],
   );
 
   const handleGroupToggle = useCallback(
@@ -415,7 +416,7 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
         onPermissionsChange(selectedPermissions.filter((id) => !groupIds.includes(id)));
       }
     },
-    [selectedPermissions, onPermissionsChange, disabled]
+    [selectedPermissions, onPermissionsChange, disabled],
   );
 
   const getGroupSelectionState = useCallback(
@@ -426,7 +427,7 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
       if (selectedInGroup.length === groupPermIds.length) return "all";
       return "partial";
     },
-    [selectedPermissions]
+    [selectedPermissions],
   );
 
   if (isLoading) {
@@ -504,7 +505,8 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
                       </label>
                       {group.permissions.length > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          ({selectedPermissions.filter((id) => groupPermIds.includes(id)).length}/{group.permissions.length})
+                          ({selectedPermissions.filter((id) => groupPermIds.includes(id)).length}/
+                          {group.permissions.length})
                         </span>
                       )}
                     </div>
@@ -523,7 +525,7 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
                           className={cn(
                             "flex items-center gap-2 text-sm rounded-md px-2 py-1 cursor-pointer transition-colors",
                             isChecked ? "bg-primary/5" : "hover:bg-muted/50",
-                            disabled && "opacity-50 cursor-not-allowed"
+                            disabled && "opacity-50 cursor-not-allowed",
                           )}
                         >
                           <Checkbox
@@ -534,7 +536,9 @@ function PermissionEditor({ selectedPermissions, onPermissionsChange, roleKey, d
                           <span className="flex-1">
                             <span className="font-medium">{permission.name}</span>
                             {permission.description && (
-                              <p className="text-xs text-muted-foreground">{permission.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {permission.description}
+                              </p>
                             )}
                           </span>
                           <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -621,10 +625,7 @@ function CreateUserSheet({
   const strength = getPasswordStrength(createPassword);
 
   const isValid =
-    createEmail.trim() &&
-    createName.trim() &&
-    createHandle.trim() &&
-    createPassword.trim();
+    createEmail.trim() && createName.trim() && createHandle.trim() && createPassword.trim();
 
   const handleFieldBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -652,7 +653,10 @@ function CreateUserSheet({
         <div className="space-y-6 px-6 py-6">
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="create-email" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="create-email"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <Mail className="size-3.5" />
               Email *
             </Label>
@@ -666,7 +670,7 @@ function CreateUserSheet({
               autoFocus
               className={cn(
                 "focus-visible:ring-offset-0",
-                touched.email && !createEmail && "border-rose-500 focus-visible:ring-rose-500"
+                touched.email && !createEmail && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
             {touched.email && !createEmail && (
@@ -678,7 +682,10 @@ function CreateUserSheet({
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="create-name" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="create-name"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <User className="size-3.5" />
               Full Name *
             </Label>
@@ -690,7 +697,7 @@ function CreateUserSheet({
               placeholder="John Doe"
               className={cn(
                 "focus-visible:ring-offset-0",
-                touched.name && !createName && "border-rose-500 focus-visible:ring-rose-500"
+                touched.name && !createName && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
             {touched.name && !createName && (
@@ -700,7 +707,10 @@ function CreateUserSheet({
 
           {/* Handle */}
           <div className="space-y-2">
-            <Label htmlFor="create-handle" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="create-handle"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <AtSign className="size-3.5" />
               Handle *
             </Label>
@@ -712,7 +722,7 @@ function CreateUserSheet({
               placeholder="johndoe"
               className={cn(
                 "focus-visible:ring-offset-0 font-mono",
-                touched.handle && !createHandle && "border-rose-500 focus-visible:ring-rose-500"
+                touched.handle && !createHandle && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
             {touched.handle && !createHandle && (
@@ -727,15 +737,14 @@ function CreateUserSheet({
 
           {/* Role */}
           <div className="space-y-2">
-            <Label htmlFor="create-role" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="create-role"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <Shield className="size-3.5" />
               Role
             </Label>
-            <RoleSelect
-              value={createRole}
-              onValueChange={setCreateRole}
-              roles={roles}
-            />
+            <RoleSelect value={createRole} onValueChange={setCreateRole} roles={roles} />
             <div className="mt-1">
               <RoleBadge role={createRole} />
             </div>
@@ -758,7 +767,10 @@ function CreateUserSheet({
 
           {/* Password */}
           <div className="space-y-2">
-            <Label htmlFor="create-password" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="create-password"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <KeyRound className="size-3.5" />
               Password *
             </Label>
@@ -772,7 +784,9 @@ function CreateUserSheet({
                 placeholder="Enter a strong password"
                 className={cn(
                   "pr-28 font-mono focus-visible:ring-offset-0",
-                  touched.password && !createPassword && "border-rose-500 focus-visible:ring-rose-500"
+                  touched.password &&
+                    !createPassword &&
+                    "border-rose-500 focus-visible:ring-rose-500",
                 )}
               />
               <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -845,13 +859,18 @@ function CreateUserSheet({
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Strength</span>
-                  <span className={cn("text-xs font-medium", strength.color.replace("bg-", "text-"))}>
+                  <span
+                    className={cn("text-xs font-medium", strength.color.replace("bg-", "text-"))}
+                  >
                     {strength.label}
                   </span>
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className={cn("h-full rounded-full transition-all duration-500", strength.color)}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      strength.color,
+                    )}
                     style={{ width: strength.width }}
                   />
                 </div>
@@ -898,6 +917,17 @@ interface EditUserDialogProps {
   roles?: RbacRole[];
   selectedPermissions?: string[];
   onPermissionsChange?: (permissions: string[]) => void;
+  /**
+   * If true, the Role selector + Permission editor are disabled. Used when
+   * the admin is opening the edit dialog on their own account (§1 security
+   * guard — admins may not modify their own role via the admin endpoints).
+   */
+  disableRoleAssignment?: boolean;
+  /**
+   * Short explanation shown near the disabled role controls. Defaults to the
+   * standard "you can't edit your own role" copy.
+   */
+  roleDisabledHint?: string;
 }
 
 function EditUserDialog({
@@ -916,6 +946,8 @@ function EditUserDialog({
   roles,
   selectedPermissions: externalSelectedPermissions,
   onPermissionsChange,
+  disableRoleAssignment = false,
+  roleDisabledHint,
 }: EditUserDialogProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [internalPermissions, setInternalPermissions] = useState<string[]>([]);
@@ -924,6 +956,11 @@ function EditUserDialog({
   const setSelectedPermissions = onPermissionsChange ?? setInternalPermissions;
 
   const isValid = editEmail.trim() && editName.trim() && editHandle.trim();
+
+  const DEFAULT_DISABLED_REASON =
+    "You can't modify your own role or permissions from the admin panel. " +
+    "Ask another administrator, or submit a formal role request.";
+  const disabledReason = roleDisabledHint ?? DEFAULT_DISABLED_REASON;
 
   const handleFieldBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -948,7 +985,10 @@ function EditUserDialog({
 
         <div className="space-y-5 px-6 py-6">
           <div className="space-y-2">
-            <Label htmlFor="edit-email" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="edit-email"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <Mail className="size-3.5" />
               Email *
             </Label>
@@ -960,7 +1000,7 @@ function EditUserDialog({
               onBlur={() => handleFieldBlur("email")}
               className={cn(
                 "focus-visible:ring-offset-0",
-                touched.email && !editEmail && "border-rose-500 focus-visible:ring-rose-500"
+                touched.email && !editEmail && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
             {touched.email && !editEmail && (
@@ -969,7 +1009,10 @@ function EditUserDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-name" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="edit-name"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <User className="size-3.5" />
               Full Name *
             </Label>
@@ -980,16 +1023,17 @@ function EditUserDialog({
               onBlur={() => handleFieldBlur("name")}
               className={cn(
                 "focus-visible:ring-offset-0",
-                touched.name && !editName && "border-rose-500 focus-visible:ring-rose-500"
+                touched.name && !editName && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
-            {touched.name && !editName && (
-              <p className="text-xs text-rose-500">Name is required</p>
-            )}
+            {touched.name && !editName && <p className="text-xs text-rose-500">Name is required</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-handle" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="edit-handle"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <AtSign className="size-3.5" />
               Handle *
             </Label>
@@ -1000,41 +1044,62 @@ function EditUserDialog({
               onBlur={() => handleFieldBlur("handle")}
               className={cn(
                 "font-mono focus-visible:ring-offset-0",
-                touched.handle && !editHandle && "border-rose-500 focus-visible:ring-rose-500"
+                touched.handle && !editHandle && "border-rose-500 focus-visible:ring-rose-500",
               )}
             />
             {touched.handle && !editHandle && (
               <p className="text-xs text-rose-500">Handle is required</p>
             )}
-            {editHandle && (
-              <p className="text-xs text-muted-foreground font-mono">@{editHandle}</p>
-            )}
+            {editHandle && <p className="text-xs text-muted-foreground font-mono">@{editHandle}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-role" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <Label
+              htmlFor="edit-role"
+              className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            >
               <Shield className="size-3.5" />
               Role
+              {disableRoleAssignment && (
+                <span className="normal-case tracking-normal text-amber-600 dark:text-amber-500 font-normal">
+                  (disabled for your own account)
+                </span>
+              )}
             </Label>
             <RoleSelect
               value={editRole}
               onValueChange={setEditRole}
               roles={roles}
+              disabled={disableRoleAssignment}
             />
             <div className="mt-1">
               <RoleBadge role={editRole} />
             </div>
+            {disableRoleAssignment && (
+              <p
+                role="note"
+                className="mt-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+              >
+                {disabledReason}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <ShieldCheck className="size-3.5" />
               Permissions
+              {disableRoleAssignment && (
+                <span className="normal-case tracking-normal text-amber-600 dark:text-amber-500 font-normal">
+                  (disabled for your own account)
+                </span>
+              )}
             </Label>
             <PermissionEditor
               selectedPermissions={selectedPermissions}
               onPermissionsChange={setSelectedPermissions}
               roleKey={editRole}
+              disabled={disableRoleAssignment}
             />
           </div>
         </div>
@@ -1088,8 +1153,8 @@ function DeleteUserDialog({
           <DialogTitle className="text-lg font-semibold">Delete user</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             Are you sure you want to delete{" "}
-            <strong className="text-foreground">{selectedUser?.name}</strong>? This
-            action cannot be undone.
+            <strong className="text-foreground">{selectedUser?.name}</strong>? This action cannot be
+            undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -1097,8 +1162,7 @@ function DeleteUserDialog({
           <div className="mx-6 my-2 flex items-start gap-3 rounded-lg bg-rose-500/10 border border-rose-500/20 p-3">
             <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-500" />
             <p className="text-sm text-rose-600 dark:text-rose-400">
-              You are about to delete your own account. You will be logged out
-              immediately.
+              You are about to delete your own account. You will be logged out immediately.
             </p>
           </div>
         )}
@@ -1107,11 +1171,7 @@ function DeleteUserDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={deleteUserPending}
-          >
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteUserPending}>
             {deleteUserPending ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -1150,8 +1210,8 @@ function BulkDeleteDialog({
           <DialogTitle className="text-lg font-semibold">Delete selected users</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             Are you sure you want to delete{" "}
-            <strong className="text-foreground">{selectedIds.length}</strong> users?
-            This action cannot be undone.
+            <strong className="text-foreground">{selectedIds.length}</strong> users? This action
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -1159,8 +1219,8 @@ function BulkDeleteDialog({
           <div className="mx-6 my-2 flex items-start gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
             <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-500" />
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              You are about to delete {selectedIds.length} users. This is a destructive
-              action and cannot be reversed.
+              You are about to delete {selectedIds.length} users. This is a destructive action and
+              cannot be reversed.
             </p>
           </div>
         )}
@@ -1178,7 +1238,6 @@ function BulkDeleteDialog({
   );
 }
 
-
 /* ─── Types ─── */
 
 interface EmailTemplate {
@@ -1188,7 +1247,7 @@ interface EmailTemplate {
   subject: string;
   body: string;
   tags: string[];
-  category: 'welcome' | 'notification' | 'marketing' | 'support' | 'system';
+  category: "welcome" | "notification" | "marketing" | "support" | "system";
   icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -1402,12 +1461,7 @@ The {{workspace_name}} Team`,
 
 /* ─── Main Component ─── */
 
-function EmailDialog({
-  open,
-  onOpenChange,
-  user,
-  onSend,
-}: EmailDialogProps) {
+function EmailDialog({ open, onOpenChange, user, onSend }: EmailDialogProps) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -1416,47 +1470,53 @@ function EmailDialog({
   const [activeTab, setActiveTab] = useState<"compose" | "templates">("compose");
 
   // Template variables
-  const variables = useMemo(() => ({
-    user_name: user?.name || "User",
-    user_email: user?.email || "user@example.com",
-    workspace_name: "Vellum",
-    support_email: "support@vellum.com",
-    activation_link: "https://app.vellum.com/activate/{{token}}",
-    reset_link: "https://app.vellum.com/reset/{{token}}",
-    feedback_link: "https://app.vellum.com/feedback",
-    feature_name: "AI Content Generator",
-    feature_details: "Create content 10x faster with AI assistance",
-    recent_updates: "New AI features, improved performance, and better UX",
-    invoice_number: "INV-2024-001",
-    invoice_amount: "$299.00",
-    due_date: "December 15, 2024",
-    invoice_status: "Due",
-    invoice_link: "https://app.vellum.com/billing/invoices/INV-2024-001",
-    user_role: "Editor",
-    manager_name: "Sarah Chen",
-    team_channels: "#general, #content, #product",
-    suspension_reason: "Violation of content policies",
-  }), [user]);
+  const variables = useMemo(
+    () => ({
+      user_name: user?.name || "User",
+      user_email: user?.email || "user@example.com",
+      workspace_name: "Vellum",
+      support_email: "support@vellum.com",
+      activation_link: "https://app.vellum.com/activate/{{token}}",
+      reset_link: "https://app.vellum.com/reset/{{token}}",
+      feedback_link: "https://app.vellum.com/feedback",
+      feature_name: "AI Content Generator",
+      feature_details: "Create content 10x faster with AI assistance",
+      recent_updates: "New AI features, improved performance, and better UX",
+      invoice_number: "INV-2024-001",
+      invoice_amount: "$299.00",
+      due_date: "December 15, 2024",
+      invoice_status: "Due",
+      invoice_link: "https://app.vellum.com/billing/invoices/INV-2024-001",
+      user_role: "Editor",
+      manager_name: "Sarah Chen",
+      team_channels: "#general, #content, #product",
+      suspension_reason: "Violation of content policies",
+    }),
+    [user],
+  );
 
   // Apply template
-  const applyTemplate = useCallback((templateId: string) => {
-    const template = EMAIL_TEMPLATES.find(t => t.id === templateId);
-    if (!template) return;
+  const applyTemplate = useCallback(
+    (templateId: string) => {
+      const template = EMAIL_TEMPLATES.find((t) => t.id === templateId);
+      if (!template) return;
 
-    let templateSubject = template.subject;
-    let templateBody = template.body;
+      let templateSubject = template.subject;
+      let templateBody = template.body;
 
-    // Replace variables
-    Object.entries(variables).forEach(([key, value]) => {
-      templateSubject = templateSubject.replace(new RegExp(`{{${key}}}`, 'g'), value);
-      templateBody = templateBody.replace(new RegExp(`{{${key}}}`, 'g'), value);
-    });
+      // Replace variables
+      Object.entries(variables).forEach(([key, value]) => {
+        templateSubject = templateSubject.replace(new RegExp(`{{${key}}}`, "g"), value);
+        templateBody = templateBody.replace(new RegExp(`{{${key}}}`, "g"), value);
+      });
 
-    setSubject(templateSubject);
-    setBody(templateBody);
-    setSelectedTemplate(templateId);
-    setActiveTab("compose");
-  }, [variables]);
+      setSubject(templateSubject);
+      setBody(templateBody);
+      setSelectedTemplate(templateId);
+      setActiveTab("compose");
+    },
+    [variables],
+  );
 
   // Reset form
   const resetForm = useCallback(() => {
@@ -1514,19 +1574,22 @@ function EmailDialog({
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const filteredTemplates = useMemo(() => {
     if (filterCategory === "all") return EMAIL_TEMPLATES;
-    return EMAIL_TEMPLATES.filter(t => t.category === filterCategory);
+    return EMAIL_TEMPLATES.filter((t) => t.category === filterCategory);
   }, [filterCategory]);
 
   const categories = useMemo(() => {
-    const cats = new Set(EMAIL_TEMPLATES.map(t => t.category));
+    const cats = new Set(EMAIL_TEMPLATES.map((t) => t.category));
     return ["all", ...Array.from(cats)];
   }, []);
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      if (!open) resetForm();
-      onOpenChange(open);
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) resetForm();
+        onOpenChange(open);
+      }}
+    >
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
         <DialogHeader className="border-b px-6 py-5">
           <div className="flex items-center justify-between">
@@ -1535,9 +1598,7 @@ function EmailDialog({
                 <Mail className="size-5 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-semibold">
-                  Send Email
-                </DialogTitle>
+                <DialogTitle className="text-lg font-semibold">Send Email</DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
                   {user ? `To: ${user.name} <${user.email}>` : "Compose an email"}
                 </DialogDescription>
@@ -1548,7 +1609,6 @@ function EmailDialog({
                 <AtSign className="size-3" />
                 {user?.email || "No recipient"}
               </Badge>
-              
             </div>
           </div>
         </DialogHeader>
@@ -1570,7 +1630,7 @@ function EmailDialog({
                         "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
                         filterCategory === cat
                           ? "bg-accent text-accent-foreground"
-                          : "hover:bg-muted"
+                          : "hover:bg-muted",
                       )}
                     >
                       {cat === "all" ? "All Templates" : getCategoryLabel(cat)}
@@ -1641,7 +1701,11 @@ function EmailDialog({
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col overflow-y-auto">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "compose" | "templates")} className="flex-1 flex flex-col">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "compose" | "templates")}
+              className="flex-1 flex flex-col"
+            >
               <div className="border-b px-6 py-2">
                 <TabsList>
                   <TabsTrigger value="compose" className="gap-2">
@@ -1661,7 +1725,10 @@ function EmailDialog({
               <TabsContent value="compose" className="flex-1 overflow-y-auto p-6 space-y-4">
                 {/* Subject */}
                 <div className="space-y-2">
-                  <Label htmlFor="email-subject" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <Label
+                    htmlFor="email-subject"
+                    className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+                  >
                     <Tag className="size-3.5" />
                     Subject
                   </Label>
@@ -1678,20 +1745,25 @@ function EmailDialog({
                 {/* Body */}
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="email-body" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <Label
+                      htmlFor="email-body"
+                      className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+                    >
                       <AlignLeft className="size-3.5" />
                       Message
                     </Label>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{body.split('\n').filter(l => l.trim()).length} lines</span>
+                      <span>{body.split("\n").filter((l) => l.trim()).length} lines</span>
                       <span>·</span>
                       <span>{body.length} characters</span>
                     </div>
                   </div>
                   {previewMode ? (
                     <div className="min-h-[200px] p-4 rounded-lg border bg-muted/10 prose prose-sm max-w-none">
-                      {body.split('\n').map((line, i) => (
-                        <p key={i} className="leading-relaxed">{line || <br />}</p>
+                      {body.split("\n").map((line, i) => (
+                        <p key={i} className="leading-relaxed">
+                          {line || <br />}
+                        </p>
                       ))}
                     </div>
                   ) : (
@@ -1701,7 +1773,7 @@ function EmailDialog({
                       onChange={(e) => setBody(e.target.value)}
                       placeholder="Write your message here... Use {{variable}} for dynamic content"
                       className="min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{ resize: 'vertical' }}
+                      style={{ resize: "vertical" }}
                     />
                   )}
                 </div>
@@ -1747,14 +1819,16 @@ function EmailDialog({
                             "flex items-start gap-4 p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md",
                             selectedTemplate === template.id
                               ? "border-primary bg-primary/5"
-                              : "hover:border-muted-foreground/30"
+                              : "hover:border-muted-foreground/30",
                           )}
                           onClick={() => applyTemplate(template.id)}
                         >
-                          <div className={cn(
-                            "size-10 rounded-lg flex items-center justify-center shrink-0 border",
-                            getCategoryColor(template.category)
-                          )}>
+                          <div
+                            className={cn(
+                              "size-10 rounded-lg flex items-center justify-center shrink-0 border",
+                              getCategoryColor(template.category),
+                            )}
+                          >
                             <Icon className="size-5" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1814,7 +1888,7 @@ function EmailDialog({
                   {selectedTemplate && (
                     <Badge variant="secondary" className="gap-1">
                       <FileText className="size-3" />
-                      Template: {EMAIL_TEMPLATES.find(t => t.id === selectedTemplate)?.name}
+                      Template: {EMAIL_TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
                     </Badge>
                   )}
                   {previewMode && (
