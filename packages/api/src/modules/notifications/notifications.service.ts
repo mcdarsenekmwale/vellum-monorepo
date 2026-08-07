@@ -27,6 +27,27 @@ export class NotificationsService {
     private config: ConfigService,
   ) {}
 
+  /**
+   * AbortSignal.timeout polyfill for Node 18 / runtime environments where the
+   * API is absent (e.g. Prisma Data Platform older runtimes).
+   * Returns a native AbortSignal.timeout when available; otherwise uses a
+   * setTimeout that aborts an AbortController after `ms`.
+   */
+  private timeoutSignal(ms: number): AbortSignal {
+    try {
+      if (typeof (AbortSignal as any).timeout === 'function') {
+        return (AbortSignal as any).timeout(ms);
+      }
+    } catch {
+      /* ignore and fall through to manual implementation */
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    // Best-effort prevent Node warnings about dangling timers in test envs.
+    try { if (typeof (t as any).unref === 'function') (t as any).unref(); } catch { /* noop */ }
+    return ctrl.signal;
+  }
+
   async getNotifications(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
@@ -133,7 +154,7 @@ export class NotificationsService {
                   : {}),
               },
               body: JSON.stringify(payload),
-              signal: AbortSignal.timeout(3000),
+              signal: this.timeoutSignal(3000),
             });
           } catch (err) {
             console.warn(`[notifications] EMAIL webhook dispatch failed (${data.kind}):`, (err as Error).message);

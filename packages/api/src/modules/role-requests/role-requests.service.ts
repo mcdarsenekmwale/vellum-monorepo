@@ -4,6 +4,7 @@ import { CacheService } from '../../shared/cache/cache.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   NotificationKind,
+  Role,
   RolePermissionRequestStatus,
   RolePermissionRequestType,
 } from '@prisma/client';
@@ -56,16 +57,54 @@ export class RoleRequestsService {
     private notifications: NotificationsService,
   ) {}
 
+  /**
+   * Validate that a role key is assignable — i.e. either a legacy `Role` enum
+   * value OR an active, non-deleted `RbacRole.key`. Prevents users from
+   * submitting requests for non-existent roles.
+   */
+  private async assertValidRoleKey(requestedRoleKey: string): Promise<void> {
+    if (!requestedRoleKey || typeof requestedRoleKey !== 'string') {
+      throw new BadRequestException('Requested role is required.');
+    }
+    // Fast path: try exact legacy enum match (case insensitive compare via uppercase).
+    const legacyRoles = new Set<string>(Object.values(Role).map((r) => String(r)));
+    if (legacyRoles.has(requestedRoleKey)) return;
+
+    // RBAC match. Also tolerate case-insensitive RbacRole.key lookups; if user
+    // submits `SUPPORT_ADMIN` instead of `support_admin` accept the
+    // canonicalized key and rewrite to the exact stored key. We treat fuzzy
+    // matches the same way AdminService.resolveRole does.
+    const allActive = await this.prisma.rbacRole.findMany({
+      where: { deletedAt: null, isActive: true },
+      select: { key: true, name: true },
+    });
+    const lowerToExact = new Map<string, string>();
+    for (const r of allActive) {
+      lowerToExact.set(r.key.toLowerCase(), r.key);
+      if (r.name) lowerToExact.set(r.name.toLowerCase(), r.key);
+    }
+    if (!lowerToExact.has(requestedRoleKey.toLowerCase())) {
+      const available = Array.from(legacyRoles)
+        .concat(allActive.map((r) => r.key))
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .sort();
+      throw new BadRequestException(
+        `Requested role "${requestedRoleKey}" is not assignable. Valid role keys: ${available.join(', ')}.`,
+      );
+    }
+  }
+
   // ---------- §2 User-initiated requests ----------
 
   async createRequest(args: CreateRequestArgs) {
     const { requesterId, requestedRoleKey, type, justification, startsAt, expiresAt } = args;
 
+    // Role-key validation first — fails fast with valid list if bad.
+    // (This also throws BadRequest for empty-string/null/missing keys.)
+    await this.assertValidRoleKey(requestedRoleKey);
+
     if (!justification || justification.trim().length < 5) {
       throw new BadRequestException('Justification must be at least 5 characters.');
-    }
-    if (!requestedRoleKey || typeof requestedRoleKey !== 'string') {
-      throw new BadRequestException('Requested role is required.');
     }
 
     if (type === RolePermissionRequestType.TEMPORARY) {
@@ -135,24 +174,52 @@ export class RoleRequestsService {
       });
 
       // §4b Notify all admin-level users "new request pending"
-      const admins = await this.prisma.user.findMany({
-        where: {
-          role: { in: ['ADMIN', 'PLATFORM_ADMIN', 'SUPER_ADMIN'] as any },
-          isActive: true,
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      for (const a of admins) {
-        if (a.id === requesterId) continue; // don't self-notify
-        await this.notifications.createNotification({
-          userId: a.id,
-          actorId: requesterId,
-          kind: NotificationKind.ROLE_REQUEST_SUBMITTED,
-          body: `A new role request for ${requestedRoleKey} is awaiting your review.`,
-          metadata: { roleRequestId: request.id, requestedRoleKey, type },
-        });
-      }
+      //
+      // Admin-level users are detected two ways:
+      //  (a) legacy `user.role` column — ADMIN | PLATFORM_ADMIN | SUPER_ADMIN
+      //  (b) RBAC UserRoleAssignment rows whose RbacRole.key is an admin-tier key
+      //      (moderator | support_admin | admin | platform_admin | super_admin).
+      // This ensures RBAC-created subadmins always get notified even if their
+      // legacy user.role column remains USER.
+      const legacyAdminRoles = ['ADMIN', 'PLATFORM_ADMIN', 'SUPER_ADMIN'];
+      const adminTierRbacKeys = new Set([
+        'moderator', 'support_admin', 'admin', 'platform_admin', 'super_admin',
+      ]);
+
+      const [legacyAdmins, rbacAdmins] = await Promise.all([
+        tx.user.findMany({
+          where: {
+            role: { in: legacyAdminRoles as any[] },
+            isActive: true,
+            deletedAt: null,
+          },
+          select: { id: true },
+        }),
+        tx.userRoleAssignment.findMany({
+          where: {
+            role: { key: { in: Array.from(adminTierRbacKeys) }, deletedAt: null, isActive: true },
+            user: { isActive: true, deletedAt: null },
+          },
+          select: { userId: true },
+        }),
+      ]);
+
+      const adminIds = new Set<string>();
+      for (const u of legacyAdmins) adminIds.add(u.id);
+      for (const a of rbacAdmins) adminIds.add(a.userId);
+      adminIds.delete(requesterId); // don't self-notify
+
+      await Promise.all(
+        Array.from(adminIds).map((id) =>
+          this.notifications.createNotification({
+            userId: id,
+            actorId: requesterId,
+            kind: NotificationKind.ROLE_REQUEST_SUBMITTED,
+            body: `A new role request for ${requestedRoleKey} is awaiting your review.`,
+            metadata: { roleRequestId: request.id, requestedRoleKey, type },
+          }),
+        ),
+      );
 
       return request;
     });

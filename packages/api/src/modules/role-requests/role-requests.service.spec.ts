@@ -62,11 +62,17 @@ class MockPrisma {
 
   rbacRole = {
     findFirst: ({ where }: any) => this.rbacRoles.find((r) => r.key === where?.key && r.deletedAt === where?.deletedAt) ?? null,
+    findMany: () => [...this.rbacRoles],
   };
 
   userRoleAssignment = {
     delete: async () => {},
     deleteMany: async () => {},
+    findMany: async ({ where }: any) => {
+      // Minimal stub: we don't ship any RBAC-assigned admins in this fixture,
+      // so return empty. Tests that need a richer fixture can extend later.
+      return [];
+    },
   };
 
   get rolePermissionRequest() {
