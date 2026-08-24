@@ -31,6 +31,16 @@ import {
   createUser,
   resetUserPassword,
   createWebhook,
+  testWebhook,
+  getWebhookById,
+  getWebhookLogs,
+  getWebhookStats,
+  getWebhookTemplates,
+  rotateWebhookSecret,
+  bulkUpdateWebhooks,
+  triggerWebhookEvent,
+  exportWebhookLogs,
+  applyWebhookTemplate,
   deleteAdvertisement,
   deleteApiKey,
   deleteAccessRequest,
@@ -272,6 +282,17 @@ import {
   type UserSettings,
   type ValidLegacyRole,
   type WebhookConfig,
+  type WebhookType,
+  type WebhookFormat,
+  type TeamsCardType,
+  type WebhookLog,
+  type WebhookStats,
+  type WebhookTemplate,
+  type DailyPoint,
+  type TestResult,
+  type WebhookLogsFilter,
+  type WebhookBulkUpdate,
+  type RotateSecretResult,
   SearchResourcesPayload,
   getDeletedSupportTickets,
   permanentlyDeleteSupportTicket,
@@ -1168,12 +1189,24 @@ export function useWebhooks() {
   });
 }
 
+export function useWebhook(id: string | undefined | null) {
+  return useQuery({
+    queryKey: ["webhooks", id],
+    queryFn: () => getWebhookById(id!),
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    enabled: !!id,
+  });
+}
+
 export function useCreateWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; url: string; events: string[]; isActive?: boolean }) =>
-      createWebhook(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["webhooks"] }),
+    mutationFn: (data: Parameters<typeof createWebhook>[0]) => createWebhook(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+      qc.invalidateQueries({ queryKey: ["webhook-stats"] });
+    },
   });
 }
 
@@ -1182,7 +1215,11 @@ export function useUpdateWebhook() {
   return useMutation({
     mutationFn: ({ id, ...data }: { id: string } & Partial<WebhookConfig>) =>
       updateWebhook(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["webhooks"] }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+      qc.invalidateQueries({ queryKey: ["webhooks", vars.id] });
+      qc.invalidateQueries({ queryKey: ["webhook-stats"] });
+    },
   });
 }
 
@@ -1190,7 +1227,101 @@ export function useDeleteWebhook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteWebhook(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["webhooks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+      qc.invalidateQueries({ queryKey: ["webhook-stats"] });
+    },
+  });
+}
+
+export function useTestWebhook() {
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof testWebhook>[1] }) =>
+      testWebhook(id, data),
+  });
+}
+
+export function useWebhookLogs(id: string | undefined | null, filter?: WebhookLogsFilter) {
+  const qc = useQueryClient();
+  const filterKey = filter ? JSON.stringify(filter) : "default";
+  return useQuery({
+    queryKey: ["webhook-logs", id, filterKey],
+    queryFn: () => getWebhookLogs(id!, filter),
+    staleTime: 30_000,
+    gcTime: CACHE_TIME,
+    enabled: !!id,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useWebhookStats(id?: string | null) {
+  return useQuery({
+    queryKey: ["webhook-stats", id ?? "overview"],
+    queryFn: () => getWebhookStats(id ?? undefined),
+    staleTime: 60_000,
+    gcTime: CACHE_TIME,
+  });
+}
+
+export function useWebhookTemplates() {
+  return useQuery({
+    queryKey: ["webhook-templates"],
+    queryFn: getWebhookTemplates,
+    staleTime: 5 * 60_000,
+    gcTime: CACHE_TIME,
+  });
+}
+
+export function useRotateWebhookSecret() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rotateWebhookSecret(id),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["webhooks", id] });
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+    },
+  });
+}
+
+export function useBulkUpdateWebhooks() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: WebhookBulkUpdate) => bulkUpdateWebhooks(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+      qc.invalidateQueries({ queryKey: ["webhook-stats"] });
+    },
+  });
+}
+
+export function useTriggerWebhookEvent() {
+  return useMutation({
+    mutationFn: ({ event, payload }: { event: string; payload: unknown }) =>
+      triggerWebhookEvent(event, payload),
+  });
+}
+
+export function useExportWebhookLogs() {
+  return useMutation({
+    mutationFn: ({ id, filter }: { id: string; filter?: WebhookLogsFilter }) =>
+      exportWebhookLogs(id, filter),
+  });
+}
+
+export function useApplyWebhookTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      templateId,
+      overrides,
+    }: {
+      templateId: string;
+      overrides?: Partial<WebhookConfig>;
+    }) => applyWebhookTemplate(templateId, overrides),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["webhooks"] });
+      qc.invalidateQueries({ queryKey: ["webhook-stats"] });
+    },
   });
 }
 
@@ -1428,8 +1559,6 @@ export function usePermanentlyDeleteSupportTicket() {
   });
 }
 
-
-
 // ─── Support Tickets ────────────────────────────────────────────────────────
 export function useSupportTicket(id: string | undefined) {
   return useQuery({
@@ -1513,8 +1642,7 @@ export function useRequestTicketAccess() {
       type?: TicketAccessRequestType;
       startsAt?: string;
       expiresAt?: string;
-    }) =>
-      requestTicketAccess(ticketId, { justification, type, startsAt, expiresAt }),
+    }) => requestTicketAccess(ticketId, { justification, type, startsAt, expiresAt }),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["ticket-access-check", variables.ticketId] });
       qc.invalidateQueries({ queryKey: ["ticket-access-requests"] });
@@ -1560,8 +1688,13 @@ export function useTicketAccessRequestsForTicket(
 export function useApproveTicketAccessRequest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ requestId, adminJustification }: { requestId: string; adminJustification: string }) =>
-      approveTicketAccessRequest(requestId, adminJustification),
+    mutationFn: ({
+      requestId,
+      adminJustification,
+    }: {
+      requestId: string;
+      adminJustification: string;
+    }) => approveTicketAccessRequest(requestId, adminJustification),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ticket-access-requests"] });
       qc.invalidateQueries({ queryKey: ["ticket-access-requests-for-ticket"] });
@@ -1576,8 +1709,13 @@ export function useApproveTicketAccessRequest() {
 export function useRejectTicketAccessRequest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ requestId, adminJustification }: { requestId: string; adminJustification: string }) =>
-      rejectTicketAccessRequest(requestId, adminJustification),
+    mutationFn: ({
+      requestId,
+      adminJustification,
+    }: {
+      requestId: string;
+      adminJustification: string;
+    }) => rejectTicketAccessRequest(requestId, adminJustification),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ticket-access-requests"] });
       qc.invalidateQueries({ queryKey: ["ticket-access-requests-for-ticket"] });
@@ -1618,7 +1756,8 @@ export function useCreateResourceAccessRequest() {
 export function useSearchResources() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ query, payload }: { query: string; payload?: SearchResourcesPayload }) => searchResources(query, payload),
+    mutationFn: ({ query, payload }: { query: string; payload?: SearchResourcesPayload }) =>
+      searchResources(query, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-access-requests"] });
     },
@@ -1901,7 +2040,8 @@ export function useSupportAgents(params?: {
   teamId?: string;
   page?: number;
   limit?: number;
-  sortBy?: "name" | "activeTickets" | "maxTickets" | "createdAt" | "ticketsResolved" | "escalations";
+  sortBy?:
+    "name" | "activeTickets" | "maxTickets" | "createdAt" | "ticketsResolved" | "escalations";
   sortDir?: "asc" | "desc";
 }) {
   return useQuery({
@@ -1967,10 +2107,8 @@ export function useCreateSupportAgent() {
 export function useUpdateSupportAgent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      userId: string;
-      data: Parameters<typeof updateSupportAgent>[1];
-    }) => updateSupportAgent(args.userId, args.data),
+    mutationFn: (args: { userId: string; data: Parameters<typeof updateSupportAgent>[1] }) =>
+      updateSupportAgent(args.userId, args.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["support-agents"] });
       qc.invalidateQueries({ queryKey: ["agent-detail", vars.userId] });
@@ -2005,7 +2143,8 @@ export function useToggleAgentStatus() {
 export function useUpdateUserPresence() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { userId: string; status: string }) => updateUserPresence(args.userId, args.status),
+    mutationFn: (args: { userId: string; status: string }) =>
+      updateUserPresence(args.userId, args.status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["support-agents"] });
       qc.invalidateQueries({ queryKey: ["agent-stats"] });
@@ -2075,10 +2214,8 @@ export function useCreateSupportDepartment() {
 export function useUpdateSupportDepartment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      id: string;
-      data: Parameters<typeof updateSupportDepartment>[1];
-    }) => updateSupportDepartment(args.id, args.data),
+    mutationFn: (args: { id: string; data: Parameters<typeof updateSupportDepartment>[1] }) =>
+      updateSupportDepartment(args.id, args.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["support-departments"] });
       qc.invalidateQueries({ queryKey: ["support-department", vars.id] });
@@ -2148,10 +2285,8 @@ export function useCreateSupportTeam() {
 export function useUpdateSupportTeam() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      id: string;
-      data: Parameters<typeof updateSupportTeam>[1];
-    }) => updateSupportTeam(args.id, args.data),
+    mutationFn: (args: { id: string; data: Parameters<typeof updateSupportTeam>[1] }) =>
+      updateSupportTeam(args.id, args.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["support-teams"] });
       qc.invalidateQueries({ queryKey: ["support-team", vars.id] });
@@ -2184,10 +2319,8 @@ export function useRestoreSupportTeam() {
 export function useRouteTicket() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      ticketId: string;
-      routing: Parameters<typeof routeTicket>[1];
-    }) => routeTicket(args.ticketId, args.routing),
+    mutationFn: (args: { ticketId: string; routing: Parameters<typeof routeTicket>[1] }) =>
+      routeTicket(args.ticketId, args.routing),
     onSuccess: (_data, args) => {
       qc.invalidateQueries({ queryKey: ["support-ticket", args.ticketId] });
       qc.invalidateQueries({ queryKey: ["support-tickets"] });
@@ -2200,8 +2333,11 @@ export function useRouteTicket() {
 export function useAddAgentToTeam() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { agentId: string; teamId: string; data?: { isPrimary?: boolean; assignedBy?: string } }) =>
-      addAgentToTeam(args.agentId, args.teamId, args.data),
+    mutationFn: (args: {
+      agentId: string;
+      teamId: string;
+      data?: { isPrimary?: boolean; assignedBy?: string };
+    }) => addAgentToTeam(args.agentId, args.teamId, args.data),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["support-team", vars.teamId] });
       qc.invalidateQueries({ queryKey: ["support-teams"] });
@@ -2279,8 +2415,7 @@ export function useAssignTeamLead() {
 export function useRemoveTeamLead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { teamId: string }) =>
-      updateSupportTeam(args.teamId, { leadId: null }),
+    mutationFn: (args: { teamId: string }) => updateSupportTeam(args.teamId, { leadId: null }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["support-teams"] });
       qc.invalidateQueries({ queryKey: ["support-team", vars.teamId] });
@@ -2292,9 +2427,7 @@ export function useBulkAssignTeamLeads() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (assignments: Array<{ teamId: string; userId: string }>) => {
-      return Promise.all(
-        assignments.map((a) => updateSupportTeam(a.teamId, { leadId: a.userId })),
-      );
+      return Promise.all(assignments.map((a) => updateSupportTeam(a.teamId, { leadId: a.userId })));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["support-teams"] });
@@ -2306,9 +2439,7 @@ export function useBulkRemoveTeamLeads() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (teamIds: string[]) => {
-      return Promise.all(
-        teamIds.map((id) => updateSupportTeam(id, { leadId: null })),
-      );
+      return Promise.all(teamIds.map((id) => updateSupportTeam(id, { leadId: null })));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["support-teams"] });
@@ -2648,7 +2779,9 @@ export function useSupportTicketVolumeForecast(params?: {
 }) {
   return useQuery({
     queryKey: [
-      "support", "forecast", "volume",
+      "support",
+      "forecast",
+      "volume",
       params?.departmentId ?? "all",
       params?.teamId ?? "all",
       params?.days ?? 30,
@@ -2667,7 +2800,9 @@ export function useSupportStaffingRecommendation(params?: {
 }) {
   return useQuery({
     queryKey: [
-      "support", "forecast", "staffing",
+      "support",
+      "forecast",
+      "staffing",
       params?.departmentId ?? "all",
       params?.teamId ?? "all",
       params?.ticketsPerAgentPerDay ?? 12,
@@ -2728,9 +2863,8 @@ export function useSupportDashboardStats(_params: SupportDashboardStatsParams = 
   const dashboard = useSupportDashboard();
   const agents = useSupportAgents({ limit: 1 });
 
-  const data: SupportDashboardStatsData | undefined =
-    dashboard.data
-      ? {
+  const data: SupportDashboardStatsData | undefined = dashboard.data
+    ? {
         totalTickets:
           (dashboard.data.summary.openTickets ?? 0) +
           (dashboard.data.summary.inProgress ?? 0) +
@@ -2750,7 +2884,7 @@ export function useSupportDashboardStats(_params: SupportDashboardStatsParams = 
         onlineAgents: dashboard.data.summary.onlineAgents ?? 0,
         newLast24h: dashboard.data.summary.newLast24h ?? 0,
       }
-      : undefined;
+    : undefined;
 
   return {
     data,
@@ -2920,26 +3054,24 @@ export function useSupportSLAAdherence(params?: { windowDays?: number }) {
       totalWeightedTickets += weight;
       responsePct =
         (responsePct ?? 0) +
-        (c.metrics.slaResponseAdherencePct * weight) /
-        Math.max(totalWeightedTickets, 1);
+        (c.metrics.slaResponseAdherencePct * weight) / Math.max(totalWeightedTickets, 1);
     }
     if (c.metrics.slaResolutionAdherencePct != null) {
       resolutionPct =
         (resolutionPct ?? 0) +
-        (c.metrics.slaResolutionAdherencePct * weight) /
-        Math.max(totalWeightedTickets, 1);
+        (c.metrics.slaResolutionAdherencePct * weight) / Math.max(totalWeightedTickets, 1);
     }
   }
 
   const data: SlaAdherenceData | undefined =
     cards.length > 0
       ? {
-        responseAdherencePct: responsePct,
-        resolutionAdherencePct: resolutionPct,
-        totalEvaluated: totalTickets,
-        breached: totalTickets - Math.round(((resolutionPct ?? 0) / 100) * totalTickets),
-        met: Math.round(((resolutionPct ?? 0) / 100) * totalTickets),
-      }
+          responseAdherencePct: responsePct,
+          resolutionAdherencePct: resolutionPct,
+          totalEvaluated: totalTickets,
+          breached: totalTickets - Math.round(((resolutionPct ?? 0) / 100) * totalTickets),
+          met: Math.round(((resolutionPct ?? 0) / 100) * totalTickets),
+        }
       : undefined;
 
   return {
@@ -2979,9 +3111,7 @@ export function useSupportAgentActivity(params?: { limit?: number }) {
       ticketsAssigned: a.ticketsAssigned ?? a.activeTickets ?? 0,
       escalations: a.escalations ?? 0,
       utilizationPct:
-        a.maxTickets > 0
-          ? Math.round(((a.activeTickets ?? 0) / a.maxTickets) * 100)
-          : null,
+        a.maxTickets > 0 ? Math.round(((a.activeTickets ?? 0) / a.maxTickets) * 100) : null,
     })) ?? [];
 
   return {
@@ -3040,8 +3170,7 @@ export function useRecentSupportActivity(params?: { limit?: number }) {
     const { action, severity } = actionForStatus(t.status);
     return {
       id: `act-${t.id}`,
-      agentName:
-        t.assignee?.name ?? t.assignee?.handle ?? t.assignee?.email ?? "Unassigned",
+      agentName: t.assignee?.name ?? t.assignee?.handle ?? t.assignee?.email ?? "Unassigned",
       agentAvatar: t.assignee?.avatar ?? null,
       action,
       ticketNumber: t.ticketNumber,
@@ -3076,10 +3205,11 @@ export function useSupportEscalationTrends(params?: { windowDays?: number }) {
   // across the window so charts have meaningful data before a dedicated
   // timeseries endpoint exists. Each day gets a trend component so the
   // chart shows a real signal shaped by the composite score.
-  const avgTicketsPerDay = cards.length > 0
-    ? cards.reduce((s, c) => s + (c.metrics.totalTickets ?? 0), 0) /
-    (windowDays * Math.max(cards.length, 1))
-    : 0;
+  const avgTicketsPerDay =
+    cards.length > 0
+      ? cards.reduce((s, c) => s + (c.metrics.totalTickets ?? 0), 0) /
+        (windowDays * Math.max(cards.length, 1))
+      : 0;
 
   const today = new Date();
   const points: EscalationTrendPoint[] = [];
@@ -3092,14 +3222,14 @@ export function useSupportEscalationTrends(params?: { windowDays?: number }) {
     const escalationRate =
       cards.length > 0 && tickets > 0
         ? Math.min(
-          100,
-          Math.max(
-            0,
-            100 -
-            (cards.reduce((s, c) => s + c.compositeScore, 0) / cards.length) *
-            (0.4 + 0.1 * Math.cos(i)),
-          ),
-        )
+            100,
+            Math.max(
+              0,
+              100 -
+                (cards.reduce((s, c) => s + c.compositeScore, 0) / cards.length) *
+                  (0.4 + 0.1 * Math.cos(i)),
+            ),
+          )
         : 0;
     const escalations = Math.round((tickets * escalationRate) / 100);
     points.push({ date: isoDate, tickets, escalations, escalationRate });

@@ -51,6 +51,7 @@ import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index
 import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
+import { Route as AppWebhooksIdRouteImport } from './routes/_app.webhooks_.$id'
 import { Route as AppUsersDeletedRouteImport } from './routes/_app.users.deleted'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
 import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
@@ -282,6 +283,11 @@ const AppArticlesIndexRoute = AppArticlesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppArticlesRoute,
 } as any)
+const AppWebhooksIdRoute = AppWebhooksIdRouteImport.update({
+  id: '/webhooks_/$id',
+  path: '/webhooks/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppUsersDeletedRoute = AppUsersDeletedRouteImport.update({
   id: '/deleted',
   path: '/deleted',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/users/$userId': typeof AppUsersUserIdRoute
   '/users/deleted': typeof AppUsersDeletedRoute
+  '/webhooks/$id': typeof AppWebhooksIdRoute
   '/articles/': typeof AppArticlesIndexRoute
   '/audit/': typeof AppAuditIndexRoute
   '/moderation/': typeof AppModerationIndexRoute
@@ -501,6 +508,7 @@ export interface FileRoutesByTo {
   '/support/reports': typeof AppSupportReportsRoute
   '/users/$userId': typeof AppUsersUserIdRoute
   '/users/deleted': typeof AppUsersDeletedRoute
+  '/webhooks/$id': typeof AppWebhooksIdRoute
   '/articles': typeof AppArticlesIndexRoute
   '/audit': typeof AppAuditIndexRoute
   '/moderation': typeof AppModerationIndexRoute
@@ -567,6 +575,7 @@ export interface FileRoutesById {
   '/_app/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/_app/users/deleted': typeof AppUsersDeletedRoute
+  '/_app/webhooks_/$id': typeof AppWebhooksIdRoute
   '/_app/articles/': typeof AppArticlesIndexRoute
   '/_app/audit/': typeof AppAuditIndexRoute
   '/_app/moderation/': typeof AppModerationIndexRoute
@@ -633,6 +642,7 @@ export interface FileRouteTypes {
     | '/support/tickets'
     | '/users/$userId'
     | '/users/deleted'
+    | '/webhooks/$id'
     | '/articles/'
     | '/audit/'
     | '/moderation/'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/support/reports'
     | '/users/$userId'
     | '/users/deleted'
+    | '/webhooks/$id'
     | '/articles'
     | '/audit'
     | '/moderation'
@@ -757,6 +768,7 @@ export interface FileRouteTypes {
     | '/_app/support/tickets'
     | '/_app/users/$userId'
     | '/_app/users/deleted'
+    | '/_app/webhooks_/$id'
     | '/_app/articles/'
     | '/_app/audit/'
     | '/_app/moderation/'
@@ -1075,6 +1087,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArticlesIndexRouteImport
       parentRoute: typeof AppArticlesRoute
     }
+    '/_app/webhooks_/$id': {
+      id: '/_app/webhooks_/$id'
+      path: '/webhooks/$id'
+      fullPath: '/webhooks/$id'
+      preLoaderRoute: typeof AppWebhooksIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/users/deleted': {
       id: '/_app/users/deleted'
       path: '/deleted'
@@ -1352,6 +1371,7 @@ interface AppRouteChildren {
   AppSupportKbRoute: typeof AppSupportKbRoute
   AppSupportReportsRoute: typeof AppSupportReportsRoute
   AppSupportTicketsRoute: typeof AppSupportTicketsRouteWithChildren
+  AppWebhooksIdRoute: typeof AppWebhooksIdRoute
   AppSupportIndexRoute: typeof AppSupportIndexRoute
   AppSupportAnalyticsIdRoute: typeof AppSupportAnalyticsIdRoute
   AppSupportDepartmentsIdRoute: typeof AppSupportDepartmentsIdRoute
@@ -1401,6 +1421,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSupportKbRoute: AppSupportKbRoute,
   AppSupportReportsRoute: AppSupportReportsRoute,
   AppSupportTicketsRoute: AppSupportTicketsRouteWithChildren,
+  AppWebhooksIdRoute: AppWebhooksIdRoute,
   AppSupportIndexRoute: AppSupportIndexRoute,
   AppSupportAnalyticsIdRoute: AppSupportAnalyticsIdRoute,
   AppSupportDepartmentsIdRoute: AppSupportDepartmentsIdRoute,

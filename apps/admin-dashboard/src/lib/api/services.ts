@@ -309,16 +309,36 @@ export interface BackgroundJob {
 
 // ─── Webhooks ───────────────────────────────────────────────────────────────
 
+export type WebhookType = "INCOMING" | "OUTGOING";
+export type WebhookFormat = "JSON" | "FORM" | "XML" | "PLAIN";
+export type TeamsCardType = "MESSAGE" | "ADAPTIVE";
+export type TestStatus = "idle" | "loading" | "success" | "error";
+export type PayloadFormat = "json" | "form" | "xml" | "plain";
+
 export interface WebhookConfig {
   id: string;
   name: string;
+  type: WebhookType;
   url: string;
-  secret: string;
+  secret?: string | null;
+  format?: WebhookFormat;
   events: string[];
+  headers?: Record<string, string> | null;
   isActive: boolean;
+  lastTriggeredAt?: string | null;
+  failureCount?: number;
+  retryMaxAttempts?: number;
+  retryBackoffDelay?: number;
+  allowedIps?: string[];
+  requiresAuth?: boolean;
+  teamsChannelId?: string | null;
+  teamsTeamId?: string | null;
+  teamsCardType?: TeamsCardType | null;
+  teamsCardTemplate?: Record<string, unknown> | null;
+  createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
-  webhookLogs?: WebhookLog[];
+  logs?: WebhookLog[];
 }
 
 export interface WebhookLog {
@@ -329,7 +349,83 @@ export interface WebhookLog {
   statusCode: number | null;
   response: string | null;
   error: string | null;
+  durationMs?: number | null;
+  attempt?: number;
   createdAt: string;
+}
+
+export interface WebhookStats {
+  total: number;
+  totalIncoming: number;
+  totalOutgoing: number;
+  active: number;
+  totalTriggers: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  averageDurationMs: number;
+  last7Days: DailyPoint[];
+  last30Days: DailyPoint[];
+  byEvent: Array<{ event: string; count: number; success: number; failure: number }>;
+}
+
+export interface DailyPoint {
+  date: string;
+  triggers: number;
+  success: number;
+  failure: number;
+}
+
+export interface WebhookTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: WebhookType;
+  events: string[];
+  format?: WebhookFormat;
+  headers?: Record<string, string>;
+  teamsCardType?: TeamsCardType;
+  teamsCardTemplate?: Record<string, unknown>;
+  icon?: string;
+  category: string;
+}
+
+export interface TestResult {
+  status: TestStatus;
+  statusCode?: number;
+  responseTime?: number;
+  responseBody?: string;
+  responseHeaders?: Record<string, string>;
+  errorMessage?: string;
+  timestamp: string;
+  logs?: LogEntry[];
+}
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  type: "request" | "response" | "error";
+  data: unknown;
+  statusCode?: number;
+}
+
+export interface WebhookLogsFilter {
+  event?: string;
+  status?: "success" | "failure" | "all";
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface WebhookBulkUpdate {
+  ids: string[];
+  action: "enable" | "disable" | "delete";
+}
+
+export interface RotateSecretResult {
+  id: string;
+  secret: string;
 }
 
 // ─── API Keys ───────────────────────────────────────────────────────────────
@@ -585,8 +681,6 @@ export async function updateUser(
 export async function resetUserPassword(id: string, data: { password: string }): Promise<User> {
   return api(`/admin/users/${id}/reset-password`, { method: "POST", body: JSON.stringify(data) });
 }
-
-
 
 export async function deleteUser(id: string): Promise<void> {
   return api(`/admin/users/${id}`, { method: "DELETE" });
@@ -931,22 +1025,23 @@ export interface SupportTicket {
   reopenedAt?: string | null;
   createdAt: string;
   updatedAt: string;
-  user?: { 
-    id: string; 
-    email: string; 
-    name: string; 
-    handle: string; 
-    avatar: string | null ;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    handle: string;
+    avatar: string | null;
     plan?: string;
     role?: string;
     createdAt?: any;
   };
-  assignee?: { 
-    id: string; 
-    email: string; 
-    name: string; 
-    handle: string; 
-    avatar: string | null };
+  assignee?: {
+    id: string;
+    email: string;
+    name: string;
+    handle: string;
+    avatar: string | null;
+  };
   department?: { id: string; name: string; key: string };
   team?: { id: string; name: string; departmentId?: string };
   category?: { id: string; name: string; key: string };
@@ -1269,7 +1364,14 @@ export interface SupportAgent {
   vacationUntil?: string | null;
   createdAt: string;
   updatedAt: string;
-  user: { id: string; name: string; email: string; avatar: string | null; handle?: string; role?: string };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+    handle?: string;
+    role?: string;
+  };
   department?: { id: string; name: string } | null;
   team?: { id: string; name: string } | null;
   // Enriched fields from listAgents
@@ -1337,7 +1439,8 @@ export async function getSupportAgents(params?: {
   search?: string;
   page?: number;
   limit?: number;
-  sortBy?: "name" | "activeTickets" | "maxTickets" | "createdAt" | "ticketsResolved" | "escalations";
+  sortBy?:
+    "name" | "activeTickets" | "maxTickets" | "createdAt" | "ticketsResolved" | "escalations";
   sortDir?: "asc" | "desc";
 }): Promise<Paginated<SupportAgent>> {
   return api("/support/agents", { query: params });
@@ -1383,7 +1486,10 @@ export async function toggleAgentStatus(userId: string): Promise<SupportAgent> {
 }
 
 export async function updateUserPresence(userId: string, status: string): Promise<SupportAgent> {
-  return api(`/support/agents/${userId}/presence`, { method: "PATCH", body: JSON.stringify({ status }) });
+  return api(`/support/agents/${userId}/presence`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 }
 
 // ─── Get agent's current presence ───
@@ -1460,8 +1566,8 @@ export async function getSupportTicketsV2(params?: {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
-  orderBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status';
-  orderDir?: 'asc' | 'desc';
+  orderBy?: "createdAt" | "updatedAt" | "priority" | "status";
+  orderDir?: "asc" | "desc";
 }): Promise<Paginated<SupportTicket>> {
   return api("/support/tickets", { query: params as Record<string, any> });
 }
@@ -1490,11 +1596,11 @@ export async function getSupportTicketV2(id: string): Promise<SupportTicket> {
 
 export interface TicketAccessCheck {
   hasAccess: boolean;
-  reason: 'admin' | 'owner' | 'assignee' | 'team' | 'grant' | 'none';
+  reason: "admin" | "owner" | "assignee" | "team" | "grant" | "none";
 }
 
-export type TicketAccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-export type TicketAccessRequestType = 'PERMANENT' | 'TEMPORARY';
+export type TicketAccessRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+export type TicketAccessRequestType = "PERMANENT" | "TEMPORARY";
 
 export interface TicketAccessRequest {
   id: string;
@@ -1540,8 +1646,8 @@ export async function listTicketAccessRequests(params?: {
   ticketId?: string;
   page?: number;
   limit?: number;
-  orderBy?: 'createdAt' | 'reviewedAt' | 'expiresAt';
-  orderDir?: 'asc' | 'desc';
+  orderBy?: "createdAt" | "reviewedAt" | "expiresAt";
+  orderDir?: "asc" | "desc";
 }): Promise<Paginated<TicketAccessRequest>> {
   return api("/support/tickets/access-requests", { query: params as Record<string, any> });
 }
@@ -1827,11 +1933,27 @@ export async function getWebhooks(): Promise<WebhookConfig[]> {
   return api("/admin/webhooks");
 }
 
+export async function getWebhookById(id: string): Promise<WebhookConfig> {
+  return api(`/admin/webhooks/${id}`);
+}
+
 export async function createWebhook(data: {
   name: string;
   url: string;
   events: string[];
   isActive?: boolean;
+  type?: WebhookType;
+  format?: WebhookFormat;
+  secret?: string;
+  headers?: Record<string, string>;
+  retryMaxAttempts?: number;
+  retryBackoffDelay?: number;
+  allowedIps?: string[];
+  requiresAuth?: boolean;
+  teamsChannelId?: string;
+  teamsTeamId?: string;
+  teamsCardType?: TeamsCardType;
+  teamsCardTemplate?: Record<string, unknown>;
 }): Promise<WebhookConfig> {
   return api("/admin/webhooks", { method: "POST", body: JSON.stringify(data) });
 }
@@ -1845,6 +1967,91 @@ export async function updateWebhook(
 
 export async function deleteWebhook(id: string): Promise<void> {
   return api(`/admin/webhooks/${id}`, { method: "DELETE" });
+}
+
+export async function testWebhook(
+  id: string,
+  data: {
+    event?: string;
+    payload?: unknown;
+    overrideUrl?: string;
+    headers?: Record<string, string>;
+  },
+): Promise<TestResult> {
+  return api(`/admin/webhooks/${id}/test`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getWebhookLogs(
+  id: string,
+  filter?: WebhookLogsFilter,
+): Promise<{ items: WebhookLog[]; total: number }> {
+  const params = new URLSearchParams();
+  if (filter?.event) params.set("event", filter.event);
+  if (filter?.status) params.set("status", filter.status);
+  if (filter?.from) params.set("from", filter.from);
+  if (filter?.to) params.set("to", filter.to);
+  if (filter?.limit) params.set("limit", String(filter.limit));
+  if (filter?.offset) params.set("offset", String(filter.offset));
+  const qs = params.toString();
+  return api(`/admin/webhooks/${id}/logs${qs ? `?${qs}` : ""}`);
+}
+
+export async function getWebhookStats(id?: string): Promise<WebhookStats> {
+  const path = id ? `/admin/webhooks/${id}/stats` : "/admin/webhooks/stats/overview";
+  return api(path);
+}
+
+export async function getWebhookTemplates(): Promise<WebhookTemplate[]> {
+  return api("/admin/webhooks/templates");
+}
+
+export async function rotateWebhookSecret(id: string): Promise<RotateSecretResult> {
+  return api(`/admin/webhooks/${id}/rotate-secret`, { method: "POST" });
+}
+
+export async function bulkUpdateWebhooks(
+  data: WebhookBulkUpdate,
+): Promise<{ updated: number; deleted: number }> {
+  return api("/admin/webhooks/bulk", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function triggerWebhookEvent(
+  event: string,
+  payload: unknown,
+): Promise<{ triggered: number; results: Array<{ id: string; success: boolean }> }> {
+  return api("/admin/webhooks/trigger", {
+    method: "POST",
+    body: JSON.stringify({ event, payload }),
+  });
+}
+
+export async function exportWebhookLogs(
+  id: string,
+  filter?: WebhookLogsFilter,
+): Promise<{ csvUrl: string; count: number }> {
+  const params = new URLSearchParams();
+  if (filter?.event) params.set("event", filter.event);
+  if (filter?.status) params.set("status", filter.status);
+  if (filter?.from) params.set("from", filter.from);
+  if (filter?.to) params.set("to", filter.to);
+  const qs = params.toString();
+  return api(`/admin/webhooks/${id}/logs/export${qs ? `?${qs}` : ""}`);
+}
+
+export async function applyWebhookTemplate(
+  templateId: string,
+  overrides: Partial<WebhookConfig> = {},
+): Promise<WebhookConfig> {
+  return api(`/admin/webhooks/templates/${templateId}/apply`, {
+    method: "POST",
+    body: JSON.stringify(overrides),
+  });
 }
 
 // API Keys
@@ -2304,8 +2511,12 @@ export async function getAccessRequestStats(): Promise<AccessRequestStats> {
   return api("/access-requests/stats/summary");
 }
 
-export async function getResourcePermissions(resourceType?: string): Promise<ResourcePermissionEntry[]> {
-  return api("/access-requests/resources/permissions", { query: resourceType ? { resourceType } : undefined });
+export async function getResourcePermissions(
+  resourceType?: string,
+): Promise<ResourcePermissionEntry[]> {
+  return api("/access-requests/resources/permissions", {
+    query: resourceType ? { resourceType } : undefined,
+  });
 }
 
 export async function getResources(): Promise<ResourceSummary[]> {
@@ -2326,11 +2537,16 @@ export async function createResourceAccessRequest(data: {
 }
 
 // Search for resources to request access to
-export async function searchResources(query: string, payload?: SearchResourcesPayload): Promise<ResourceSummary[]> {
-  return api("/access-requests/resources/search", { query: { query } , method: "POST", body: JSON.stringify(payload)});
+export async function searchResources(
+  query: string,
+  payload?: SearchResourcesPayload,
+): Promise<ResourceSummary[]> {
+  return api("/access-requests/resources/search", {
+    query: { query },
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
-
-
 
 // ────────────────────────────────────────────────────────────────────────────
 // Phase 1 — Support Departments & Teams
@@ -2558,7 +2774,10 @@ export async function addAgentToTeam(
   teamId: string,
   data?: { isPrimary?: boolean; assignedBy?: string },
 ): Promise<SupportAgentTeamMembership> {
-  return api(`/support/agents/${agentId}/teams/${teamId}`, { method: "POST", body: JSON.stringify(data ?? {}) });
+  return api(`/support/agents/${agentId}/teams/${teamId}`, {
+    method: "POST",
+    body: JSON.stringify(data ?? {}),
+  });
 }
 
 export async function removeAgentFromTeam(
@@ -2859,4 +3078,3 @@ export async function getSupportTicketRisk(ticketId: string): Promise<SlaBreachR
 export async function getSupportTicketCsatPrediction(ticketId: string): Promise<CsatPrediction> {
   return api(`/support/tickets/${encodeURIComponent(ticketId)}/csat-prediction`);
 }
-

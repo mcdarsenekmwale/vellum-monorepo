@@ -1,13 +1,33 @@
+import { useMemo, useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, PlayCircle, KeyRound, Pencil, Trash2, Copy, Check, Webhook } from "lucide-react";
+import {
+  Plus,
+  Search,
+  LayoutDashboard,
+  Inbox,
+  Send,
+  Activity,
+  TrendingUp,
+  Webhook,
+  Check,
+  Copy,
+  PlayCircle,
+  KeyRound,
+  Pencil,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Filter,
+  Sparkles,
+} from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { SectionCard } from "@/components/dashboard/section-card";
-import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -15,27 +35,39 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
   useWebhooks,
-  useCreateWebhook,
+  useWebhookStats,
+  useBulkUpdateWebhooks,
   useUpdateWebhook,
   useDeleteWebhook,
+  useRotateWebhookSecret,
   type WebhookConfig,
 } from "@/lib/api/hooks";
-import { ChartSkeleton } from "@/components/dashboard/skeletons";
-import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
-
-const SUGGESTED_EVENTS = [
-  "article.created",
-  "article.updated",
-  "article.deleted",
-  "user.created",
-  "user.updated",
-  "comment.created",
-];
+import { WebhookCard } from "@/components/webhooks/WebhookCard";
+import { WebhookFormDialog } from "@/components/webhooks/WebhookFormDialog";
+import { WebhookTestDialog } from "@/components/webhooks/WebhookTestDialog";
+import { WebhookStatsPanel } from "@/components/webhooks/WebhookStatsPanel";
+import { useTestWebhook } from "@/lib/api/hooks";
+import type { TestResult } from "@/lib/api/services";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/webhooks")({
   head: () => ({ meta: [{ title: "Webhooks · Vellum Admin" }] }),
@@ -43,480 +75,587 @@ export const Route = createFileRoute("/_app/webhooks")({
 });
 
 function WebhooksPage() {
-  const { data, isLoading, refetch } = useWebhooks();
-  const createWebhook = useCreateWebhook();
-  const updateWebhook = useUpdateWebhook();
-  const deleteWebhook = useDeleteWebhook();
-  const webhooks = data ?? [];
+  const { data: webhooks, isLoading: loadingList, refetch: refetchList } = useWebhooks();
+  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useWebhookStats();
+  const bulkMut = useBulkUpdateWebhooks();
+  const updateMut = useUpdateWebhook();
+  const deleteMut = useDeleteWebhook();
+  const rotateMut = useRotateWebhookSecret();
+  const testMut = useTestWebhook();
+
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"ALL" | "INCOMING" | "OUTGOING">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "PAUSED">("ALL");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createUrl, setCreateUrl] = useState("");
-  const [createEvents, setCreateEvents] = useState("");
-  const [createIsActive, setCreateIsActive] = useState(true);
+  const [editing, setEditing] = useState<WebhookConfig | null>(null);
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editUrl, setEditUrl] = useState("");
-  const [editEvents, setEditEvents] = useState("");
-  const [editIsActive, setEditIsActive] = useState(true);
-
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deletingWebhook, setDeletingWebhook] = useState<WebhookConfig | null>(null);
+  const [isTestOpen, setIsTestOpen] = useState(false);
+  const [testWebhook, setTestWebhook] = useState<WebhookConfig | null>(null);
 
   const [isSecretOpen, setIsSecretOpen] = useState(false);
   const [secretWebhook, setSecretWebhook] = useState<WebhookConfig | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
-  const [isTestOpen, setIsTestOpen] = useState(false);
-  const [testWebhook, setTestWebhook] = useState<WebhookConfig | null>(null);
-  const [testSending, setTestSending] = useState(false);
-  const [testSuccess, setTestSuccess] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState<WebhookConfig | null>(null);
 
-  const [isLogsOpen, setIsLogsOpen] = useState(false);
-  const [logsWebhook, setLogsWebhook] = useState<WebhookConfig | null>(null);
+  const list = webhooks ?? [];
+  const total = list.length;
+  const totalIncoming = list.filter((w) => w.type === "INCOMING").length;
+  const totalOutgoing = list.filter((w) => w.type === "OUTGOING").length;
+  const active = list.filter((w) => w.isActive).length;
+  const successRate = useMemo(() => {
+    let ok = 0;
+    let n = 0;
+    for (const w of list) {
+      const logs = w.logs ?? [];
+      for (const l of logs) {
+        n++;
+        if (l.statusCode && l.statusCode >= 200 && l.statusCode < 300 && !l.error) ok++;
+      }
+    }
+    return n === 0 ? null : Math.round((ok / n) * 100);
+  }, [list]);
 
-  const parseEvents = (eventsStr: string): string[] => {
-    return eventsStr
-      .split(",")
-      .map((e) => e.trim())
-      .filter((e) => e.length > 0);
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return list.filter((w) => {
+      if (typeFilter !== "ALL" && w.type !== typeFilter) return false;
+      if (statusFilter === "ACTIVE" && !w.isActive) return false;
+      if (statusFilter === "PAUSED" && w.isActive) return false;
+      if (!term) return true;
+      return (
+        w.name.toLowerCase().includes(term) ||
+        w.url.toLowerCase().includes(term) ||
+        w.events.some((e) => e.toLowerCase().includes(term))
+      );
+    });
+  }, [list, q, typeFilter, statusFilter]);
+
+  const allVisibleSelected = filtered.length > 0 && filtered.every((w) => selected.has(w.id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      const next = new Set(selected);
+      filtered.forEach((w) => next.delete(w.id));
+      setSelected(next);
+    } else {
+      const next = new Set(selected);
+      filtered.forEach((w) => next.add(w.id));
+      setSelected(next);
+    }
   };
 
-  const handleCreate = () => {
-    const name = createName.trim();
-    const url = createUrl.trim();
-    const events = parseEvents(createEvents);
-    if (!name || !url || events.length === 0) return;
+  const clearSelection = () => setSelected(new Set());
 
-    createWebhook.mutate(
-      { name, url, events, isActive: createIsActive },
-      {
-        onSuccess: () => {
-          setIsCreateOpen(false);
-          setCreateName("");
-          setCreateUrl("");
-          setCreateEvents("");
-          setCreateIsActive(true);
-          refetch();
-        },
-      },
-    );
+  const handleBulk = async (action: "enable" | "disable" | "delete") => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    try {
+      await bulkMut.mutateAsync({ ids, action });
+      toast.success(
+        action === "delete"
+          ? `Deleted ${ids.length} webhook${ids.length > 1 ? "s" : ""}`
+          : `Updated ${ids.length} webhook${ids.length > 1 ? "s" : ""}`,
+      );
+      if (action === "delete") clearSelection();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Bulk action failed");
+    }
   };
 
-  const openEdit = (webhook: WebhookConfig) => {
-    setEditingWebhook(webhook);
-    setEditName(webhook.name);
-    setEditUrl(webhook.url);
-    setEditEvents(webhook.events.join(", "));
-    setEditIsActive(webhook.isActive);
-    setIsEditOpen(true);
+  const runTest = async (
+    payload: Parameters<typeof testMut.mutateAsync>[0]["data"],
+  ): Promise<TestResult> => {
+    if (!testWebhook) throw new Error("No webhook selected");
+    return testMut.mutateAsync({ id: testWebhook.id, data: payload });
   };
 
-  const handleEdit = () => {
-    if (!editingWebhook) return;
-    const name = editName.trim();
-    const url = editUrl.trim();
-    const events = parseEvents(editEvents);
-    if (!name || !url || events.length === 0) return;
-
-    updateWebhook.mutate(
-      { id: editingWebhook.id, name, url, events, isActive: editIsActive },
-      {
-        onSuccess: () => {
-          setIsEditOpen(false);
-          setEditingWebhook(null);
-          refetch();
-        },
-      },
-    );
-  };
-
-  const openDelete = (webhook: WebhookConfig) => {
-    setDeletingWebhook(webhook);
+  const openEdit = (w: WebhookConfig) => setEditing(w);
+  const openDelete = (w: WebhookConfig) => {
+    setDeleting(w);
     setIsDeleteOpen(true);
   };
-
-  const handleDelete = () => {
-    if (!deletingWebhook) return;
-    deleteWebhook.mutate(deletingWebhook.id, {
-      onSuccess: () => {
-        setIsDeleteOpen(false);
-        setDeletingWebhook(null);
-        refetch();
-      },
-    });
-  };
-
-  const openSecret = (webhook: WebhookConfig) => {
-    setSecretWebhook(webhook);
+  const openSecret = (w: WebhookConfig) => {
+    setSecretWebhook(w);
     setCopiedSecret(false);
     setIsSecretOpen(true);
   };
-
-  const copySecret = () => {
-    if (!secretWebhook) return;
-    navigator.clipboard.writeText(secretWebhook.secret);
-    setCopiedSecret(true);
-    setTimeout(() => setCopiedSecret(false), 2000);
-  };
-
-  const openTest = (webhook: WebhookConfig) => {
-    setTestWebhook(webhook);
-    setTestSuccess(false);
-    setTestSending(false);
+  const openTest = (w: WebhookConfig) => {
+    setTestWebhook(w);
     setIsTestOpen(true);
   };
-
-  const handleTest = () => {
-    setTestSending(true);
-    setTimeout(() => {
-      setTestSending(false);
-      setTestSuccess(true);
-    }, 1200);
+  const handleToggleActive = async (w: WebhookConfig, next: boolean) => {
+    try {
+      await updateMut.mutateAsync({ id: w.id, isActive: next });
+      toast.success(next ? "Webhook activated" : "Webhook paused");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to update");
+    }
   };
 
-  const openLogs = (webhook: WebhookConfig) => {
-    setLogsWebhook(webhook);
-    setIsLogsOpen(true);
+  const handleDeleteConfirm = async () => {
+    if (!deleting) return;
+    try {
+      await deleteMut.mutateAsync(deleting.id);
+      toast.success("Webhook deleted");
+      setIsDeleteOpen(false);
+      setDeleting(null);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Delete failed");
+    }
   };
 
-  const logs = logsWebhook?.webhookLogs ?? [];
+  const handleRotateSecret = async () => {
+    if (!secretWebhook) return;
+    try {
+      const result = await rotateMut.mutateAsync(secretWebhook.id);
+      setSecretWebhook({ ...secretWebhook, secret: result.secret });
+      setCopiedSecret(false);
+      toast.success("Secret rotated");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Rotate failed");
+    }
+  };
+
+  const copySecret = async () => {
+    if (!secretWebhook?.secret) return;
+    await navigator.clipboard.writeText(secretWebhook.secret);
+    setCopiedSecret(true);
+    setTimeout(() => setCopiedSecret(false), 1800);
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Platform"
         title="Webhooks"
-        description="Outbound HTTP callbacks with delivery logs and retry policies."
+        description="Inbound & outbound event delivery with retry, signed requests, Teams cards, and audit logs."
         actions={
-          <>
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1.5">
-                  <Plus className="size-4" /> New webhook
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Create webhook</DialogTitle>
-                  <DialogDescription>
-                    Configure a new outbound webhook endpoint to receive event notifications.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="create-name">Webhook name</Label>
-                    <Input
-                      id="create-name"
-                      value={createName}
-                      onChange={(e) => setCreateName(e.target.value)}
-                      placeholder="e.g. Article sync"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="create-url">Endpoint URL</Label>
-                    <Input
-                      id="create-url"
-                      value={createUrl}
-                      onChange={(e) => setCreateUrl(e.target.value)}
-                      placeholder="https://api.example.com/webhook"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="create-events">Events (comma-separated)</Label>
-                    <Input
-                      id="create-events"
-                      value={createEvents}
-                      onChange={(e) => setCreateEvents(e.target.value)}
-                      placeholder="article.created, article.updated"
-                    />
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {SUGGESTED_EVENTS.map((event) => (
-                        <button
-                          key={event}
-                          type="button"
-                          onClick={() => {
-                            const current = parseEvents(createEvents);
-                            if (current.includes(event)) {
-                              setCreateEvents(current.filter((e) => e !== event).join(", "));
-                            } else {
-                              setCreateEvents([...current, event].join(", "));
-                            }
-                          }}
-                          className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] transition-colors ${
-                            parseEvents(createEvents).includes(event)
-                              ? "border-primary/50 bg-primary/10 text-primary"
-                              : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
-                          }`}
-                        >
-                          {event}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border p-3">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="create-active">Active</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Enable this webhook to start sending events.
-                      </p>
-                    </div>
-                    <Switch
-                      id="create-active"
-                      checked={createIsActive}
-                      onCheckedChange={setCreateIsActive}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreate}
-                    disabled={
-                      createWebhook.isPending ||
-                      !createName.trim() ||
-                      !createUrl.trim() ||
-                      parseEvents(createEvents).length === 0
-                    }
-                  >
-                    {createWebhook.isPending ? "Creating..." : "Create webhook"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => {
+                refetchList();
+                refetchStats();
+              }}
+            >
+              <RefreshCw
+                className={cn("size-3.5", (loadingList || loadingStats) && "animate-spin")}
+              />
+              Refresh
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="size-4" /> New webhook
+            </Button>
+          </div>
         }
       />
-      <SectionCard padded={false}>
-        {isLoading ? (
-          <div className="p-5">
-            <ChartSkeleton height={200} />
-          </div>
-        ) : webhooks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 grid size-16 place-items-center rounded-full bg-muted/50">
-              <Webhook className="size-8 text-muted-foreground/50" />
-            </div>
-            <p className="text-sm font-medium text-foreground">No webhooks configured</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create your first webhook to start receiving event notifications.
-            </p>
-            <Button size="sm" className="mt-4 gap-1.5" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="size-4" /> Create webhook
-            </Button>
-          </div>
-        ) : (
-          <ul className="divide-y">
-            {webhooks.map((w) => (
-              <li key={w.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-5 py-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{w.name}</span>
-                    <StatusBadge status={w.isActive ? "active" : "paused"} />
-                  </div>
-                  <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                    {w.url}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {w.events.map((e) => (
-                      <Badge key={e} variant="secondary" className="font-mono text-[10px]">
-                        {e}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2 text-xs text-muted-foreground">
-                  <div>
-                    Last delivery{" "}
-                    {w.webhookLogs?.[0]
-                      ? formatDistanceToNow(new Date(w.webhookLogs[0].createdAt), {
-                          addSuffix: true,
-                        })
-                      : "never"}
-                  </div>
-                  <div className="flex gap-1.5">
-                    <Button size="sm" variant="outline" onClick={() => openTest(w)}>
-                      <PlayCircle className="size-3.5" />
-                      Test
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => openLogs(w)}>
-                      Logs
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => openSecret(w)}
-                    >
-                      <KeyRound className="size-3.5" /> Secret
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="size-7"
-                      onClick={() => openEdit(w)}
-                      title="Edit"
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="size-7"
-                      onClick={() => openDelete(w)}
-                      title="Delete"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit webhook</DialogTitle>
-            <DialogDescription>Update the webhook configuration.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Webhook name</Label>
-              <Input
-                id="edit-name"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                autoFocus
-              />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Total
+                </div>
+                {loadingList ? (
+                  <Skeleton className="mt-1 h-7 w-16" />
+                ) : (
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {total.toLocaleString()}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">Configured webhooks</div>
+              </div>
+              <div className="grid size-9 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <LayoutDashboard className="size-4" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-url">Endpoint URL</Label>
-              <Input id="edit-url" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Incoming
+                </div>
+                {loadingList ? (
+                  <Skeleton className="mt-1 h-7 w-16" />
+                ) : (
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {totalIncoming.toLocaleString()}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">Receive ingress</div>
+              </div>
+              <div className="grid size-9 place-items-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <Inbox className="size-4" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-events">Events (comma-separated)</Label>
-              <Input
-                id="edit-events"
-                value={editEvents}
-                onChange={(e) => setEditEvents(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {SUGGESTED_EVENTS.map((event) => (
-                  <button
-                    key={event}
-                    type="button"
-                    onClick={() => {
-                      const current = parseEvents(editEvents);
-                      if (current.includes(event)) {
-                        setEditEvents(current.filter((e) => e !== event).join(", "));
-                      } else {
-                        setEditEvents([...current, event].join(", "));
-                      }
-                    }}
-                    className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] transition-colors ${
-                      parseEvents(editEvents).includes(event)
-                        ? "border-primary/50 bg-primary/10 text-primary"
-                        : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/30"
-                    }`}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Outgoing
+                </div>
+                {loadingList ? (
+                  <Skeleton className="mt-1 h-7 w-16" />
+                ) : (
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {totalOutgoing.toLocaleString()}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">Send outbound</div>
+              </div>
+              <div className="grid size-9 place-items-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <Send className="size-4" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Active
+                </div>
+                {loadingList ? (
+                  <Skeleton className="mt-1 h-7 w-16" />
+                ) : (
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {active.toLocaleString()}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">{total - active} paused</div>
+              </div>
+              <div className="grid size-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Activity className="size-4" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Success rate
+                </div>
+                {loadingList ? (
+                  <Skeleton className="mt-1 h-7 w-16" />
+                ) : (
+                  <div
+                    className={cn(
+                      "mt-1 text-2xl font-semibold tabular-nums",
+                      successRate === null && "text-muted-foreground",
+                      successRate !== null &&
+                        successRate < 80 &&
+                        "text-rose-600 dark:text-rose-400",
+                      successRate !== null &&
+                        successRate >= 80 &&
+                        successRate < 95 &&
+                        "text-amber-600 dark:text-amber-400",
+                      successRate !== null &&
+                        successRate >= 95 &&
+                        "text-emerald-600 dark:text-emerald-400",
+                    )}
                   >
-                    {event}
-                  </button>
-                ))}
+                    {successRate === null ? "—" : `${successRate}%`}
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">Last deliveries</div>
+              </div>
+              <div className="grid size-9 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <TrendingUp className="size-4" />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div className="space-y-0.5">
-                <Label htmlFor="edit-active">Active</Label>
-                <p className="text-xs text-muted-foreground">
-                  Enable this webhook to start sending events.
-                </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <WebhookStatsPanel
+        stats={stats}
+        loading={loadingStats}
+        onRefresh={() => refetchStats()}
+        scope="overview"
+      />
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search name, URL, or events…"
+                  className="pl-9 h-9"
+                />
               </div>
-              <Switch id="edit-active" checked={editIsActive} onCheckedChange={setEditIsActive} />
+              <Tabs
+                value={typeFilter}
+                onValueChange={(v) => setTypeFilter(v as any)}
+                className="shrink-0"
+              >
+                <TabsList className="h-9">
+                  <TabsTrigger value="ALL" className="text-xs h-8 px-3">
+                    All types
+                  </TabsTrigger>
+                  <TabsTrigger value="INCOMING" className="text-xs h-8 px-3">
+                    Incoming
+                  </TabsTrigger>
+                  <TabsTrigger value="OUTGOING" className="text-xs h-8 px-3">
+                    Outgoing
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                <SelectTrigger className="h-9 w-[130px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active only</SelectItem>
+                  <SelectItem value="PAUSED">Paused only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {selected.size > 0 ? (
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/30 pl-3 pr-2 py-1.5 h-9">
+                  <Badge variant="outline" className="text-[10px]">
+                    {selected.size.toLocaleString()} selected
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 border-0"
+                    onClick={() => handleBulk("enable")}
+                    disabled={bulkMut.isPending}
+                  >
+                    <CheckCircle2 className="size-3.5 text-emerald-500" />
+                    Enable
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 border-0"
+                    onClick={() => handleBulk("disable")}
+                    disabled={bulkMut.isPending}
+                  >
+                    <XCircle className="size-3.5 text-amber-500" />
+                    Disable
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 border-0 text-destructive"
+                    onClick={() => handleBulk("delete")}
+                    disabled={bulkMut.isPending}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Delete
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
+                    ×
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Filter className="size-3.5" />
+                  {filtered.length.toLocaleString()} of {total.toLocaleString()} shown
+                </div>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9">
+                    <Sparkles className="size-3.5 text-amber-500" />
+                    <span className="hidden sm:inline">Quick add</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuItem onClick={() => setIsCreateOpen(true)}>
+                    <Plus className="size-3.5 mr-2" />
+                    Blank webhook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsCreateOpen(true)}>
+                    <Sparkles className="size-3.5 mr-2 text-amber-500" />
+                    From template…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={
-                updateWebhook.isPending ||
-                !editName.trim() ||
-                !editUrl.trim() ||
-                parseEvents(editEvents).length === 0
-              }
-            >
-              {updateWebhook.isPending ? "Saving..." : "Save changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete webhook</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{deletingWebhook?.name}</strong>? This action
-              cannot be undone and no more events will be delivered to this endpoint.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteWebhook.isPending}>
-              {deleteWebhook.isPending ? "Deleting..." : "Delete webhook"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {filtered.length > 0 && (
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={allVisibleSelected}
+                onChange={toggleSelectAll}
+                aria-label="Select all visible"
+              />
+              <Label className="text-xs cursor-pointer select-none" onClick={toggleSelectAll}>
+                {allVisibleSelected
+                  ? "Deselect all"
+                  : `Select all ${filtered.length.toLocaleString()} visible`}
+              </Label>
+            </div>
+          )}
 
-      {/* Secret Dialog */}
-      <Dialog open={isSecretOpen} onOpenChange={setIsSecretOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Webhook secret</DialogTitle>
-            <DialogDescription>
-              Use this secret to verify that incoming webhook requests are sent by Vellum.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div className="rounded-md border bg-muted/30 p-3">
-              <div className="flex items-center justify-between">
-                <code className="font-mono text-sm break-all pr-3">{secretWebhook?.secret}</code>
+          <div className="space-y-0.5" />
+
+          {loadingList ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-5 space-y-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-4 grid size-16 place-items-center rounded-full bg-muted/50">
+                <Webhook className="size-8 text-muted-foreground/50" />
+              </div>
+              <p className="text-sm font-medium text-foreground">No webhooks match</p>
+              <p className="mt-1 text-sm text-muted-foreground max-w-md">
+                {total === 0
+                  ? "Create your first webhook to start sending or receiving event notifications."
+                  : "Try clearing the search or filters, or create a new webhook."}
+              </p>
+              <div className="mt-5 flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={copySecret}
-                  className="shrink-0 gap-1.5"
+                  onClick={() => {
+                    setQ("");
+                    setTypeFilter("ALL");
+                    setStatusFilter("ALL");
+                  }}
                 >
-                  {copiedSecret ? (
-                    <>
-                      <Check className="size-3.5 text-emerald-500" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="size-3.5" /> Copy
-                    </>
-                  )}
+                  Clear filters
+                </Button>
+                <Button size="sm" className="gap-1.5" onClick={() => setIsCreateOpen(true)}>
+                  <Plus className="size-4" /> Create webhook
                 </Button>
               </div>
             </div>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {filtered.map((w) => (
+                <WebhookCard
+                  key={w.id}
+                  webhook={w}
+                  selected={selected.has(w.id)}
+                  onSelectChange={(checked) => {
+                    const next = new Set(selected);
+                    if (checked) next.add(w.id);
+                    else next.delete(w.id);
+                    setSelected(next);
+                  }}
+                  onEdit={openEdit}
+                  onDelete={openDelete}
+                  onTest={openTest}
+                  onShowSecret={openSecret}
+                  onToggleActive={handleToggleActive}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <WebhookFormDialog
+        open={isCreateOpen || !!editing}
+        onOpenChange={(next) => {
+          if (!next) {
+            setIsCreateOpen(false);
+            setEditing(null);
+          }
+        }}
+        initial={editing ?? null}
+      />
+
+      <WebhookTestDialog
+        open={isTestOpen}
+        onOpenChange={(next) => {
+          setIsTestOpen(next);
+          if (!next) setTestWebhook(null);
+        }}
+        webhook={testWebhook!}
+        onTest={async (data) => runTest(data)}
+      />
+
+      <Dialog open={isSecretOpen} onOpenChange={setIsSecretOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="size-4" />
+              Webhook signing secret
+            </DialogTitle>
+            <DialogDescription>
+              Use this secret to verify HMAC signatures for webhook{" "}
+              <strong>{secretWebhook?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-3">
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <code className="font-mono text-sm break-all pr-2 select-all">
+                  {secretWebhook?.secret ?? "—"}
+                </code>
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="outline" size="sm" onClick={copySecret} className="gap-1">
+                    {copiedSecret ? (
+                      <>
+                        <Check className="size-3.5 text-emerald-500" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-3.5" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRotateSecret}
+                    disabled={rotateMut.isPending}
+                    className="gap-1"
+                  >
+                    <RefreshCw className={cn("size-3.5", rotateMut.isPending && "animate-spin")} />
+                    Rotate
+                  </Button>
+                </div>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Keep this secret secure. Anyone with access to it can forge webhook requests to your
-              endpoint.
+              Rotating the secret invalidates signatures produced by the old one immediately. Update
+              your consumer before rotating to avoid dropped deliveries.
             </p>
           </div>
           <DialogFooter>
@@ -525,99 +664,28 @@ function WebhooksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Test Dialog */}
-      <Dialog open={isTestOpen} onOpenChange={setIsTestOpen}>
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Test webhook</DialogTitle>
+            <DialogTitle>Delete webhook</DialogTitle>
             <DialogDescription>
-              Send a test ping to <strong>{testWebhook?.name}</strong> to verify the endpoint is
-              reachable.
+              Are you sure you want to delete <strong>{deleting?.name}</strong>? This action cannot
+              be undone and all related delivery logs will be removed.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            {testSuccess ? (
-              <div className="flex items-center gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-4">
-                <div className="grid size-8 shrink-0 place-items-center rounded-full bg-emerald-500/20">
-                  <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    Test ping sent successfully
-                  </p>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">
-                    The webhook endpoint responded with a 200 OK.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-md border p-4">
-                <p className="text-sm text-muted-foreground">
-                  A test event with a sample payload will be sent to:
-                </p>
-                <code className="mt-2 block truncate font-mono text-xs">{testWebhook?.url}</code>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTestOpen(false)}>
-              {testSuccess ? "Close" : "Cancel"}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Cancel
             </Button>
-            {!testSuccess && (
-              <Button onClick={handleTest} disabled={testSending}>
-                {testSending ? "Sending..." : "Send test ping"}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Logs Dialog */}
-      <Dialog open={isLogsOpen} onOpenChange={setIsLogsOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Delivery logs</DialogTitle>
-            <DialogDescription>
-              Recent delivery attempts for <strong>{logsWebhook?.name}</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[400px] overflow-y-auto">
-            {logs.length === 0 ? (
-              <div className="py-12 text-center">
-                <p className="text-sm text-muted-foreground">No delivery logs yet.</p>
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {logs.map((log) => (
-                  <li key={log.id} className="py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className={`font-mono text-[10px] ${
-                            log.statusCode && log.statusCode >= 200 && log.statusCode < 300
-                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                              : log.error
-                                ? "bg-destructive/10 text-destructive"
-                                : ""
-                          }`}
-                        >
-                          {log.statusCode ? `${log.statusCode}` : "Failed"}
-                        </Badge>
-                        <span className="font-mono text-xs">{log.event}</span>
-                      </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
-                      </span>
-                    </div>
-                    {log.error && <p className="mt-1.5 text-xs text-destructive">{log.error}</p>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsLogsOpen(false)}>Close</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteMut.isPending}
+              className="gap-1"
+            >
+              <Trash2 className="size-4" />
+              {deleteMut.isPending ? "Deleting…" : "Delete webhook"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
