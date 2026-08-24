@@ -233,13 +233,8 @@ export class WebhooksController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get recent webhook logs across all webhooks (admin only)' })
-  async listAllWebhookLogs(@Query('limit') limit?: number, @Query('event') event?: string) {
-    // Reuse the listLogs path with a synthetic flow by passing query directly
-    // via general stats / logs endpoint. For simplicity use findMany with no webhookId.
-    return this.webhooksService.listLogs('system', 'SUPER_ADMIN', 'ALL' as any, {
-      event,
-      limit: limit ?? 100,
-    } as ListWebhookLogsQueryDto).then(r => r.items);
+  async listAllWebhookLogs(@Request() req: any, @Query('limit') limit?: number, @Query('event') event?: string) {
+    return this.webhooksService.listAllLogs(req.user.id, req.user.role, { limit, event });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

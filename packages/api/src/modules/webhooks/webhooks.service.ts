@@ -16,6 +16,7 @@ import {
   WebhookLogType,
   WebhookType,
   TeamsCardType,
+  Role,
 } from '@prisma/client';
 import {
   CreateWebhookDto,
@@ -431,6 +432,19 @@ export class WebhooksService {
     return { success: true, deleted: count };
   }
 
+  // Admin global log listing (no webhook scoping)
+  async listAllLogs(_userId: string, role: any, opts: { limit?: number; event?: string } = {}) {
+    if (role !== Role.ADMIN && role !== 'SUPER_ADMIN') throw new ForbiddenException('Admin only');
+    const take = Math.min(500, Math.max(1, opts.limit ?? 100));
+    const where: any = {};
+    if (opts.event) where.event = opts.event;
+    return this.prisma.webhookLog.findMany({
+      where,
+      take,
+      orderBy: { timestamp: 'desc' },
+    });
+  }
+
   async getStats(userId: string, role: any, webhookId?: string) {
     const baseWhere: any = {};
     if (webhookId) {
@@ -571,7 +585,15 @@ export class WebhooksService {
     headers: Record<string, string | string[] | undefined>,
     clientIp?: string,
   ) {
-    const webhook = await this.prisma.webhook.findUnique({ where: { id } });
+    // Reject obviously invalid IDs before hitting Prisma (which throws on malformed UUIDs)
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRe.test(id)) throw new NotFoundException('Webhook not found');
+    let webhook;
+    try {
+      webhook = await this.prisma.webhook.findUnique({ where: { id } });
+    } catch {
+      throw new NotFoundException('Webhook not found');
+    }
     if (!webhook || !webhook.isActive) throw new NotFoundException('Webhook not found');
     if (webhook.type !== WebhookType.INCOMING) {
       throw new BadRequestException('This endpoint is for incoming webhooks only');
