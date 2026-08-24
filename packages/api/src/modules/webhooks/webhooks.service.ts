@@ -465,9 +465,8 @@ export class WebhooksService {
         where: { ...baseWhere, type: WebhookLogType.ERROR },
       }),
       this.prisma.$queryRawUnsafe<{ avg: number | null }[]>(
-        `SELECT AVG("durationMs") as avg FROM "WebhookLog" ${
-          webhookId ? 'WHERE "webhookId" = $1' : ''
-        }`,
+        `SELECT AVG("durationMs") as avg FROM "WebhookLog"
+         WHERE "durationMs" IS NOT NULL ${webhookId ? `AND "webhookId" = $1` : ''}`,
         ...(webhookId ? [webhookId] : []),
       ),
     ]);
@@ -476,11 +475,11 @@ export class WebhooksService {
     const successCount = totalLogs - errorLogs;
     const successRate = totalLogs ? Math.round((successCount / totalLogs) * 10000) / 100 : 0;
 
-    // Event breakdown
+    // Event breakdown — anchor on "event IS NOT NULL" then append webhook filter with AND
     const eventBreakdownRes = await this.prisma.$queryRawUnsafe<any[]>(
-      `SELECT event, COUNT(*) as count FROM "WebhookLog" ${
-        webhookId ? 'WHERE "webhookId" = $1' : ''
-      } AND event IS NOT NULL GROUP BY event ORDER BY count DESC LIMIT 10`,
+      `SELECT event, COUNT(*) as count FROM "WebhookLog"
+       WHERE event IS NOT NULL ${webhookId ? `AND "webhookId" = $1` : ''}
+       GROUP BY event ORDER BY count DESC LIMIT 10`,
       ...(webhookId ? [webhookId] : []),
     );
 
@@ -488,7 +487,7 @@ export class WebhooksService {
     if (!webhookId) {
       const rows = await this.prisma.$queryRawUnsafe<any[]>(
         `SELECT "webhookId", count(*) as count,
-           SUM(CASE WHEN type = 'ERROR' THEN 1 ELSE 0 END) as errors
+           SUM(CASE WHEN "type" = 'ERROR' THEN 1 ELSE 0 END) as errors
          FROM "WebhookLog"
          WHERE "webhookId" IS NOT NULL
          GROUP BY "webhookId"
