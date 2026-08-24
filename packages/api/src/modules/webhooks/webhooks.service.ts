@@ -207,8 +207,16 @@ export class WebhooksService {
   }
 
   async findAll(userId: string, role: any, dto: ListWebhooksQueryDto) {
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
+    // Query-string values arrive as strings at runtime even with typed DTOs if ValidationPipe
+    // transform: true isn't enabled globally — coerce defensively before Prisma (needs Int take/skip).
+    const coerce = (v: unknown, fallback: number, min = 1, max = 200): number => {
+      if (v === undefined || v === null || v === '') return fallback;
+      const n = Number(v);
+      if (Number.isNaN(n) || !Number.isFinite(n)) return fallback;
+      return Math.min(max, Math.max(min, Math.floor(n)));
+    };
+    const page = coerce(dto.page, 1);
+    const limit = coerce(dto.limit, 20);
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -391,17 +399,38 @@ export class WebhooksService {
     if (!webhook) throw new NotFoundException('Webhook not found');
     this.enforceOwnershipOrAdmin(webhook, userId, role);
 
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 50;
+    // Coerce numeric query params — query strings are always strings at runtime; Prisma wants Int.
+    const coerce = (v: unknown, fallback: number, min = 1, max = 500): number => {
+      if (v === undefined || v === null || v === '') return fallback;
+      const n = Number(v);
+      if (Number.isNaN(n) || !Number.isFinite(n)) return fallback;
+      return Math.min(max, Math.max(min, Math.floor(n)));
+    };
+
+    const page = coerce(dto.page, 1);
+    const limit = coerce(dto.limit, 50);
     const skip = (page - 1) * limit;
 
     const where: any = { webhookId };
     if (dto.event) where.event = dto.event;
-    if (typeof dto.statusCode === 'number') where.statusCode = dto.statusCode;
+    // statusCode is typed as `number` via the DTO class's @IsInt + @Type(()=>Number) decorators
+    // with ValidationPipe transform: true. But at runtime, if transform is disabled or a caller
+    // bypasses the DTO, it might still arrive as a string — so coerce via unknown for safety.
+    const rawSc = dto.statusCode as unknown;
+    if (rawSc !== undefined && rawSc !== null && rawSc !== '') {
+      const sc = Number(rawSc);
+      if (!Number.isNaN(sc) && Number.isFinite(sc)) where.statusCode = Math.floor(sc);
+    }
     if (dto.from || dto.to) {
       where.timestamp = {};
-      if (dto.from) where.timestamp.gte = new Date(dto.from);
-      if (dto.to) where.timestamp.lte = new Date(dto.to);
+      if (dto.from) {
+        const g = new Date(dto.from);
+        if (!Number.isNaN(g.getTime())) where.timestamp.gte = g;
+      }
+      if (dto.to) {
+        const l = new Date(dto.to);
+        if (!Number.isNaN(l.getTime())) where.timestamp.lte = l;
+      }
     }
 
     const [items, total] = await Promise.all([
@@ -433,9 +462,15 @@ export class WebhooksService {
   }
 
   // Admin global log listing (no webhook scoping)
-  async listAllLogs(_userId: string, role: any, opts: { limit?: number; event?: string } = {}) {
+  async listAllLogs(_userId: string, role: any, opts: { limit?: number | string; event?: string } = {}) {
     if (role !== Role.ADMIN && role !== 'SUPER_ADMIN') throw new ForbiddenException('Admin only');
-    const take = Math.min(500, Math.max(1, opts.limit ?? 100));
+    // Coerce opts.limit: query-string is a string at runtime. Math.min/Math.max below coerce via
+    // ToNumber anyway, but being explicit keeps us safe and logs 500s free.
+    let limit = Number(opts.limit);
+    if (opts.limit === undefined || opts.limit === null || opts.limit === '' || Number.isNaN(limit) || !Number.isFinite(limit)) {
+      limit = 100;
+    }
+    const take = Math.min(500, Math.max(1, Math.floor(limit)));
     const where: any = {};
     if (opts.event) where.event = opts.event;
     return this.prisma.webhookLog.findMany({

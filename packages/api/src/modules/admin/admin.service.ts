@@ -1665,6 +1665,65 @@ export class AdminService {
     });
   }
 
+    async listLogs(
+      webhookId: string,
+      dto: { page?: number | string; limit?: number | string , eventType?: string , status?: string,
+        from?: string , to?: string, statusCode?: number | string,
+       },
+    ) {
+      const webhook = await this.prisma.webhook.findUnique({ where: { id: webhookId } });
+      if (!webhook) throw new NotFoundException('Webhook not found');
+      
+      // Query-string values always arrive as strings at runtime regardless of TS annotations.
+      // Prisma take/skip REQUIRE Int (not String) — otherwise PrismaClientValidationError.
+      const coerce = (v: unknown, fallback: number, min = 1, max = 500): number => {
+        if (v === undefined || v === null || v === '') return fallback;
+        const n = Number(v);
+        if (Number.isNaN(n) || !Number.isFinite(n)) return fallback;
+        return Math.min(max, Math.max(min, Math.floor(n)));
+      };
+
+      const page = coerce(dto.page, 1);
+      const limit = coerce(dto.limit, 50);
+      const skip = (page - 1) * limit;
+  
+      const where: any = { webhookId };
+      if (dto.eventType) where.event = dto.eventType;
+      if (dto.statusCode !== undefined && dto.statusCode !== null && dto.statusCode !== '') {
+        const sc = Number(dto.statusCode);
+        if (!Number.isNaN(sc) && Number.isFinite(sc)) where.statusCode = Math.floor(sc);
+      }
+      if (dto.from || dto.to) {
+        where.timestamp = {};
+        if (dto.from) {
+          const g = new Date(dto.from);
+          if (!Number.isNaN(g.getTime())) where.timestamp.gte = g;
+        }
+        if (dto.to) {
+          const l = new Date(dto.to);
+          if (!Number.isNaN(l.getTime())) where.timestamp.lte = l;
+        }
+      }
+  
+      const [items, total] = await Promise.all([
+        this.prisma.webhookLog.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { timestamp: 'desc' },
+        }),
+        this.prisma.webhookLog.count({ where }),
+      ]);
+  
+      return {
+        items,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
   async listApiKeys() {
     return this.prisma.apiKey.findMany({
       orderBy: { createdAt: 'desc' },

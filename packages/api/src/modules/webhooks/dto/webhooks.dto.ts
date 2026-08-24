@@ -324,6 +324,7 @@ export class ListWebhookLogsQueryDto {
   })
   @IsOptional()
   @IsInt()
+  @Type(() => Number)
   statusCode?: number;
 
   @ApiPropertyOptional()
