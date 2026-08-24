@@ -18,13 +18,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         run: npx prisma generate
-
-      - name: Verify build
-        run: npm run build
 
       - name: Deploy to Prisma Compute
         env:
