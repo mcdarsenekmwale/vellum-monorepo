@@ -1624,8 +1624,8 @@ export class AdminService {
     return this.prisma.webhook.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        webhookLogs: {
-          orderBy: { createdAt: 'desc' },
+        logs: {
+          orderBy: { timestamp: 'desc' },
           take: 10,
         },
       },
@@ -1641,6 +1641,8 @@ export class AdminService {
         events,
         isActive,
         secret,
+        type: 'OUTGOING',
+        format: 'JSON',
       },
     });
   }

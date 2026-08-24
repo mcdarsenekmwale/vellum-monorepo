@@ -369,29 +369,103 @@ model Media {
 }
 
 model Webhook {
-  id          String       @id @default(uuid())
-  name        String
-  url         String
-  secret      String
-  events      String[]
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  webhookLogs WebhookLog[] @relation("WebhookLog")
+  id                String        @id @default(uuid())
+  name              String
+  type              WebhookType   @default(OUTGOING)
+  url               String
+  secret            String?
+  format            WebhookFormat @default(JSON)
+  events            String[]      @default([])
+  headers           Json?
+  isActive          Boolean       @default(true)
+  lastTriggeredAt   DateTime?
+  failureCount      Int           @default(0)
+  // Outgoing webhook specific (retry policy)
+  retryMaxAttempts  Int           @default(3)
+  retryBackoffDelay Int           @default(1000)
+  // Incoming webhook specific (security)
+  allowedIps        String[]      @default([])
+  requiresAuth      Boolean       @default(true)
+  // Teams integration
+  teamsChannelId    String?
+  teamsTeamId       String?
+  teamsCardType     TeamsCardType? @default(MESSAGE)
+  teamsCardTemplate Json?
+  // Audit
+  createdBy         String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  logs              WebhookLog[]  @relation("WebhookLog")
+
+  @@index([type])
+  @@index([isActive])
+  @@index([createdBy])
+  @@index([createdAt])
 }
 
 model WebhookLog {
-  id         String   @id @default(uuid())
-  webhookId  String?
-  event      String
-  payload    Json
-  statusCode Int?
-  response   String?
-  error      String?
-  createdAt  DateTime @default(now())
-  webhook    Webhook? @relation("WebhookLog", fields: [webhookId], references: [id])
+  id          String     @id @default(uuid())
+  webhookId   String?
+  type        WebhookLogType @default(REQUEST)
+  event       String?
+  statusCode  Int?
+  payload     Json?
+  response    Json?
+  headers     Json?
+  durationMs  Int?
+  errorMessage String?
+  attempt     Int        @default(1)
+  timestamp   DateTime   @default(now())
+  webhook     Webhook?   @relation("WebhookLog", fields: [webhookId], references: [id], onDelete: Cascade)
 
   @@index([webhookId])
+  @@index([type])
+  @@index([event])
+  @@index([timestamp])
+  @@index([webhookId, timestamp])
+}
+
+model WebhookTemplate {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  description String?
+  category    String       @default("general") // "teams" | "slack" | "general" | "custom"
+  type        WebhookType  @default(OUTGOING)
+  format      WebhookFormat @default(JSON)
+  config      Json         // template config: url placeholder, headers, card template, events
+  variables   String[]     @default([]) // template variable names
+  isBuiltIn   Boolean      @default(false)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@index([slug])
+}
+
+enum WebhookType {
+  INCOMING
+  OUTGOING
+}
+
+enum WebhookFormat {
+  JSON
+  FORM
+  XML
+  PLAIN
+}
+
+enum WebhookLogType {
+  REQUEST
+  RESPONSE
+  ERROR
+}
+
+enum TeamsCardType {
+  MESSAGE
+  ADAPTIVE
 }
 
 model AuditLog {

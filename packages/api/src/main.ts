@@ -14,7 +14,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    rawBody: true,
   });
+
+  const rawBodySizeLimit = '5mb';
+  app.useBodyParser('json', { limit: rawBodySizeLimit });
+  app.useBodyParser('urlencoded', { extended: true, limit: rawBodySizeLimit });
+  app.useBodyParser('text', { limit: rawBodySizeLimit });
 
   const httpAdapter = app.getHttpAdapter();
   const instance = httpAdapter.getInstance();
