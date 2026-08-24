@@ -9,14 +9,13 @@ import {
   ArrowRight,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Ban,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatusBadge } from "@/components/dashboard/status-badge";
-import { ChartSkeleton, Shimmer } from "@/components/dashboard/skeletons";
+import { Shimmer } from "@/components/dashboard/skeletons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

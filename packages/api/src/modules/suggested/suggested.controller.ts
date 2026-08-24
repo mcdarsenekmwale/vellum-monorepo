@@ -1,6 +1,11 @@
 import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { SuggestedService } from './suggested.service';
+import {
+  PaginatedResult,
+  SuggestedService,
+  ArticleSuggestion,
+  AuthorSuggestion,
+} from './suggested.service';
 import { SuggestedQueryDto } from './dto/suggested.dto';
 import { OptionalJwtAuthGuard } from '../auth/jwt-optional-auth.guard';
 
@@ -15,7 +20,10 @@ export class SuggestedController {
   @ApiResponse({ status: 200, description: 'Suggested articles retrieved' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Number of items to skip' })
-  async getSuggestedArticles(@Query() query: SuggestedQueryDto, @Request() req?: any) {
+  async getSuggestedArticles(
+    @Query() query: SuggestedQueryDto,
+    @Request() req?: any,
+  ): Promise<PaginatedResult<ArticleSuggestion>> {
     const userId = req?.user?.id;
     const limit = query.limit ?? 4;
     const offset = query.offset ?? 0;
@@ -31,7 +39,7 @@ export class SuggestedController {
     @Query('excludeArticleId') excludeArticleId: string,
     @Query('excludeAuthorId') excludeAuthorId: string,
     @Request() req?: any,
-  ) {
+  ): Promise<ArticleSuggestion | null> {
     const userId = req?.user?.id;
     return this.suggestedService.getReplacementArticle(userId, excludeArticleId, excludeAuthorId);
   }
@@ -41,7 +49,10 @@ export class SuggestedController {
   @ApiResponse({ status: 200, description: 'Suggested authors retrieved' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Number of items to skip' })
-  async getSuggestedAuthors(@Query() query: SuggestedQueryDto, @Request() req?: any) {
+  async getSuggestedAuthors(
+    @Query() query: SuggestedQueryDto,
+    @Request() req?: any,
+  ): Promise<PaginatedResult<AuthorSuggestion>> {
     const userId = req?.user?.id;
     const limit = query.limit ?? 5;
     const offset = query.offset ?? 0;
@@ -55,7 +66,7 @@ export class SuggestedController {
   async getReplacementAuthor(
     @Query('excludeAuthorId') excludeAuthorId: string,
     @Request() req?: any,
-  ) {
+  ): Promise<AuthorSuggestion | null> {
     const userId = req?.user?.id;
     return this.suggestedService.getReplacementAuthor(userId, excludeAuthorId);
   }

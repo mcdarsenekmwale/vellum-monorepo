@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { useAuthState } from "@/hooks/useApi";
 import { getRedirectUrl } from "@/lib/auth";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -13,6 +14,7 @@ const LEFT_IMAGE = "https://images.unsplash.com/photo-1457369804613-52c61a468e7d
 function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuthState();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -127,7 +129,7 @@ function LoginPage() {
             {/* Email */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Email Address
+                {t("auth.email")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -145,7 +147,7 @@ function LoginPage() {
             {/* Password */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Password
+                {t("auth.password")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -183,7 +185,7 @@ function LoginPage() {
                 to={"/forgot-password" as any}
                 className="text-[#d97706] text-sm font-medium hover:text-[#e88d1f] transition-colors"
               >
-                Forgot password?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
 
@@ -200,7 +202,7 @@ function LoginPage() {
                 </span>
               ) : (
                 <>
-                  Sign In
+                  {t("auth.signIn")}
                   <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}

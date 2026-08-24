@@ -107,7 +107,8 @@ export class NotificationsService {
   async createNotification(data: {
     userId: string;
     actorId?: string;
-    kind: NotificationKind;
+    kind: NotificationKind & 'ACCESS_APPROVED' ;
+    title?: string;
     articleSlug?: string;
     highlightId?: string;
     commentId?: string;

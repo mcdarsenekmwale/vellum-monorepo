@@ -54,6 +54,48 @@ export class UsersService {
     };
   }
 
+  /**
+   * Admin-detail lookup by numeric/UUID `id`. This is what the admin dashboard
+   * user detail page (/users/$userId) calls — it passes the User.id, not the
+   * handle. Separate from getProfile / getUserByHandle so privilege & visibility
+   * rules stay honest and route-confusion (handle-vs-UUID) disappears.
+   */
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        handle: true,
+        name: true,
+        avatar: true,
+        bio: true,
+        website: true,
+        location: true,
+        publication: true,
+        role: true,
+        isActive: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const [followerCount, followingCount] = await Promise.all([
+      this.prisma.follow.count({ where: { followingId: user.id } }),
+      this.prisma.follow.count({ where: { followerId: user.id } }),
+    ]);
+
+    return {
+      ...user,
+      followerCount,
+      followingCount,
+    };
+  }
+
   async getUserByHandle(handle: string) {
     const user = await this.prisma.user.findUnique({
       where: { handle },

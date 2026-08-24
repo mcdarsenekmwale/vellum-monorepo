@@ -34,6 +34,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useDashboardStats } from "@/lib/api/hooks";
+import { SupportAdminDashboard } from "@/components/dashboard/SupportAdminDashboard";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
@@ -104,6 +105,8 @@ function renderDashboard(role: string | null) {
     case "Admin":
     case "SuperAdmin":
       return <AdminDashboard />;
+    case "SupportAdmin":
+      return <SupportAdminDashboard />;
     case "Moderator":
       return <ModeratorDashboard />;
     case "Creator":

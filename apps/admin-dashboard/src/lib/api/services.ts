@@ -29,6 +29,7 @@ export interface User {
   publication: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 
   location?: string;
   website?: string;
@@ -581,8 +582,29 @@ export async function updateUser(
   return api(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(data) });
 }
 
+export async function resetUserPassword(id: string, data: { password: string }): Promise<User> {
+  return api(`/admin/users/${id}/reset-password`, { method: "POST", body: JSON.stringify(data) });
+}
+
+
+
 export async function deleteUser(id: string): Promise<void> {
   return api(`/admin/users/${id}`, { method: "DELETE" });
+}
+
+export async function getDeletedUsers(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<User>> {
+  return api("/admin/users/deleted", { query: params });
+}
+
+export async function restoreUser(id: string): Promise<User> {
+  return api(`/admin/users/${id}/restore`, { method: "PUT" });
+}
+
+export async function purgeUser(id: string): Promise<{ id: string; purged: boolean }> {
+  return api(`/admin/users/${id}/purge`, { method: "DELETE" });
 }
 
 export async function updateUserRole(id: string, role: RoleKey): Promise<User> {
@@ -900,6 +922,7 @@ export interface SupportTicket {
   userId: string;
   assigneeId?: string | null;
   departmentId?: string | null;
+  teamId?: string | null;
   categoryId?: string | null;
   dueAt?: string | null;
   firstResponseAt?: string | null;
@@ -908,9 +931,24 @@ export interface SupportTicket {
   reopenedAt?: string | null;
   createdAt: string;
   updatedAt: string;
-  user?: { id: string; email: string; name: string; handle: string; avatar: string | null };
-  assignee?: { id: string; email: string; name: string; handle: string; avatar: string | null };
+  user?: { 
+    id: string; 
+    email: string; 
+    name: string; 
+    handle: string; 
+    avatar: string | null ;
+    plan?: string;
+    role?: string;
+    createdAt?: any;
+  };
+  assignee?: { 
+    id: string; 
+    email: string; 
+    name: string; 
+    handle: string; 
+    avatar: string | null };
   department?: { id: string; name: string; key: string };
+  team?: { id: string; name: string; departmentId?: string };
   category?: { id: string; name: string; key: string };
   messages?: Array<{
     id: string;
@@ -933,6 +971,16 @@ export interface SupportTicket {
     createdAt: string;
     changedBy: { id: string; name: string };
   }>;
+  assignments?: Array<{
+    id: string;
+    agentId: string;
+    agent?: { id: string; name: string } | null;
+    assignedBy?: { id: string; name: string } | null;
+    assignedAt: string;
+    endedAt?: string | null;
+    isActive: boolean;
+    reason: string | null;
+  }>;
 }
 
 export async function createSupportTicket(data: {
@@ -950,6 +998,14 @@ export async function getSupportTickets(params?: {
   priority?: string;
 }): Promise<Paginated<SupportTicket>> {
   return api("/admin/support-tickets", { query: params });
+}
+
+export async function restoreSupportTicket(id: string): Promise<void> {
+  return api(`/admin/support-tickets/deleted/${id}/restore`, { method: "PUT" });
+}
+
+export async function permanentlyDeleteSupportTicket(id: string): Promise<void> {
+  return api(`/admin/support-tickets/deleted/${id}/permanentently-delete`, { method: "DELETE" });
 }
 
 export async function getSupportTicket(id: string): Promise<SupportTicket> {
@@ -1193,6 +1249,10 @@ export interface SupportDashboard {
     resolved: number;
     closed: number;
     onlineAgents: number;
+    avgResponseMs?: number;
+    avgResolutionMs?: number;
+    newLast24h?: number;
+    resolvedToday?: number;
   };
   byPriority: Array<{ priority: string; _count: number }>;
   byStatus: Array<{ status: string; _count: number }>;
@@ -1205,16 +1265,149 @@ export interface SupportAgent {
   activeTickets: number;
   maxTickets: number;
   skills: string[];
-  user: { id: string; name: string; email: string; avatar: string | null };
-  department?: { id: string; name: string };
+  isActive: boolean;
+  vacationUntil?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; name: string; email: string; avatar: string | null; handle?: string; role?: string };
+  department?: { id: string; name: string } | null;
+  team?: { id: string; name: string } | null;
+  // Enriched fields from listAgents
+  ticketsAssigned?: number;
+  ticketsResolved?: number;
+  escalations?: number;
+}
+
+export interface SupportAgentDetail extends SupportAgent {
+  tickets: SupportAgentTicket[];
+  recentActivity: SupportAgentActivity[];
+  metrics: {
+    totalAssigned: number;
+    resolved: number;
+    escalated: number;
+    reopened: number;
+    escalationRate: number;
+    reopenRate: number;
+  };
+}
+
+export interface SupportAgentTicket {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  category?: { name: string } | null;
+}
+
+export interface SupportAgentActivity {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string;
+  metadata?: any;
+  createdAt: string;
+}
+
+export interface SupportAgentStats {
+  total: number;
+  active: number;
+  inactive: number;
+  online: number;
+  busy: number;
+  away: number;
+  offline: number;
+  totalTickets: number;
+  resolvedTickets: number;
+  closedTickets: number;
+  resolutionRate: number;
 }
 
 export async function getSupportDashboard(): Promise<SupportDashboard> {
   return api("/support/dashboard");
 }
 
-export async function getSupportAgents(): Promise<SupportAgent[]> {
-  return api("/support/agents");
+export async function getSupportAgents(params?: {
+  departmentId?: string;
+  teamId?: string;
+  status?: string;
+  isActive?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: "name" | "activeTickets" | "maxTickets" | "createdAt" | "ticketsResolved" | "escalations";
+  sortDir?: "asc" | "desc";
+}): Promise<Paginated<SupportAgent>> {
+  return api("/support/agents", { query: params });
+}
+
+export async function getAgentStats(): Promise<SupportAgentStats> {
+  return api("/support/agents/stats");
+}
+
+export async function getAgentDetail(userId: string): Promise<SupportAgentDetail> {
+  return api(`/support/agents/${userId}`);
+}
+
+export async function createSupportAgent(data: {
+  userId: string;
+  departmentId?: string;
+  teamId?: string;
+  skills?: string[];
+  maxTickets?: number;
+}): Promise<SupportAgent> {
+  return api("/support/agents", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateSupportAgent(
+  userId: string,
+  data: {
+    departmentId?: string;
+    teamId?: string;
+    skills?: string[];
+    maxTickets?: number;
+    isActive?: boolean;
+  },
+): Promise<SupportAgent> {
+  return api(`/support/agents/${userId}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteSupportAgent(userId: string): Promise<{ success: boolean }> {
+  return api(`/support/agents/${userId}`, { method: "DELETE" });
+}
+
+export async function toggleAgentStatus(userId: string): Promise<SupportAgent> {
+  return api(`/support/agents/${userId}/status`, { method: "PATCH" });
+}
+
+export async function updateUserPresence(userId: string, status: string): Promise<SupportAgent> {
+  return api(`/support/agents/${userId}/presence`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+
+// ─── Get agent's current presence ───
+export async function getAgentPresence(userId: string): Promise<SupportAgent> {
+  return api(`/support/agents/${userId}/presence`);
+}
+
+// ─── Check if user is a support agent ───
+export async function isSupportAgent(userId: string): Promise<boolean> {
+  return api(`/support/agents/check/${userId}`);
+}
+
+export async function getAgentTickets(
+  userId: string,
+  params?: { status?: string; page?: number; limit?: number },
+): Promise<Paginated<SupportAgentTicket>> {
+  return api(`/support/agents/${userId}/tickets`, { query: params });
+}
+
+export async function getAgentActivity(
+  userId: string,
+  params?: { page?: number; limit?: number },
+): Promise<Paginated<SupportAgentActivity>> {
+  return api(`/support/agents/${userId}/activity`, { query: params });
 }
 
 export async function assignTicket(ticketId: string, agentId: string, reason?: string) {
@@ -1245,20 +1438,147 @@ export async function escalateTicket(ticketId: string, reason?: string) {
   });
 }
 
+// ─── Deleted Support Tickets ────────────────────────────────────────────────────────
+
+export async function getDeletedSupportTickets(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<Paginated<SupportTicket>> {
+  return api("/support/tickets/deleted", { query: params });
+}
+
 export async function getSupportTicketsV2(params?: {
   page?: number;
   limit?: number;
   status?: string;
   priority?: string;
   assigneeId?: string;
+  departmentId?: string;
+  teamId?: string;
+  categoryId?: string;
   unassigned?: boolean;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  orderBy?: 'createdAt' | 'updatedAt' | 'priority' | 'status';
+  orderDir?: 'asc' | 'desc';
 }): Promise<Paginated<SupportTicket>> {
-  return api("/support/tickets", { query: params });
+  return api("/support/tickets", { query: params as Record<string, any> });
+}
+
+export async function routeTicket(
+  ticketId: string,
+  routing: { agentId?: string; teamId?: string; departmentId?: string; reason?: string },
+): Promise<SupportTicket> {
+  return api(`/support/tickets/${ticketId}/route`, {
+    method: "POST",
+    body: JSON.stringify(routing),
+  });
 }
 
 export async function getSupportTicketV2(id: string): Promise<SupportTicket> {
   return api(`/support/tickets/${id}`);
+}
+
+// ─── Ticket Access Control ───────────────────────────────────────────────
+//
+// The backend restricts ticket visibility by role: support agents and lower
+// roles only see tickets they created or are assigned to (plus team-member
+// and explicit-grant visibility). When `getSupportTicketV2` returns 403, the
+// UI should prompt the user to submit a ticket-view access request via the
+// endpoints below.
+
+export interface TicketAccessCheck {
+  hasAccess: boolean;
+  reason: 'admin' | 'owner' | 'assignee' | 'team' | 'grant' | 'none';
+}
+
+export type TicketAccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type TicketAccessRequestType = 'PERMANENT' | 'TEMPORARY';
+
+export interface TicketAccessRequest {
+  id: string;
+  requesterId: string;
+  reviewerId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  permissionKey: string;
+  type: TicketAccessRequestType;
+  status: TicketAccessRequestStatus;
+  justification: string;
+  adminJustification: string | null;
+  startsAt: string | null;
+  expiresAt: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  requester?: { id: string; name: string; email: string; avatar: string | null; handle: string };
+  reviewer?: { id: string; name: string; email: string } | null;
+}
+
+export async function checkTicketAccess(ticketId: string): Promise<TicketAccessCheck> {
+  return api(`/support/tickets/${encodeURIComponent(ticketId)}/access`);
+}
+
+export async function requestTicketAccess(
+  ticketId: string,
+  body: {
+    justification: string;
+    type?: TicketAccessRequestType;
+    startsAt?: string;
+    expiresAt?: string;
+  },
+): Promise<TicketAccessRequest> {
+  return api(`/support/tickets/${encodeURIComponent(ticketId)}/access-request`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listTicketAccessRequests(params?: {
+  status?: TicketAccessRequestStatus;
+  ticketId?: string;
+  page?: number;
+  limit?: number;
+  orderBy?: 'createdAt' | 'reviewedAt' | 'expiresAt';
+  orderDir?: 'asc' | 'desc';
+}): Promise<Paginated<TicketAccessRequest>> {
+  return api("/support/tickets/access-requests", { query: params as Record<string, any> });
+}
+
+export async function listTicketAccessRequestsForTicket(
+  ticketId: string,
+  params?: { status?: TicketAccessRequestStatus; page?: number; limit?: number },
+): Promise<Paginated<TicketAccessRequest>> {
+  return api(`/support/tickets/${encodeURIComponent(ticketId)}/access-requests`, {
+    query: params as Record<string, any>,
+  });
+}
+
+export async function approveTicketAccessRequest(
+  requestId: string,
+  adminJustification: string,
+): Promise<TicketAccessRequest> {
+  return api(`/support/tickets/access-requests/${encodeURIComponent(requestId)}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ adminJustification }),
+  });
+}
+
+export async function rejectTicketAccessRequest(
+  requestId: string,
+  adminJustification: string,
+): Promise<TicketAccessRequest> {
+  return api(`/support/tickets/access-requests/${encodeURIComponent(requestId)}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ adminJustification }),
+  });
+}
+
+export async function cancelTicketAccessRequest(requestId: string): Promise<TicketAccessRequest> {
+  return api(`/support/tickets/access-requests/${encodeURIComponent(requestId)}/cancel`, {
+    method: "POST",
+  });
 }
 
 export async function updateTicketStatusV2(
@@ -1280,6 +1600,9 @@ export interface CannedResponse {
   shortcut: string | null;
   isActive: boolean;
   usageCount: number;
+  tags: string[];
+  variables: string[];
+  shortcuts: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -1297,6 +1620,11 @@ export async function createCannedResponse(data: {
   body: string;
   category?: string;
   shortcut?: string;
+  shortcuts?: string[];
+  isActive?: boolean;
+  usageCount?: number;
+  tags?: string[];
+  variables?: string[];
 }): Promise<CannedResponse> {
   return api("/support/canned-responses", { method: "POST", body: JSON.stringify(data) });
 }
@@ -1308,7 +1636,11 @@ export async function updateCannedResponse(
     body?: string;
     category?: string;
     shortcut?: string;
+    shortcuts?: string[];
     isActive?: boolean;
+    usageCount?: number;
+    tags?: string[];
+    variables?: string[];
   },
 ): Promise<CannedResponse> {
   return api(`/support/canned-responses/${id}`, { method: "PUT", body: JSON.stringify(data) });
@@ -1683,6 +2015,7 @@ export interface RoleRequestEvent {
 }
 
 export interface RoleRequest {
+  resolvedBy: any;
   id: string;
   requesterId: string;
   reviewerId?: string | null;
@@ -1703,6 +2036,7 @@ export interface RoleRequest {
 }
 
 export interface PaginatedRoleRequests {
+  totalPages: number;
   data: RoleRequest[];
   total: number;
   page: number;
@@ -1726,6 +2060,26 @@ export async function getRoleRequests(params?: {
   requesterId?: string;
 }): Promise<PaginatedRoleRequests> {
   return api("/role-requests", { query: params });
+}
+
+/**
+ * Current-authenticated-user-only role request history.
+ *
+ * Hits the JWT-gated `/api/role-requests/mine` endpoint on the backend which
+ * scopes results to `requesterId === req.user.id` server-side — it does NOT
+ * rely on the caller passing a requesterId filter. This is important because
+ * the base `/api/role-requests` list endpoint is AdminGuard-protected, which
+ * would 403 for least-privileged users trying to see their own requests.
+ *
+ * See also `getRoleRequests` which is the admin-side listing and requires an
+ * Admin or SuperAdmin bearer token.
+ */
+export async function getMyRoleRequests(params?: {
+  status?: RoleRequestStatus | "ALL";
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedRoleRequests> {
+  return api("/role-requests/mine", { query: params });
 }
 
 export async function getRoleRequestById(id: string): Promise<RoleRequest> {
@@ -1779,3 +2133,730 @@ export async function bulkRejectRoleRequests(
     body: JSON.stringify({ ids, adminJustification }),
   });
 }
+
+// ─── Access Control Requests ───────────────────────────────────────────────────
+
+export type AccessRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+export type AccessRequestType = "PERMANENT" | "TEMPORARY";
+
+export interface AccessRequestEntry {
+  id: string;
+  requesterId: string;
+  reviewerId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  permissionKey: string;
+  type: AccessRequestType;
+  status: AccessRequestStatus;
+  justification: string;
+  adminJustification: string | null;
+  startsAt: string | null;
+  expiresAt: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  requester: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+    handle: string;
+  };
+  reviewer: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+}
+
+export interface PaginatedAccessRequests {
+  data: AccessRequestEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AccessRequestStats {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  cancelled: number;
+  byResource: { resourceType: string; count: number }[];
+}
+
+export interface ResourcePermissionEntry {
+  id: string;
+  resourceType: string;
+  permissionKey: string;
+  permissionName: string;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface ResourceSummary {
+  type: string;
+  permissionCount: number;
+}
+
+export interface SearchResourcesPayload {
+  query: string;
+  limit?: number;
+  types?: string[];
+}
+
+export interface SearchResourceResult {
+  id: string;
+  type: string;
+  title?: string;
+  subject?: string;
+  name?: string;
+  description?: string;
+  status?: string;
+  [key: string]: any;
+}
+
+export async function getAccessRequests(params?: {
+  requesterId?: string;
+  status?: AccessRequestStatus;
+  resourceType?: string;
+  page?: number;
+  limit?: number;
+  orderBy?: "createdAt" | "reviewedAt" | "expiresAt";
+  orderDir?: "asc" | "desc";
+}): Promise<PaginatedAccessRequests> {
+  return api("/access-requests", { query: params });
+}
+
+export async function getMyAccessRequests(params?: {
+  status?: AccessRequestStatus;
+  page?: number;
+  limit?: number;
+}): Promise<PaginatedAccessRequests> {
+  return api("/access-requests/mine", { query: params });
+}
+
+export async function getAccessRequestById(id: string): Promise<AccessRequestEntry> {
+  return api(`/access-requests/${id}`);
+}
+
+export async function createAccessRequest(data: {
+  resourceType: string;
+  resourceId?: string;
+  permissionKey: string;
+  type: AccessRequestType;
+  justification: string;
+  startsAt?: string;
+  expiresAt?: string;
+}): Promise<AccessRequestEntry> {
+  return api("/access-requests", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function approveAccessRequest(
+  id: string,
+  adminJustification: string,
+): Promise<AccessRequestEntry> {
+  return api(`/access-requests/${id}/approve`, {
+    method: "PUT",
+    body: JSON.stringify({ adminJustification }),
+  });
+}
+
+export async function rejectAccessRequest(
+  id: string,
+  adminJustification: string,
+): Promise<AccessRequestEntry> {
+  return api(`/access-requests/${id}/reject`, {
+    method: "PUT",
+    body: JSON.stringify({ adminJustification }),
+  });
+}
+
+export async function cancelAccessRequest(id: string): Promise<AccessRequestEntry> {
+  return api(`/access-requests/${id}/cancel`, { method: "PUT" });
+}
+
+export async function deleteAccessRequest(id: string): Promise<{ id: string; deleted: boolean }> {
+  return api(`/access-requests/${id}`, { method: "DELETE" });
+}
+
+export async function bulkApproveAccessRequests(
+  ids: string[],
+  adminJustification: string,
+): Promise<{ approved: number; failed: number; total: number; requests: AccessRequestEntry[] }> {
+  return api("/access-requests/bulk-approve", {
+    method: "POST",
+    body: JSON.stringify({ ids, adminJustification }),
+  });
+}
+
+export async function bulkRejectAccessRequests(
+  ids: string[],
+  adminJustification: string,
+): Promise<{ rejected: number; failed: number; total: number; requests: AccessRequestEntry[] }> {
+  return api("/access-requests/bulk-reject", {
+    method: "POST",
+    body: JSON.stringify({ ids, adminJustification }),
+  });
+}
+
+export async function getAccessRequestStats(): Promise<AccessRequestStats> {
+  return api("/access-requests/stats/summary");
+}
+
+export async function getResourcePermissions(resourceType?: string): Promise<ResourcePermissionEntry[]> {
+  return api("/access-requests/resources/permissions", { query: resourceType ? { resourceType } : undefined });
+}
+
+export async function getResources(): Promise<ResourceSummary[]> {
+  return api("/access-requests/resources/list");
+}
+
+// Create a resource access request
+export async function createResourceAccessRequest(data: {
+  resourceType: string;
+  resourceId?: string;
+  permissionKey: string;
+  type: AccessRequestType;
+  justification: string;
+  startsAt?: string;
+  expiresAt?: string;
+}): Promise<AccessRequestEntry> {
+  return api("/access-requests/resources", { method: "POST", body: JSON.stringify(data) });
+}
+
+// Search for resources to request access to
+export async function searchResources(query: string, payload?: SearchResourcesPayload): Promise<ResourceSummary[]> {
+  return api("/access-requests/resources/search", { query: { query } , method: "POST", body: JSON.stringify(payload)});
+}
+
+
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 1 — Support Departments & Teams
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface SupportDepartment {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  email: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  headId: string | null;
+  head?: { id: string; name: string; email: string; avatar: string | null } | null;
+  firstResponseSlaMinutes: number;
+  resolutionSlaMinutes: number;
+  slaAdherenceTargetPct: number;
+  businessHoursStartMin: number;
+  businessHoursEndMin: number;
+  businessDays: number[];
+  timezone: string;
+  budgetAllocated: number | null;
+  resourceCapacityFte: number | null;
+  teams?: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    isActive: boolean;
+    leadId: string | null;
+    lead?: { id: string; name: string; email: string; avatar: string | null } | null;
+    maxTicketsPerAgent: number;
+    concurrentTicketLimitPerAgent: number;
+    skillSpecialization: string | null;
+    _count: { agents: number; memberships: number };
+  }>;
+  _count?: { agents: number; tickets: number; teams: number };
+}
+
+export interface SupportTeam {
+  id: string;
+  name: string;
+  departmentId: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  leadId: string | null;
+  lead?: { id: string; name: string; email: string; avatar: string | null } | null;
+  slaInheritFromDept: boolean;
+  firstResponseSlaMinutes: number | null;
+  resolutionSlaMinutes: number | null;
+  businessHoursInherit: boolean;
+  businessHoursStartMin: number | null;
+  businessHoursEndMin: number | null;
+  businessDays: number[];
+  timezone: string | null;
+  maxTicketsPerAgent: number;
+  concurrentTicketLimitPerAgent: number;
+  skillSpecialization: string | null;
+  department?: { id: string; name: string; key: string };
+  _count?: { members: number } | { agents: number; memberships: number };
+  memberships?: SupportAgentTeamMembership[];
+}
+
+export interface SupportAgentTeamMembership {
+  id: string;
+  agentId: string;
+  teamId: string;
+  isPrimary: boolean;
+  startDate: string;
+  endDate: string | null;
+  assignedBy: string | null;
+  assignedAt: string;
+  agent?: SupportAgent;
+}
+
+// ── Departments ────────────────────────────────────────────────────────────
+
+export async function listSupportDepartments(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  includeDeleted?: boolean;
+  sortBy?: "name" | "createdAt" | "firstResponseSlaMinutes" | "slaAdherenceTargetPct";
+  sortDir?: "asc" | "desc";
+}): Promise<Paginated<SupportDepartment>> {
+  return api("/support/departments", { query: params });
+}
+
+export async function getSupportDepartment(id: string): Promise<SupportDepartment> {
+  return api(`/support/departments/${id}`);
+}
+
+export async function createSupportDepartment(data: {
+  key: string;
+  name: string;
+  description?: string | null;
+  email?: string | null;
+  headId?: string | null;
+  firstResponseSlaMinutes?: number;
+  resolutionSlaMinutes?: number;
+  slaAdherenceTargetPct?: number;
+  businessHoursStartMin?: number;
+  businessHoursEndMin?: number;
+  businessDays?: number[];
+  timezone?: string;
+  budgetAllocated?: number | null;
+  resourceCapacityFte?: number | null;
+  isActive?: boolean;
+}): Promise<SupportDepartment> {
+  return api("/support/departments", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateSupportDepartment(
+  id: string,
+  data: {
+    name?: string;
+    description?: string | null;
+    email?: string | null;
+    headId?: string | null;
+    isActive?: boolean;
+    firstResponseSlaMinutes?: number;
+    resolutionSlaMinutes?: number;
+    slaAdherenceTargetPct?: number;
+    businessHoursStartMin?: number;
+    businessHoursEndMin?: number;
+    businessDays?: number[];
+    timezone?: string;
+    budgetAllocated?: number | null;
+    resourceCapacityFte?: number | null;
+  },
+): Promise<SupportDepartment> {
+  return api(`/support/departments/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function deleteSupportDepartment(id: string): Promise<SupportDepartment> {
+  return api(`/support/departments/${id}`, { method: "DELETE" });
+}
+
+export async function restoreSupportDepartment(id: string): Promise<SupportDepartment> {
+  return api(`/support/departments/${id}/restore`, { method: "POST" });
+}
+
+// ── Teams ──────────────────────────────────────────────────────────────────
+
+export async function listSupportTeams(params?: {
+  page?: number;
+  limit?: number;
+  departmentId?: string;
+  search?: string;
+  isActive?: boolean;
+  includeDeleted?: boolean;
+  sortBy?: "name" | "createdAt" | "maxTicketsPerAgent";
+  sortDir?: "asc" | "desc";
+}): Promise<Paginated<SupportTeam>> {
+  return api("/support/teams", { query: params });
+}
+
+export async function getSupportTeam(id: string): Promise<SupportTeam> {
+  return api(`/support/teams/${id}`);
+}
+
+export async function createSupportTeam(data: {
+  departmentId: string;
+  name: string;
+  description?: string | null;
+  leadId?: string | null;
+  slaInheritFromDept?: boolean;
+  firstResponseSlaMinutes?: number | null;
+  resolutionSlaMinutes?: number | null;
+  businessHoursInherit?: boolean;
+  businessHoursStartMin?: number | null;
+  businessHoursEndMin?: number | null;
+  businessDays?: number[];
+  timezone?: string | null;
+  maxTicketsPerAgent?: number;
+  concurrentTicketLimitPerAgent?: number;
+  skillSpecialization?: string | null;
+  isActive?: boolean;
+}): Promise<SupportTeam> {
+  return api("/support/teams", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateSupportTeam(
+  id: string,
+  data: {
+    name?: string;
+    description?: string | null;
+    leadId?: string | null;
+    isActive?: boolean;
+    departmentId?: string;
+    slaInheritFromDept?: boolean;
+    firstResponseSlaMinutes?: number | null;
+    resolutionSlaMinutes?: number | null;
+    businessHoursInherit?: boolean;
+    businessHoursStartMin?: number | null;
+    businessHoursEndMin?: number | null;
+    businessDays?: number[];
+    timezone?: string | null;
+    maxTicketsPerAgent?: number;
+    concurrentTicketLimitPerAgent?: number;
+    skillSpecialization?: string | null;
+  },
+): Promise<SupportTeam> {
+  return api(`/support/teams/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function deleteSupportTeam(id: string): Promise<SupportTeam> {
+  return api(`/support/teams/${id}`, { method: "DELETE" });
+}
+
+export async function restoreSupportTeam(id: string): Promise<SupportTeam> {
+  return api(`/support/teams/${id}/restore`, { method: "POST" });
+}
+
+// ── Agent ↔ Team memberships ───────────────────────────────────────────────
+
+export async function addAgentToTeam(
+  agentId: string,
+  teamId: string,
+  data?: { isPrimary?: boolean; assignedBy?: string },
+): Promise<SupportAgentTeamMembership> {
+  return api(`/support/agents/${agentId}/teams/${teamId}`, { method: "POST", body: JSON.stringify(data ?? {}) });
+}
+
+export async function removeAgentFromTeam(
+  agentId: string,
+  teamId: string,
+): Promise<SupportAgentTeamMembership> {
+  return api(`/support/agents/${agentId}/teams/${teamId}`, { method: "DELETE" });
+}
+
+export async function setPrimaryTeam(
+  agentId: string,
+  teamId: string,
+): Promise<SupportAgentTeamMembership> {
+  return api(`/support/agents/${agentId}/teams/${teamId}/primary`, { method: "POST" });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phases 2–4 — Support Analytics, KPIs, Reports, Predictive
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface SupportOrgMetrics {
+  id: string;
+  generatedAt: string;
+  tickets: {
+    total: number;
+    new24h: number;
+    new7d: number;
+    new30d: number;
+    avgDaily7d: number;
+    avgDaily30d: number;
+    backlog: number;
+    escalated: number;
+  };
+  statusBreakdown: Record<string, number>;
+  priorityBreakdown: Record<string, number>;
+  satisfaction: { avg: number | null; count: number };
+  sla: {
+    responseAdherencePct: number | null;
+    resolutionAdherencePct: number | null;
+    breached: number;
+  };
+  agents: {
+    total: number;
+    active: number;
+    assignedTickets: number;
+    avgTicketsPerActiveAgent: number;
+  };
+  teams?: { total: number; active: number };
+  memberships?: { active: number };
+}
+
+export interface SupportTeamKpis {
+  id: string;
+  windowDays: number;
+  generatedAt: string;
+  volume: {
+    total: number;
+    new: number;
+    backlog: number;
+    escalated: number;
+    resolved: number;
+    avgInteractionsPerTicket: number | null;
+  };
+  sla: {
+    responseAdherencePct: number | null;
+    resolutionAdherencePct: number | null;
+    breachResolutionCount: number;
+    breachResponseCount: number;
+  };
+  satisfaction: {
+    csatAvg: number | null;
+    csatSampleSize: number;
+  };
+  efficiency: {
+    fcrRatePct: number | null;
+    reopenRatePct: number | null;
+  };
+  backlogToResolvedRatio: number | null;
+}
+
+export type SupportOrgHealthGrade = "A" | "B" | "C" | "D" | "F";
+
+export interface SupportDepartmentScorecard {
+  id: string;
+  name: string;
+  windowDays: number;
+  generatedAt: string;
+  metrics: {
+    totalTickets: number;
+    slaResponseAdherencePct: number | null;
+    slaResolutionAdherencePct: number | null;
+    avgSatisfaction: number | null;
+    avgInteractionsPerTicket: number | null;
+    agentUtilizationPct: number | null;
+  };
+  varianceVsAvgPct: number | null;
+  compositeScore: number;
+  healthGrade: SupportOrgHealthGrade;
+}
+
+export interface SupportTicketsReportRow {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  type: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  departmentId: string | null;
+  departmentName?: string | null;
+  teamId: string | null;
+  teamName?: string | null;
+  assigneeId: string | null;
+  assigneeName?: string | null;
+  reporterId: string | null;
+  reporterName?: string | null;
+  slaMetResponse: boolean | null;
+  slaMetResolution: boolean | null;
+  satisfaction: number | null;
+  interactionsCount: number | null;
+}
+
+export interface SupportTicketsReport {
+  filters: Record<string, any>;
+  total: number;
+  page: number;
+  limit: number;
+  rows: SupportTicketsReportRow[];
+  summary: {
+    byStatus: Record<string, number>;
+    byPriority: Record<string, number>;
+    avgSatisfaction: number | null;
+    slaResponseAdherencePct: number | null;
+    slaResolutionAdherencePct: number | null;
+  };
+}
+
+export interface ForecastVolumePoint {
+  date: string;
+  dayOfWeek: number;
+  forecastTickets: number;
+  lowerBound: number;
+  upperBound: number;
+  confidencePct: number;
+  adjustedForWeekend: boolean;
+  seasonalityFactor: number;
+}
+
+export interface ForecastVolumeResponse {
+  scope: { departmentId?: string; teamId?: string };
+  days: number;
+  generatedAt: string;
+  summary: {
+    totalForecastTickets: number;
+    avgDailyForecast: number;
+    peakDay: string;
+    peakDayForecast: number;
+    quietDay: string;
+    quietDayForecast: number;
+  };
+  daily: ForecastVolumePoint[];
+  input: {
+    avgDaily30d: number;
+    avgDaily7d: number;
+    trendPct: number;
+    daysOfHistoryUsed: number;
+  };
+}
+
+export interface StaffingRecommendation {
+  scope: { departmentId?: string; teamId?: string };
+  generatedAt: string;
+  assumptions: {
+    ticketsPerAgentPerDay: number;
+    utilizationTargetPct: number;
+    days: number;
+  };
+  forecast: {
+    totalTickets: number;
+    avgDailyTickets: number;
+  };
+  agents: {
+    currentActiveCount: number;
+    recommendedFte: number;
+    deltaFte: number;
+    recommendedNewHires: number;
+    recommendedReduction: number;
+  };
+  capacity: {
+    currentDailyCapacity: number;
+    requiredDailyCapacity: number;
+    capacityGapDaily: number;
+    utilizationForecastPct: number | null;
+  };
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  reasons: string[];
+}
+
+export interface SlaBreachRisk {
+  ticketId: string;
+  generatedAt: string;
+  riskScore: number;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  reasons: string[];
+  details: {
+    hoursOpen: number;
+    priorityMultiplier: number;
+    statusFactor: number;
+    reassignmentFactor: number;
+    breachProbabilityPct: number | null;
+    hoursUntilDeadline: number | null;
+  };
+}
+
+export interface CsatPrediction {
+  ticketId: string;
+  generatedAt: string;
+  predictedScore: number; // 1.0 – 5.0
+  confidencePct: number;
+  factors: Array<{ factor: string; weight: number; direction: "UP" | "DOWN" | "NEUTRAL" }>;
+  bucket: "POOR" | "FAIR" | "GOOD" | "EXCELLENT";
+}
+
+export interface SupportTicketsReportFilters {
+  page?: number;
+  limit?: number;
+  departmentId?: string;
+  teamId?: string;
+  status?: string;
+  priority?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export async function getSupportDepartmentMetrics(
+  departmentId: string,
+): Promise<SupportOrgMetrics> {
+  return api(`/support/departments/${encodeURIComponent(departmentId)}/metrics`);
+}
+
+export async function getSupportTeamMetrics(teamId: string): Promise<SupportOrgMetrics> {
+  return api(`/support/teams/${encodeURIComponent(teamId)}/metrics`);
+}
+
+export async function getSupportTeamKpis(teamId: string): Promise<SupportTeamKpis> {
+  return api(`/support/teams/${encodeURIComponent(teamId)}/kpis`);
+}
+
+export async function getSupportDepartmentScorecard(params?: {
+  windowDays?: number;
+}): Promise<SupportDepartmentScorecard[]> {
+  return api("/support/departments/scorecard", { query: params });
+}
+
+export async function getSupportTicketsReport(
+  filters: SupportTicketsReportFilters = {},
+): Promise<SupportTicketsReport> {
+  return api("/support/tickets-report", { query: filters as Record<string, any> });
+}
+
+export function getSupportTicketsReportCsvUrl(
+  filters: Omit<SupportTicketsReportFilters, "page" | "limit"> = {},
+): string {
+  const base = `${API_BASE_URL.replace(/\/+$/, "")}/support/tickets-report.csv`;
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) {
+    if (v === undefined || v === null || v === "") continue;
+    sp.set(k, String(v));
+  }
+  const qs = sp.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+export async function getSupportTicketVolumeForecast(params?: {
+  departmentId?: string;
+  teamId?: string;
+  days?: number;
+}): Promise<ForecastVolumeResponse> {
+  return api("/support/forecast/volume", { query: params });
+}
+
+export async function getSupportStaffingRecommendation(params?: {
+  departmentId?: string;
+  teamId?: string;
+  ticketsPerAgentPerDay?: number;
+  utilizationTargetPct?: number;
+  days?: number;
+}): Promise<StaffingRecommendation> {
+  return api("/support/forecast/staffing", { query: params });
+}
+
+export async function getSupportTicketRisk(ticketId: string): Promise<SlaBreachRisk> {
+  return api(`/support/tickets/${encodeURIComponent(ticketId)}/risk`);
+}
+
+export async function getSupportTicketCsatPrediction(ticketId: string): Promise<CsatPrediction> {
+  return api(`/support/tickets/${encodeURIComponent(ticketId)}/csat-prediction`);
+}
+

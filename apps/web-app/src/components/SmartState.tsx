@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Loader2, AlertTriangle, Inbox } from "lucide-react";
 import { useSmartState, type UseSmartStateOptions } from "@/hooks/useSmartState";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export interface SmartStateProps extends UseSmartStateOptions {
   children: ReactNode;
@@ -59,13 +60,17 @@ export function SmartState({
   emptyComponent,
   errorComponent,
   onRetry,
-  emptyTitle = "Nothing here yet",
+  emptyTitle,
   emptyDescription = "Check back later or try a different view.",
-  errorTitle = "Something went wrong",
+  errorTitle,
   className = "",
   ...options
 }: SmartStateProps) {
+  const { t } = useI18n();
   const { state, error } = useSmartState(options);
+
+  const resolvedEmptyTitle = emptyTitle ?? t("emptyStates.nothingHere");
+  const resolvedErrorTitle = errorTitle ?? t("errors.generic");
 
   switch (state) {
     case "loading":
@@ -74,7 +79,7 @@ export function SmartState({
           {loadingComponent ?? (
             <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <Loader2 className="size-6 animate-spin" />
-              <span className="text-sm">Loading...</span>
+              <span className="text-sm">{t("common.loading")}</span>
             </div>
           )}
         </div>
@@ -87,7 +92,7 @@ export function SmartState({
             <div className="flex min-h-[120px] items-center justify-center">
               <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <Loader2 className="size-6 animate-spin" />
-                <span className="text-sm">Loading...</span>
+                <span className="text-sm">{t("common.loading")}</span>
               </div>
             </div>
           )}
@@ -103,7 +108,7 @@ export function SmartState({
                 <Inbox className="size-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
+                <p className="text-sm font-medium text-foreground">{resolvedEmptyTitle}</p>
                 {emptyDescription && (
                   <p className="mt-1 max-w-xs text-xs">{emptyDescription}</p>
                 )}
@@ -122,9 +127,9 @@ export function SmartState({
                 <AlertTriangle className="size-5 text-destructive" />
               </div>
               <div>
-                <p className="text-sm font-medium">{errorTitle}</p>
+                <p className="text-sm font-medium">{resolvedErrorTitle}</p>
                 <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                  {error?.message || "Please try again in a moment."}
+                  {error?.message || t("emptyStates.pleaseTryAgain")}
                 </p>
               </div>
               {onRetry && (

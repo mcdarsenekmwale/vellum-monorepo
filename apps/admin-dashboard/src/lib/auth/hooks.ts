@@ -91,6 +91,8 @@ export function roleDisplayName(role: Role): string {
     Editor: "Editor",
     Admin: "Admin",
     SuperAdmin: "Super Admin",
+    SupportAgent: "Support Agent",
+    SupportAdmin: "Support Admin",
   };
   return displayNames[role];
 }

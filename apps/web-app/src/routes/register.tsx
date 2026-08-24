@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, AtSign, ArrowRight } from "lucide-react";
 import { useAuthState } from "@/hooks/useApi";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -12,6 +13,7 @@ const LEFT_IMAGE = "https://images.unsplash.com/photo-1481627834876-b7833e8f5570
 function RegisterPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuthState();
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [email, setEmail] = useState("");
@@ -139,7 +141,7 @@ function RegisterPage() {
             {/* Name */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Full Name
+                {t("auth.name")}
               </label>
               <div className="relative">
                 <User className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -157,7 +159,7 @@ function RegisterPage() {
             {/* Handle */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Handle
+                {t("auth.handle")}
               </label>
               <div className="relative">
                 <AtSign className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -178,7 +180,7 @@ function RegisterPage() {
             {/* Email */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Email Address
+                {t("auth.email")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -196,7 +198,7 @@ function RegisterPage() {
             {/* Password */}
             <div className="group">
               <label className="block text-muted-foreground text-xs font-semibold tracking-widest uppercase mb-3">
-                Password
+                {t("auth.password")}
               </label>
               <div className="relative">
                 <Lock className="absolute left-0 top-1/2 -translate-y-1/2 size-5 text-muted-foreground/50 group-focus-within:text-[#d97706] transition-colors" />
@@ -267,13 +269,13 @@ function RegisterPage() {
 
           {/* Login link */}
           <p className="text-center text-muted-foreground text-sm mt-10">
-            Already have an account?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <Link
               to="/login"
               search={router.state.location.search}
               className="text-[#d97706] font-semibold hover:text-[#e88d1f] transition-colors"
             >
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         </div>

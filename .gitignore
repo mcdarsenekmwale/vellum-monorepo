@@ -33,3 +33,12 @@ ios/build/
 DerivedData/
 .vercel
 .env*
+# AI agent test artifacts (auto-generated)
+test_results/
+shots/
+__pycache__/
+*.pyc
+dump.rdb
+final_settings_qa_report.json
+reports/
+apps/admin-dashboard/tests/test-output/

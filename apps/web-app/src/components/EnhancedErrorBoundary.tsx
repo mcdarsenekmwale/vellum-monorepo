@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 interface Props {
   children: ReactNode;
@@ -12,6 +13,43 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+}
+
+/**
+ * Fallback UI rendered when the boundary catches an error. Extracted as a
+ * function component so it can use the `useI18n` hook (unavailable in the
+ * class-based boundary's `render` method).
+ */
+function ErrorFallback({ error, onRetry }: { error?: Error; onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="grid size-16 place-items-center rounded-full bg-destructive/10">
+        <AlertTriangle className="size-8 text-destructive" />
+      </div>
+      <h2 className="mt-6 text-lg font-semibold">{t("errors.generic")}</h2>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        {error?.message || t("errors.generic")}
+      </p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="gap-1.5"
+        >
+          <RotateCcw className="size-4" />
+          Try again
+        </Button>
+        <Button size="sm" className="gap-1.5" asChild>
+          <Link to="/">
+            <Home className="size-4" />
+            Go home
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -40,35 +78,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      return (
-        <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 py-12 text-center">
-          <div className="grid size-16 place-items-center rounded-full bg-destructive/10">
-            <AlertTriangle className="size-8 text-destructive" />
-          </div>
-          <h2 className="mt-6 text-lg font-semibold">Something went wrong</h2>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            {this.state.error?.message ||
-              "An unexpected error occurred. Please try again or go back home."}
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={this.handleRetry}
-              className="gap-1.5"
-            >
-              <RotateCcw className="size-4" />
-              Try again
-            </Button>
-            <Button size="sm" className="gap-1.5" asChild>
-              <Link to="/">
-                <Home className="size-4" />
-                Go home
-              </Link>
-            </Button>
-          </div>
-        </div>
-      );
+      return <ErrorFallback error={this.state.error} onRetry={this.handleRetry} />;
     }
 
     return this.props.children;

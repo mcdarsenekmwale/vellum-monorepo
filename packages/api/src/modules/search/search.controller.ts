@@ -11,7 +11,7 @@ export class SearchController {
   @ApiOperation({ summary: 'Search across content' })
   @ApiResponse({ status: 200, description: 'Search results retrieved' })
   async search(
-    @Query('q') query: string,
+    @Query('query') query: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('type') type?: 'users' | 'articles' | 'highlights',

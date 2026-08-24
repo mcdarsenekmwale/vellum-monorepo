@@ -36,12 +36,31 @@ export default function ShimmerVideo({
 
   const player = useVideoPlayer(
     source ? { uri: source } : null,
-    (player) => {
-      if (player) {
-        player.loop = loop;
-        player.muted = isMuted;
+    (playerRef) => {
+      if (playerRef) {
+        playerRef.loop = loop;
+        playerRef.muted = isMuted;
         if (autoPlay) {
-          player.play();
+          playerRef.play();
+        }
+        // expo-video 3.0: no `VideoView.onReadyForDisplay`; signal readiness via listeners + timeout.
+        const t = setTimeout(() => setStatus('loaded'), 800);
+        try {
+          const anyPlayer = playerRef as any;
+          let cleaned = false;
+          const unsub = anyPlayer.addListener?.({
+            playbackStateChange: () => { if (!cleaned) { setStatus('loaded'); cleanUp(); } },
+            statusChange: () => { if (!cleaned) { setStatus('loaded'); cleanUp(); } },
+          });
+          function cleanUp() {
+            if (cleaned) return;
+            cleaned = true;
+            clearTimeout(t);
+            if (typeof unsub === 'function') unsub();
+          }
+          if (typeof unsub === 'function') return cleanUp;
+        } catch {
+          /* listener API varies across expo-video versions */
         }
       }
     }
@@ -108,7 +127,6 @@ export default function ShimmerVideo({
           ]}
           contentFit="cover"
           nativeControls={false}
-          onReadyForDisplay={handleLoaded}
         />
       )}
     </View>

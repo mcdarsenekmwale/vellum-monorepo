@@ -14,13 +14,18 @@ import {
 describe("RBAC", () => {
   describe("roleRank", () => {
     it("returns correct rank for each role", () => {
+      // Matches the RANK table in ./rbac.ts. NOTE: SupportAgent and
+      // SupportAdmin sit between Editor and Admin so help-desk staff can own
+      // tickets without receiving role-management admin powers.
       expect(roleRank("Guest")).toBe(0);
       expect(roleRank("User")).toBe(1);
       expect(roleRank("Creator")).toBe(2);
       expect(roleRank("Moderator")).toBe(3);
       expect(roleRank("Editor")).toBe(4);
-      expect(roleRank("Admin")).toBe(5);
-      expect(roleRank("SuperAdmin")).toBe(6);
+      expect(roleRank("SupportAgent")).toBe(5);
+      expect(roleRank("SupportAdmin")).toBe(6);
+      expect(roleRank("Admin")).toBe(7);
+      expect(roleRank("SuperAdmin")).toBe(8);
     });
 
     it("returns 0 for unknown role", () => {

@@ -37,6 +37,7 @@ export function getRedirectUrl(search: Record<string, string>): string {
   const allowedPaths = [
     '/', '/profile', '/profile/edit', '/settings', '/settings/about', 
     '/settings/privacy', '/settings/language', '/settings/help',
+    '/settings/subscription',
     '/compose', '/saved', '/notifications', '/highlights',
   ];
   if (allowedPaths.includes(redirectUrl) || redirectUrl.startsWith('/article/')) {

@@ -1,5 +1,5 @@
 // routes/_app/users/index.tsx
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Mail,
   UserPlus,
@@ -42,7 +42,6 @@ import {
   type User,
   useRbacRoles,
   useRoles,
-  type ValidLegacyRole,
   type RoleKey,
   VALID_LEGACY_ROLES,
 } from "@/lib/api/hooks";
@@ -57,6 +56,7 @@ import {
   BulkDeleteDialog,
   EmailDialog,
 } from "@/components/dashboard/users_action_components";
+import { canVisit } from "@/lib/auth/rbac";
 
 export const Route = createFileRoute("/_app/users/")({
   head: () => ({ meta: [{ title: "Users · Vellum Admin" }] }),
@@ -135,6 +135,8 @@ function UsersList() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  const navigate = useNavigate();
 
   // Filter and search logic
   const filteredRows = useMemo(() => {
@@ -579,6 +581,24 @@ function UsersList() {
         searchPlaceholder="Search users... (⌘K)"
         actions={
           <div className="flex items-center gap-2">
+            {/* Deleted Users */}
+            {canVisit((currentUser as any).role.toLowerCase(), "/users/deleted") && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1.5 "
+                    onClick={() => navigate({
+                      to: "/users/deleted",
+                      replace: true,
+                    })}
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="hidden sm:inline">Deleted Users</span>
+                  </Button>
+                </TooltipTrigger>
+              </Tooltip>)}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

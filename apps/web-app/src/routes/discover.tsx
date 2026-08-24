@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api";
 import { Search, TrendingUp } from "lucide-react";
 import { SmartState } from "@/components/SmartState";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 function formatRelativeTime(dateStr: string | undefined): string {
   if (!dateStr) return "";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/discover")({
 });
 
 function DiscoverPage() {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const [searchResults, setSearchResults] = useState<{
     users: import("@/lib/api").ArticleAuthor[];
@@ -71,7 +73,7 @@ function DiscoverPage() {
     <WebShell>
       <EnhancedErrorBoundary>
         <div className="max-w-[900px] mx-auto">
-          <h1 className="text-3xl font-display italic mb-6">Discover</h1>
+          <h1 className="text-3xl font-display italic mb-6">{t("discover.title")}</h1>
 
           <section className="mb-8">
             <div className="flex items-center gap-2 bg-card border border-border rounded-full px-5 py-3">
@@ -79,7 +81,7 @@ function DiscoverPage() {
               <input
                 value={q}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Search stories, people, publications…"
+                placeholder={t("discover.searchPlaceholder")}
                 className="flex-1 min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground"
               />
             </div>

@@ -1150,11 +1150,12 @@ function DeleteUserDialog({
           <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-rose-500/10">
             <AlertCircle className="size-6 text-rose-500" />
           </div>
-          <DialogTitle className="text-lg font-semibold">Delete user</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">Soft-delete user</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <strong className="text-foreground">{selectedUser?.name}</strong>? This action cannot be
-            undone.
+            Are you sure you want to soft-delete{" "}
+            <strong className="text-foreground">{selectedUser?.name}</strong>? The user
+            will be deactivated and excluded from the active users list. They can be
+            restored within 30 days, after which they will be permanently deleted.
           </DialogDescription>
         </DialogHeader>
 
@@ -1175,10 +1176,10 @@ function DeleteUserDialog({
             {deleteUserPending ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Deleting...
+                Soft-deleting...
               </>
             ) : (
-              "Delete user"
+              "Soft-delete user"
             )}
           </Button>
         </DialogFooter>

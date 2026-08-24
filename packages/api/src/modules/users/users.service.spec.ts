@@ -33,6 +33,36 @@ describe('UsersService — Security', () => {
     prisma = module.get(PrismaService);
   });
 
+  describe('getUserById — admin detail by UUID (the frontend /users/$userId hits this)', () => {
+    it('looks up user by id (NOT by handle) and excludes sensitive fields', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'u1',
+        handle: 'admin',
+        name: 'Admin',
+        email: 'admin@vellum.com',
+        role: 'ADMIN',
+        createdAt: new Date(0),
+      });
+      (prisma.follow.count as jest.Mock).mockResolvedValue(0);
+
+      const result: any = await service.getUserById('u1');
+
+      const args = (prisma.user.findUnique as jest.Mock).mock.calls[0][0];
+      expect(args.where).toEqual({ id: 'u1' });
+      const selectedKeys = Object.keys(args.select);
+      expect(selectedKeys).not.toContain('passwordHash');
+      expect(selectedKeys).not.toContain('resetToken');
+      expect(selectedKeys).not.toContain('verificationToken');
+      expect(result.id).toBe('u1');
+      expect(result.handle).toBe('admin');
+    });
+
+    it('throws NotFoundException for an unknown id', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.getUserById('ghost-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('getUserByHandle — sensitive field protection', () => {
     it('uses select (not include) so sensitive columns never get fetched', async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({

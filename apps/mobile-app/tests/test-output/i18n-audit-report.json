@@ -1,0 +1,1134 @@
+{
+  "total_files_with_hardcoded": 46,
+  "total_hardcoded_strings": 148,
+  "by_file": {
+    "apps/web-app/src/components/ShimmerImage.tsx": [
+      {
+        "file": "apps/web-app/src/components/ShimmerImage.tsx",
+        "pattern": "aria_label",
+        "text": "Image failed to load",
+        "line": 65,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/SuggestedForYou.tsx": [
+      {
+        "file": "apps/web-app/src/components/SuggestedForYou.tsx",
+        "pattern": "jsx_text",
+        "text": "Couldn't load suggestions",
+        "line": 284,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/components/SuggestedForYou.tsx",
+        "pattern": "placeholder",
+        "text": "Add a comment...",
+        "line": 482,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/WebShell.tsx": [
+      {
+        "file": "apps/web-app/src/components/WebShell.tsx",
+        "pattern": "jsx_text",
+        "text": "Create Account",
+        "line": 135,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/components/LoginPrompt.tsx": [
+      {
+        "file": "apps/web-app/src/components/LoginPrompt.tsx",
+        "pattern": "jsx_text",
+        "text": "Sign in required",
+        "line": 38,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/ShimmerVideo.tsx": [
+      {
+        "file": "apps/web-app/src/components/ShimmerVideo.tsx",
+        "pattern": "jsx_text",
+        "text": "Video unavailable",
+        "line": 65,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/components/ShimmerVideo.tsx",
+        "pattern": "aria_label",
+        "text": "Video failed to load",
+        "line": 62,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/InfiniteScroll.tsx": [
+      {
+        "file": "apps/web-app/src/components/InfiniteScroll.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading more...",
+        "line": 60,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/SuggestedAuthorsSidebar.tsx": [
+      {
+        "file": "apps/web-app/src/components/SuggestedAuthorsSidebar.tsx",
+        "pattern": "jsx_text",
+        "text": "Couldn't load suggestions",
+        "line": 159,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/GuestGuard.tsx": [
+      {
+        "file": "apps/web-app/src/components/GuestGuard.tsx",
+        "pattern": "jsx_text",
+        "text": "Delete",
+        "line": 49,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/components/GuestGuard.tsx",
+        "pattern": "title_attr",
+        "text": "Sign in to use this feature",
+        "line": 89,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/ErrorBoundary.tsx": [
+      {
+        "file": "apps/web-app/src/components/ErrorBoundary.tsx",
+        "pattern": "jsx_text",
+        "text": "Something went wrong.",
+        "line": 34,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/discover.tsx": [
+      {
+        "file": "apps/web-app/src/routes/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "No matches.",
+        "line": 101,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "No matches.",
+        "line": 133,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Browse by section",
+        "line": 159,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Trending now",
+        "line": 197,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/story.$authorId.$storyId.tsx": [
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading story...",
+        "line": 257,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "jsx_text",
+        "text": "Story not available",
+        "line": 265,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "jsx_text",
+        "text": "Send message",
+        "line": 367,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "aria_label",
+        "text": "Previous story",
+        "line": 300,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "aria_label",
+        "text": "Next story",
+        "line": 310,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "aria_label",
+        "text": "Close",
+        "line": 350,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "aria_label",
+        "text": "Like story",
+        "line": 372,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/story.$authorId.$storyId.tsx",
+        "pattern": "aria_label",
+        "text": "Share",
+        "line": 382,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/profile.edit.tsx": [
+      {
+        "file": "apps/web-app/src/routes/profile.edit.tsx",
+        "pattern": "jsx_text",
+        "text": "Edit profile",
+        "line": 97,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/profile.edit.tsx",
+        "pattern": "placeholder",
+        "text": "Your name",
+        "line": 143,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/profile.edit.tsx",
+        "pattern": "placeholder",
+        "text": "A short bio about you\u2026",
+        "line": 173,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/profile.edit.tsx",
+        "pattern": "aria_label",
+        "text": "Change avatar",
+        "line": 122,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/settings.privacy.tsx": [
+      {
+        "file": "apps/web-app/src/routes/settings.privacy.tsx",
+        "pattern": "jsx_text",
+        "text": "Syncing with server\u2026",
+        "line": 168,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.privacy.tsx",
+        "pattern": "jsx_text",
+        "text": "Changes are saved automatically.",
+        "line": 169,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/article.$slug.tsx": [
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Story not found",
+        "line": 31,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Share",
+        "line": 370,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Get the key takeaways in seconds",
+        "line": 436,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Key Points",
+        "line": 451,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Read Time",
+        "line": 463,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Tone",
+        "line": 467,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Be the first to reply.",
+        "line": 492,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/article.$slug.tsx",
+        "pattern": "jsx_text",
+        "text": "Like",
+        "line": 576,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/login.tsx": [
+      {
+        "file": "apps/web-app/src/routes/login.tsx",
+        "pattern": "jsx_text",
+        "text": "Writers",
+        "line": 83,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/login.tsx",
+        "pattern": "jsx_text",
+        "text": "Stories",
+        "line": 87,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/login.tsx",
+        "pattern": "jsx_text",
+        "text": "Readers",
+        "line": 91,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/login.tsx",
+        "pattern": "placeholder",
+        "text": "Enter your password",
+        "line": 158,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/settings.help.tsx": [
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Help Center",
+        "line": 261,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "No articles found",
+        "line": 467,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Reach the Vellum support team",
+        "line": 497,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Subject *",
+        "line": 545,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Category",
+        "line": 558,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "General question",
+        "line": 565,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Priority",
+        "line": 574,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Message *",
+        "line": 591,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Sign in to view your tickets",
+        "line": 638,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "Sign in to Vellum",
+        "line": 643,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "jsx_text",
+        "text": "No tickets yet",
+        "line": 699,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "placeholder",
+        "text": "Search help articles, topics, keywords\u2026",
+        "line": 303,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "placeholder",
+        "text": "Briefly summarize your issue or question",
+        "line": 550,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.help.tsx",
+        "pattern": "placeholder",
+        "text": "Write a reply\u2026",
+        "line": 848,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/profile.index.tsx": [
+      {
+        "file": "apps/web-app/src/routes/profile.index.tsx",
+        "pattern": "aria_label",
+        "text": "New story",
+        "line": 248,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/register.tsx": [
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "jsx_text",
+        "text": "Writers",
+        "line": 95,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "jsx_text",
+        "text": "Stories",
+        "line": 99,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "jsx_text",
+        "text": "Readers",
+        "line": 103,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "jsx_text",
+        "text": "Letters, numbers, and underscores only",
+        "line": 177,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "placeholder",
+        "text": "Your name",
+        "line": 152,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/register.tsx",
+        "pattern": "placeholder",
+        "text": "Min 6 characters",
+        "line": 209,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/category.$name.tsx": [
+      {
+        "file": "apps/web-app/src/routes/category.$name.tsx",
+        "pattern": "jsx_text",
+        "text": "No stories here yet",
+        "line": 51,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/settings.about.tsx": [
+      {
+        "file": "apps/web-app/src/routes/settings.about.tsx",
+        "pattern": "jsx_text",
+        "text": "Vellum.",
+        "line": 28,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.about.tsx",
+        "pattern": "jsx_text",
+        "text": "Version 1.0.0",
+        "line": 29,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/notifications.tsx": [
+      {
+        "file": "apps/web-app/src/routes/notifications.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load notifications. Please try again later.",
+        "line": 100,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/notifications.tsx",
+        "pattern": "jsx_text",
+        "text": "Activity",
+        "line": 110,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/author.$id.followers.tsx": [
+      {
+        "file": "apps/web-app/src/routes/author.$id.followers.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load followers.",
+        "line": 109,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/settings.subscription.tsx": [
+      {
+        "file": "apps/web-app/src/routes/settings.subscription.tsx",
+        "pattern": "jsx_text",
+        "text": "Renews automatically",
+        "line": 290,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/web-app/src/routes/settings.subscription.tsx",
+        "pattern": "jsx_text",
+        "text": "Your subscription ends at renewal",
+        "line": 335,
+        "file_uses_t": true
+      }
+    ],
+    "apps/web-app/src/routes/author.$id.following.tsx": [
+      {
+        "file": "apps/web-app/src/routes/author.$id.following.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load following.",
+        "line": 109,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/highlights.tsx": [
+      {
+        "file": "apps/web-app/src/routes/highlights.tsx",
+        "pattern": "jsx_text",
+        "text": "Highlights",
+        "line": 35,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/highlights.tsx",
+        "pattern": "jsx_text",
+        "text": "Reply",
+        "line": 101,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/web-app/src/routes/highlights.tsx",
+        "pattern": "jsx_text",
+        "text": "Share",
+        "line": 105,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/routes/author.$id.tsx": [
+      {
+        "file": "apps/web-app/src/routes/author.$id.tsx",
+        "pattern": "jsx_text",
+        "text": "Stories",
+        "line": 243,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/settings/BottomSheet.tsx": [
+      {
+        "file": "apps/web-app/src/components/settings/BottomSheet.tsx",
+        "pattern": "aria_label",
+        "text": "Close",
+        "line": 73,
+        "file_uses_t": false
+      }
+    ],
+    "apps/web-app/src/components/settings/NotificationsSheet.tsx": [
+      {
+        "file": "apps/web-app/src/components/settings/NotificationsSheet.tsx",
+        "pattern": "jsx_text",
+        "text": "Synchronizing\u2026",
+        "line": 144,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/compose.tsx": [
+      {
+        "file": "apps/mobile-app/app/compose.tsx",
+        "pattern": "jsx_text",
+        "text": "Suggest a title",
+        "line": 215,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/index.tsx": [
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading content...",
+        "line": 140,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load content",
+        "line": 150,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Your Story",
+        "line": 176,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Feature",
+        "line": 223,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Atmospherics",
+        "line": 286,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/index.tsx",
+        "pattern": "jsx_text",
+        "text": "Watch All",
+        "line": 289,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/discover.tsx": [
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading discover...",
+        "line": 83,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load discover",
+        "line": 105,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "No matches.",
+        "line": 138,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "No matches.",
+        "line": 164,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Browse by section",
+        "line": 186,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Section",
+        "line": 191,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/discover.tsx",
+        "pattern": "jsx_text",
+        "text": "Trending now",
+        "line": 202,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/login.tsx": [
+      {
+        "file": "apps/mobile-app/app/login.tsx",
+        "pattern": "jsx_text",
+        "text": "New to Vellum?",
+        "line": 375,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/login.tsx",
+        "pattern": "accessibility_label",
+        "text": "Continue with Google",
+        "line": 286,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/login.tsx",
+        "pattern": "accessibility_label",
+        "text": "Continue with Apple",
+        "line": 309,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/login.tsx",
+        "pattern": "accessibility_label",
+        "text": "Continue with Facebook",
+        "line": 332,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/login.tsx",
+        "pattern": "accessibility_label",
+        "text": "Continue with Phone",
+        "line": 356,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/saved.tsx": [
+      {
+        "file": "apps/mobile-app/app/saved.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading saved articles...",
+        "line": 39,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/register.tsx": [
+      {
+        "file": "apps/mobile-app/app/register.tsx",
+        "pattern": "jsx_text",
+        "text": "Already have an account?",
+        "line": 372,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/register.tsx",
+        "pattern": "placeholder",
+        "text": "Full Name",
+        "line": 122,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/register.tsx",
+        "pattern": "placeholder",
+        "text": "Handle",
+        "line": 152,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/register.tsx",
+        "pattern": "placeholder",
+        "text": "Email",
+        "line": 186,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/register.tsx",
+        "pattern": "placeholder",
+        "text": "Password (min 6 characters)",
+        "line": 218,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/app/help-center.tsx": [
+      {
+        "file": "apps/mobile-app/app/help-center.tsx",
+        "pattern": "title_attr",
+        "text": "Help Center",
+        "line": 124,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/feed-api.tsx": [
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading content...",
+        "line": 197,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Your Story",
+        "line": 221,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Feature",
+        "line": 270,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Atmospherics",
+        "line": 335,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Watch All",
+        "line": 338,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "No articles found",
+        "line": 409,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/feed-api.tsx",
+        "pattern": "jsx_text",
+        "text": "Check back later for new content",
+        "line": 410,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/app/notifications.tsx": [
+      {
+        "file": "apps/mobile-app/app/notifications.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading notifications...",
+        "line": 77,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/notifications.tsx",
+        "pattern": "jsx_text",
+        "text": "Failed to load notifications",
+        "line": 87,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/profile.tsx": [
+      {
+        "file": "apps/mobile-app/app/profile.tsx",
+        "pattern": "jsx_text",
+        "text": "Loading profile...",
+        "line": 94,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/help-tickets.tsx": [
+      {
+        "file": "apps/mobile-app/app/help-tickets.tsx",
+        "pattern": "title_attr",
+        "text": "My Tickets",
+        "line": 82,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/_layout.tsx": [
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Discover",
+        "line": 653,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Highlights",
+        "line": 665,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Saved",
+        "line": 676,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "New Story",
+        "line": 703,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Activity",
+        "line": 712,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Ticket",
+        "line": 762,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "title_attr",
+        "text": "Contact Support",
+        "line": 770,
+        "file_uses_t": true
+      },
+      {
+        "file": "apps/mobile-app/app/_layout.tsx",
+        "pattern": "accessibility_label",
+        "text": "Search / Discover",
+        "line": 137,
+        "file_uses_t": true
+      }
+    ],
+    "apps/mobile-app/app/category/[name].tsx": [
+      {
+        "file": "apps/mobile-app/app/category/[name].tsx",
+        "pattern": "jsx_text",
+        "text": "Retry",
+        "line": 50,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/category/[name].tsx",
+        "pattern": "jsx_text",
+        "text": "Section",
+        "line": 59,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/app/article/[slug].tsx": [
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Loading article...",
+        "line": 214,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Retry",
+        "line": 226,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Get the key takeaways",
+        "line": 391,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Key Points",
+        "line": 405,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Read Time",
+        "line": 415,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Tone",
+        "line": 419,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Reply",
+        "line": 454,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Like",
+        "line": 457,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "jsx_text",
+        "text": "Be the first to reply.",
+        "line": 488,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/article/[slug].tsx",
+        "pattern": "placeholder",
+        "text": "Add a comment...",
+        "line": 501,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/app/story/[authorId]/[storyId].tsx": [
+      {
+        "file": "apps/mobile-app/app/story/[authorId]/[storyId].tsx",
+        "pattern": "jsx_text",
+        "text": "Retry",
+        "line": 198,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/story/[authorId]/[storyId].tsx",
+        "pattern": "jsx_text",
+        "text": "Story not available",
+        "line": 208,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/story/[authorId]/[storyId].tsx",
+        "pattern": "jsx_text",
+        "text": "Close",
+        "line": 210,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/app/story/[authorId]/[storyId].tsx",
+        "pattern": "jsx_text",
+        "text": "Send message",
+        "line": 322,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/components/highlights/HighlightComments.tsx": [
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "jsx_text",
+        "text": "Reply",
+        "line": 94,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "jsx_text",
+        "text": "No comments yet.",
+        "line": 104,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "jsx_text",
+        "text": "Start the conversation.",
+        "line": 105,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "jsx_text",
+        "text": "Comments",
+        "line": 126,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "jsx_text",
+        "text": "Post",
+        "line": 158,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightComments.tsx",
+        "pattern": "placeholder",
+        "text": "Add a comment...",
+        "line": 150,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/components/highlights/HighlightsScreen.tsx": [
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightsScreen.tsx",
+        "pattern": "jsx_text",
+        "text": "Retry",
+        "line": 143,
+        "file_uses_t": false
+      },
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightsScreen.tsx",
+        "pattern": "title_attr",
+        "text": "Highlights",
+        "line": 169,
+        "file_uses_t": false
+      }
+    ],
+    "apps/mobile-app/components/highlights/HighlightOverlay.tsx": [
+      {
+        "file": "apps/mobile-app/components/highlights/HighlightOverlay.tsx",
+        "pattern": "jsx_text",
+        "text": "Follow",
+        "line": 84,
+        "file_uses_t": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,250 @@
+{
+  "suite": "mobile_login_stability_loop",
+  "generated_at": "2026-08-19T23:43:28.635214+00:00",
+  "config": {
+    "base_url": "http://localhost:19006",
+    "api_url": "http://localhost:3001",
+    "email": "user1@example.com",
+    "attempts": 10
+  },
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "success_rate": 1.0
+  },
+  "console_errors": [
+    {
+      "attempt": 1,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:14.174080+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 2,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:15.726187+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 3,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:17.279858+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 4,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:18.771103+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 5,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:20.286616+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 6,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:21.724716+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 7,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:23.382041+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 8,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:24.824163+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 9,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:26.323075+00:00",
+      "url": "http://localhost:19006/login"
+    },
+    {
+      "attempt": 10,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-19T23:43:27.825810+00:00",
+      "url": "http://localhost:19006/login"
+    }
+  ],
+  "attempts": [
+    {
+      "index": 1,
+      "ts_start": "2026-08-19T23:43:12.967379+00:00",
+      "duration_sec": 1.92,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "6470d3cd-d22e-4b47-b3cf-6ac4c7a85409",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:14.933690+00:00"
+    },
+    {
+      "index": 2,
+      "ts_start": "2026-08-19T23:43:14.991412+00:00",
+      "duration_sec": 1.49,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "5f0c86d5-ecd0-40a4-a444-597dab9adbfc",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:16.538474+00:00"
+    },
+    {
+      "index": 3,
+      "ts_start": "2026-08-19T23:43:16.599752+00:00",
+      "duration_sec": 1.37,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "90df476b-6407-49a7-afad-f9115efc0cd1",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:18.024757+00:00"
+    },
+    {
+      "index": 4,
+      "ts_start": "2026-08-19T23:43:18.084516+00:00",
+      "duration_sec": 1.46,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "10913228-3a2b-4439-86fd-c7fa19840d79",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:19.583460+00:00"
+    },
+    {
+      "index": 5,
+      "ts_start": "2026-08-19T23:43:19.640706+00:00",
+      "duration_sec": 1.34,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "cfb9ec26-29c1-4725-999a-fffda8978452",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:21.035545+00:00"
+    },
+    {
+      "index": 6,
+      "ts_start": "2026-08-19T23:43:21.095345+00:00",
+      "duration_sec": 1.36,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "4b415508-2568-494b-8925-dbaf85681686",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:22.517259+00:00"
+    },
+    {
+      "index": 7,
+      "ts_start": "2026-08-19T23:43:22.584250+00:00",
+      "duration_sec": 1.5,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "4d3c395f-7cde-4288-a613-955e5fda42a9",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:24.131837+00:00"
+    },
+    {
+      "index": 8,
+      "ts_start": "2026-08-19T23:43:24.187005+00:00",
+      "duration_sec": 1.36,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "3c7bb29e-0884-4241-bc63-0f5fe5921b0f",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:25.599715+00:00"
+    },
+    {
+      "index": 9,
+      "ts_start": "2026-08-19T23:43:25.660370+00:00",
+      "duration_sec": 1.37,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "323b684f-be91-4621-868c-b7f9947eacd1",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:27.074590+00:00"
+    },
+    {
+      "index": 10,
+      "ts_start": "2026-08-19T23:43:27.133120+00:00",
+      "duration_sec": 1.4,
+      "final_url": "http://localhost:19006/",
+      "passed": true,
+      "storage": {
+        "vellum_refresh_token": "6803dd18-a77a-4db7-8b2e-5fc8b976767a",
+        "vellum_user": "{\"id\":\"a4864533-ac60-446a-8b01-16ff77572\u2026(552)",
+        "vellum_access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ\u2026(244)",
+        "__allCount": 7
+      },
+      "storage_has_access_token": true,
+      "storage_has_user": true,
+      "ts_end": "2026-08-19T23:43:28.590146+00:00"
+    }
+  ]
+}

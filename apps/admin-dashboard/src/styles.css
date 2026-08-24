@@ -219,3 +219,19 @@
 @keyframes shimmer {
   100% { transform: translateX(100%); }
 }
+
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+.animate-bounce {
+  animation: bounce 0.5s ease-in-out;
+}

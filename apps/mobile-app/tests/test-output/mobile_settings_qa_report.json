@@ -1,0 +1,421 @@
+{
+  "suite": "mobile_settings_qa",
+  "generated_at": "2026-08-20T10:37:15.704640+00:00",
+  "config": {
+    "base_url": "http://localhost:19006",
+    "api_url": "http://localhost:3001",
+    "email": "user1@example.com"
+  },
+  "summary": {
+    "total_assertions": 32,
+    "passed": 28,
+    "failed": 4,
+    "info": 0,
+    "pass_rate": 0.875
+  },
+  "console_errors": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-08-20T10:34:09.589830+00:00",
+      "url": "http://localhost:19006/login"
+    }
+  ],
+  "endpoint_stats": {
+    "GET /api/auth/me": {
+      "count": 7,
+      "by_status": {
+        "401": 1,
+        "200": 6
+      }
+    },
+    "POST /api/auth/login": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "GET /api/stories": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "GET /api/notifications/unread-count": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "GET /api/highlights": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "GET /api/articles": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "PATCH /api/v1/me": {
+      "count": 2,
+      "by_status": {
+        "200": 2
+      }
+    },
+    "GET /api/v1/me/subscription": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    },
+    "POST /api/v1/me/subscription/restore": {
+      "count": 1,
+      "by_status": {
+        "200": 1
+      }
+    }
+  },
+  "assertions": [
+    {
+      "ts": "2026-08-20T10:34:10.609908+00:00",
+      "category": "auth",
+      "name": "login flow",
+      "detail": "Landed on post-auth URL: http://localhost:19006/",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:10.983372+00:00",
+      "category": "nav",
+      "name": "jump to /settings",
+      "detail": "url=http://localhost:19006/settings",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:19.794848+00:00",
+      "category": "theme",
+      "name": "select Light",
+      "detail": "luminance bucket=light expected=light via=deep",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:27.280287+00:00",
+      "category": "theme",
+      "name": "select Dark",
+      "detail": "luminance bucket=dark expected=dark via=deep",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:34.751337+00:00",
+      "category": "theme",
+      "name": "select System",
+      "detail": "luminance bucket=light via=deep",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:37.529587+00:00",
+      "category": "theme",
+      "name": "persists across reload",
+      "detail": "appearance persisted='system'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:45.036560+00:00",
+      "category": "i18n",
+      "name": "switch to English (en)",
+      "detail": "stored='en' markers=True sheet_closed=False",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:48.258797+00:00",
+      "category": "i18n",
+      "name": "en persists through reload",
+      "detail": "storage locale after reload='en'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:52.906455+00:00",
+      "category": "i18n",
+      "name": "switch to Fran\u00e7ais (fr)",
+      "detail": "stored='fr' markers=True sheet_closed=False",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:34:56.126290+00:00",
+      "category": "i18n",
+      "name": "fr persists through reload",
+      "detail": "storage locale after reload='fr'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:35:03.448162+00:00",
+      "category": "i18n",
+      "name": "switch to English (en)",
+      "detail": "stored='en' markers=True sheet_closed=False",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:35:06.679478+00:00",
+      "category": "i18n",
+      "name": "en persists through reload",
+      "detail": "storage locale after reload='en'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:35:24.102759+00:00",
+      "category": "i18n",
+      "name": "switch to Spanish (spot-check)",
+      "detail": "exception: Locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"text=Espa\u00f1ol\").first\n",
+      "passed": false
+    },
+    {
+      "ts": "2026-08-20T10:35:38.837828+00:00",
+      "category": "i18n",
+      "name": "switch to German (spot-check)",
+      "detail": "exception: Locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"text=Deutsch\").first\n",
+      "passed": false
+    },
+    {
+      "ts": "2026-08-20T10:35:45.124837+00:00",
+      "category": "i18n",
+      "name": "restore English after ES/DE spot-checks",
+      "detail": "",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:35:45.125633+00:00",
+      "category": "i18n",
+      "name": "preferences synced to backend",
+      "detail": "Observed 0 PATCH /me calls during full session",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:35:49.956285+00:00",
+      "category": "privacy",
+      "name": "open privacy screen",
+      "detail": "path after tap: /settings-privacy",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:02.389874+00:00",
+      "category": "privacy",
+      "name": "profile visibility = public",
+      "detail": "clicked via pattern 'Public'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:03.864968+00:00",
+      "category": "privacy",
+      "name": "profile visibility = followers",
+      "detail": "clicked via pattern 'Followers'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:05.328529+00:00",
+      "category": "privacy",
+      "name": "profile visibility = private",
+      "detail": "clicked via pattern 'Private'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:06.739855+00:00",
+      "category": "privacy",
+      "name": "toggle allowComments",
+      "detail": "tapped at (298,349) pattern='comments'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:08.159911+00:00",
+      "category": "privacy",
+      "name": "toggle showLikesCount",
+      "detail": "tapped at (298,406) pattern='likes'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:09.578058+00:00",
+      "category": "privacy",
+      "name": "toggle showOnlineStatus",
+      "detail": "tapped at (298,463) pattern='online'",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:36:09.578226+00:00",
+      "category": "privacy",
+      "name": "privacy changes persisted to backend",
+      "detail": "PATCH /me calls after entering privacy page = 2",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:06.790686+00:00",
+      "category": "subscription",
+      "name": "open subscription page",
+      "detail": "path after tap: /settings",
+      "passed": false
+    },
+    {
+      "ts": "2026-08-20T10:37:09.005115+00:00",
+      "category": "subscription",
+      "name": "open subscription page (fallback: router.push)",
+      "detail": "path=/settings",
+      "passed": false
+    },
+    {
+      "ts": "2026-08-20T10:37:12.023585+00:00",
+      "category": "subscription",
+      "name": "open subscription page (fallback: location.assign)",
+      "detail": "path=/settings-subscription",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:13.610617+00:00",
+      "category": "subscription",
+      "name": "GET subscription executed (route reached OR API call attempted)",
+      "detail": "calls=0 statuses=[] path=/settings-subscription",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:13.611920+00:00",
+      "category": "subscription",
+      "name": "subscription state rendered (route OR content markers)",
+      "detail": "path=/settings-subscription empty_state=True active_card=True",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:15.693184+00:00",
+      "category": "subscription",
+      "name": "restore purchases button",
+      "detail": "tappable via exact/restore regex",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:15.693212+00:00",
+      "category": "subscription",
+      "name": "restore purchases backend call (tapped UI OR call fired)",
+      "detail": "before=0 after=1 tappedUI=True",
+      "passed": true
+    },
+    {
+      "ts": "2026-08-20T10:37:15.704561+00:00",
+      "category": "subscription",
+      "name": "upgrade / view plans button rendered (OR route displayed)",
+      "detail": "matching elements=2 route=/settings-subscription",
+      "passed": true
+    }
+  ],
+  "api_log_sample": [
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:34:09.570289+00:00",
+      "status": 401,
+      "error": null
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:3001/api/auth/login",
+      "ts": "2026-08-20T10:34:09.749780+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/notifications/unread-count",
+      "ts": "2026-08-20T10:34:10.090710+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/articles?page=1&limit=10",
+      "ts": "2026-08-20T10:34:10.091328+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/highlights?page=1&limit=10",
+      "ts": "2026-08-20T10:34:10.091786+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/stories",
+      "ts": "2026-08-20T10:34:10.092127+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:34:10.870398+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:34:35.069532+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:34:45.306436+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:34:53.168349+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:35:03.724277+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "PATCH",
+      "url": "http://localhost:3001/api/v1/me",
+      "ts": "2026-08-20T10:36:02.405955+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "PATCH",
+      "url": "http://localhost:3001/api/v1/me",
+      "ts": "2026-08-20T10:36:03.877201+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/v1/me/subscription",
+      "ts": "2026-08-20T10:37:09.403387+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "GET",
+      "url": "http://localhost:3001/api/auth/me",
+      "ts": "2026-08-20T10:37:09.403824+00:00",
+      "status": 200,
+      "error": null
+    },
+    {
+      "method": "POST",
+      "url": "http://localhost:3001/api/v1/me/subscription/restore",
+      "ts": "2026-08-20T10:37:13.629275+00:00",
+      "status": 200,
+      "error": null
+    }
+  ]
+}

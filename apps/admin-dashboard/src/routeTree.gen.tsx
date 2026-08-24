@@ -20,6 +20,8 @@ import { Route as AppStorageRouteImport } from './routes/_app.storage'
 import { Route as AppStatusRouteImport } from './routes/_app.status'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppRolesRouteImport } from './routes/_app.roles'
+import { Route as AppRoleRequestsRouteImport } from './routes/_app.role-requests'
+import { Route as AppRequestAccessRouteImport } from './routes/_app.request-access'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPostsRouteImport } from './routes/_app.posts'
@@ -43,19 +45,33 @@ import { Route as AppApiRouteImport } from './routes/_app.api'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiRouteImport } from './routes/_app.ai'
 import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
+import { Route as AppAccessControlRouteImport } from './routes/_app.access-control'
 import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
 import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index'
 import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
+import { Route as AppUsersDeletedRouteImport } from './routes/_app.users.deleted'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
 import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
+import { Route as AppSupportReportsRouteImport } from './routes/_app.support.reports'
 import { Route as AppSupportKbRouteImport } from './routes/_app.support.kb'
+import { Route as AppSupportComparisonsRouteImport } from './routes/_app.support.comparisons'
+import { Route as AppSupportCannedResponsesRouteImport } from './routes/_app.support.canned-responses'
+import { Route as AppSupportAgentsRouteImport } from './routes/_app.support.agents'
 import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
 import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
 import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
 import { Route as AppArticlesArticleIdRouteImport } from './routes/_app.articles.$articleId'
+import { Route as AppSupportTicketsIndexRouteImport } from './routes/_app.support.tickets.index'
+import { Route as AppSupportTeamsIndexRouteImport } from './routes/_app.support.teams.index'
+import { Route as AppSupportDepartmentsIndexRouteImport } from './routes/_app.support.departments.index'
+import { Route as AppSupportTicketsDeletedRouteImport } from './routes/_app.support.tickets.deleted'
+import { Route as AppSupportTicketsAccessRequestsRouteImport } from './routes/_app.support.tickets.access-requests'
 import { Route as AppSupportTicketsTicketIdRouteImport } from './routes/_app.support.tickets.$ticketId'
+import { Route as AppSupportTeamsIdRouteImport } from './routes/_app.support.teams.$id'
+import { Route as AppSupportDepartmentsIdRouteImport } from './routes/_app.support.departments.$id'
+import { Route as AppSupportAnalyticsIdRouteImport } from './routes/_app.support.analytics.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -109,6 +125,16 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppRolesRoute = AppRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRoleRequestsRoute = AppRoleRequestsRouteImport.update({
+  id: '/role-requests',
+  path: '/role-requests',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRequestAccessRoute = AppRequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReportsRoute = AppReportsRouteImport.update({
@@ -226,6 +252,11 @@ const AppAdvertisementsRoute = AppAdvertisementsRouteImport.update({
   path: '/advertisements',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAccessControlRoute = AppAccessControlRouteImport.update({
+  id: '/access-control',
+  path: '/access-control',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -251,6 +282,11 @@ const AppArticlesIndexRoute = AppArticlesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppArticlesRoute,
 } as any)
+const AppUsersDeletedRoute = AppUsersDeletedRouteImport.update({
+  id: '/deleted',
+  path: '/deleted',
+  getParentRoute: () => AppUsersRoute,
+} as any)
 const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
@@ -261,9 +297,30 @@ const AppSupportTicketsRoute = AppSupportTicketsRouteImport.update({
   path: '/support/tickets',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSupportReportsRoute = AppSupportReportsRouteImport.update({
+  id: '/support/reports',
+  path: '/support/reports',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSupportKbRoute = AppSupportKbRouteImport.update({
   id: '/support/kb',
   path: '/support/kb',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportComparisonsRoute = AppSupportComparisonsRouteImport.update({
+  id: '/support/comparisons',
+  path: '/support/comparisons',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportCannedResponsesRoute =
+  AppSupportCannedResponsesRouteImport.update({
+    id: '/support/canned-responses',
+    path: '/support/canned-responses',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSupportAgentsRoute = AppSupportAgentsRouteImport.update({
+  id: '/support/agents',
+  path: '/support/agents',
   getParentRoute: () => AppRoute,
 } as any)
 const AppModerationReportIdRoute = AppModerationReportIdRouteImport.update({
@@ -286,15 +343,59 @@ const AppArticlesArticleIdRoute = AppArticlesArticleIdRouteImport.update({
   path: '/$articleId',
   getParentRoute: () => AppArticlesRoute,
 } as any)
+const AppSupportTicketsIndexRoute = AppSupportTicketsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSupportTicketsRoute,
+} as any)
+const AppSupportTeamsIndexRoute = AppSupportTeamsIndexRouteImport.update({
+  id: '/support/teams/',
+  path: '/support/teams/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportDepartmentsIndexRoute =
+  AppSupportDepartmentsIndexRouteImport.update({
+    id: '/support/departments/',
+    path: '/support/departments/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSupportTicketsDeletedRoute =
+  AppSupportTicketsDeletedRouteImport.update({
+    id: '/deleted',
+    path: '/deleted',
+    getParentRoute: () => AppSupportTicketsRoute,
+  } as any)
+const AppSupportTicketsAccessRequestsRoute =
+  AppSupportTicketsAccessRequestsRouteImport.update({
+    id: '/access-requests',
+    path: '/access-requests',
+    getParentRoute: () => AppSupportTicketsRoute,
+  } as any)
 const AppSupportTicketsTicketIdRoute =
   AppSupportTicketsTicketIdRouteImport.update({
     id: '/$ticketId',
     path: '/$ticketId',
     getParentRoute: () => AppSupportTicketsRoute,
   } as any)
+const AppSupportTeamsIdRoute = AppSupportTeamsIdRouteImport.update({
+  id: '/support/teams/$id',
+  path: '/support/teams/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportDepartmentsIdRoute = AppSupportDepartmentsIdRouteImport.update({
+  id: '/support/departments/$id',
+  path: '/support/departments/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportAnalyticsIdRoute = AppSupportAnalyticsIdRouteImport.update({
+  id: '/support/analytics/$id',
+  path: '/support/analytics/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/access-control': typeof AppAccessControlRoute
   '/advertisements': typeof AppAdvertisementsRoute
   '/ai': typeof AppAiRoute
   '/analytics': typeof AppAnalyticsRoute
@@ -318,6 +419,8 @@ export interface FileRoutesByFullPath {
   '/posts': typeof AppPostsRoute
   '/profile': typeof AppProfileRoute
   '/reports': typeof AppReportsRoute
+  '/request-access': typeof AppRequestAccessRoute
+  '/role-requests': typeof AppRoleRequestsRoute
   '/roles': typeof AppRolesRoute
   '/settings': typeof AppSettingsRoute
   '/status': typeof AppStatusRoute
@@ -331,18 +434,32 @@ export interface FileRoutesByFullPath {
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/support/agents': typeof AppSupportAgentsRoute
+  '/support/canned-responses': typeof AppSupportCannedResponsesRoute
+  '/support/comparisons': typeof AppSupportComparisonsRoute
   '/support/kb': typeof AppSupportKbRoute
+  '/support/reports': typeof AppSupportReportsRoute
   '/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/users/$userId': typeof AppUsersUserIdRoute
+  '/users/deleted': typeof AppUsersDeletedRoute
   '/articles/': typeof AppArticlesIndexRoute
   '/audit/': typeof AppAuditIndexRoute
   '/moderation/': typeof AppModerationIndexRoute
   '/support/': typeof AppSupportIndexRoute
   '/users/': typeof AppUsersIndexRoute
+  '/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
+  '/support/departments/$id': typeof AppSupportDepartmentsIdRoute
+  '/support/teams/$id': typeof AppSupportTeamsIdRoute
   '/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
+  '/support/tickets/access-requests': typeof AppSupportTicketsAccessRequestsRoute
+  '/support/tickets/deleted': typeof AppSupportTicketsDeletedRoute
+  '/support/departments/': typeof AppSupportDepartmentsIndexRoute
+  '/support/teams/': typeof AppSupportTeamsIndexRoute
+  '/support/tickets/': typeof AppSupportTicketsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/access-control': typeof AppAccessControlRoute
   '/advertisements': typeof AppAdvertisementsRoute
   '/ai': typeof AppAiRoute
   '/analytics': typeof AppAnalyticsRoute
@@ -363,6 +480,8 @@ export interface FileRoutesByTo {
   '/posts': typeof AppPostsRoute
   '/profile': typeof AppProfileRoute
   '/reports': typeof AppReportsRoute
+  '/request-access': typeof AppRequestAccessRoute
+  '/role-requests': typeof AppRoleRequestsRoute
   '/roles': typeof AppRolesRoute
   '/settings': typeof AppSettingsRoute
   '/status': typeof AppStatusRoute
@@ -375,20 +494,33 @@ export interface FileRoutesByTo {
   '/audit/$entryId': typeof AppAuditEntryIdRoute
   '/help/$articleId': typeof AppHelpArticleIdRoute
   '/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/support/agents': typeof AppSupportAgentsRoute
+  '/support/canned-responses': typeof AppSupportCannedResponsesRoute
+  '/support/comparisons': typeof AppSupportComparisonsRoute
   '/support/kb': typeof AppSupportKbRoute
-  '/support/tickets': typeof AppSupportTicketsRouteWithChildren
+  '/support/reports': typeof AppSupportReportsRoute
   '/users/$userId': typeof AppUsersUserIdRoute
+  '/users/deleted': typeof AppUsersDeletedRoute
   '/articles': typeof AppArticlesIndexRoute
   '/audit': typeof AppAuditIndexRoute
   '/moderation': typeof AppModerationIndexRoute
   '/support': typeof AppSupportIndexRoute
   '/users': typeof AppUsersIndexRoute
+  '/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
+  '/support/departments/$id': typeof AppSupportDepartmentsIdRoute
+  '/support/teams/$id': typeof AppSupportTeamsIdRoute
   '/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
+  '/support/tickets/access-requests': typeof AppSupportTicketsAccessRequestsRoute
+  '/support/tickets/deleted': typeof AppSupportTicketsDeletedRoute
+  '/support/departments': typeof AppSupportDepartmentsIndexRoute
+  '/support/teams': typeof AppSupportTeamsIndexRoute
+  '/support/tickets': typeof AppSupportTicketsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/_app/access-control': typeof AppAccessControlRoute
   '/_app/advertisements': typeof AppAdvertisementsRoute
   '/_app/ai': typeof AppAiRoute
   '/_app/analytics': typeof AppAnalyticsRoute
@@ -412,6 +544,8 @@ export interface FileRoutesById {
   '/_app/posts': typeof AppPostsRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/reports': typeof AppReportsRoute
+  '/_app/request-access': typeof AppRequestAccessRoute
+  '/_app/role-requests': typeof AppRoleRequestsRoute
   '/_app/roles': typeof AppRolesRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/status': typeof AppStatusRoute
@@ -425,20 +559,34 @@ export interface FileRoutesById {
   '/_app/audit/$entryId': typeof AppAuditEntryIdRoute
   '/_app/help/$articleId': typeof AppHelpArticleIdRoute
   '/_app/moderation/$reportId': typeof AppModerationReportIdRoute
+  '/_app/support/agents': typeof AppSupportAgentsRoute
+  '/_app/support/canned-responses': typeof AppSupportCannedResponsesRoute
+  '/_app/support/comparisons': typeof AppSupportComparisonsRoute
   '/_app/support/kb': typeof AppSupportKbRoute
+  '/_app/support/reports': typeof AppSupportReportsRoute
   '/_app/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/_app/users/$userId': typeof AppUsersUserIdRoute
+  '/_app/users/deleted': typeof AppUsersDeletedRoute
   '/_app/articles/': typeof AppArticlesIndexRoute
   '/_app/audit/': typeof AppAuditIndexRoute
   '/_app/moderation/': typeof AppModerationIndexRoute
   '/_app/support/': typeof AppSupportIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
+  '/_app/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
+  '/_app/support/departments/$id': typeof AppSupportDepartmentsIdRoute
+  '/_app/support/teams/$id': typeof AppSupportTeamsIdRoute
   '/_app/support/tickets/$ticketId': typeof AppSupportTicketsTicketIdRoute
+  '/_app/support/tickets/access-requests': typeof AppSupportTicketsAccessRequestsRoute
+  '/_app/support/tickets/deleted': typeof AppSupportTicketsDeletedRoute
+  '/_app/support/departments/': typeof AppSupportDepartmentsIndexRoute
+  '/_app/support/teams/': typeof AppSupportTeamsIndexRoute
+  '/_app/support/tickets/': typeof AppSupportTicketsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/access-control'
     | '/advertisements'
     | '/ai'
     | '/analytics'
@@ -462,6 +610,8 @@ export interface FileRouteTypes {
     | '/posts'
     | '/profile'
     | '/reports'
+    | '/request-access'
+    | '/role-requests'
     | '/roles'
     | '/settings'
     | '/status'
@@ -475,18 +625,32 @@ export interface FileRouteTypes {
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
+    | '/support/agents'
+    | '/support/canned-responses'
+    | '/support/comparisons'
     | '/support/kb'
+    | '/support/reports'
     | '/support/tickets'
     | '/users/$userId'
+    | '/users/deleted'
     | '/articles/'
     | '/audit/'
     | '/moderation/'
     | '/support/'
     | '/users/'
+    | '/support/analytics/$id'
+    | '/support/departments/$id'
+    | '/support/teams/$id'
     | '/support/tickets/$ticketId'
+    | '/support/tickets/access-requests'
+    | '/support/tickets/deleted'
+    | '/support/departments/'
+    | '/support/teams/'
+    | '/support/tickets/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/access-control'
     | '/advertisements'
     | '/ai'
     | '/analytics'
@@ -507,6 +671,8 @@ export interface FileRouteTypes {
     | '/posts'
     | '/profile'
     | '/reports'
+    | '/request-access'
+    | '/role-requests'
     | '/roles'
     | '/settings'
     | '/status'
@@ -519,19 +685,32 @@ export interface FileRouteTypes {
     | '/audit/$entryId'
     | '/help/$articleId'
     | '/moderation/$reportId'
+    | '/support/agents'
+    | '/support/canned-responses'
+    | '/support/comparisons'
     | '/support/kb'
-    | '/support/tickets'
+    | '/support/reports'
     | '/users/$userId'
+    | '/users/deleted'
     | '/articles'
     | '/audit'
     | '/moderation'
     | '/support'
     | '/users'
+    | '/support/analytics/$id'
+    | '/support/departments/$id'
+    | '/support/teams/$id'
     | '/support/tickets/$ticketId'
+    | '/support/tickets/access-requests'
+    | '/support/tickets/deleted'
+    | '/support/departments'
+    | '/support/teams'
+    | '/support/tickets'
   id:
     | '__root__'
     | '/'
     | '/_app'
+    | '/_app/access-control'
     | '/_app/advertisements'
     | '/_app/ai'
     | '/_app/analytics'
@@ -555,6 +734,8 @@ export interface FileRouteTypes {
     | '/_app/posts'
     | '/_app/profile'
     | '/_app/reports'
+    | '/_app/request-access'
+    | '/_app/role-requests'
     | '/_app/roles'
     | '/_app/settings'
     | '/_app/status'
@@ -568,15 +749,28 @@ export interface FileRouteTypes {
     | '/_app/audit/$entryId'
     | '/_app/help/$articleId'
     | '/_app/moderation/$reportId'
+    | '/_app/support/agents'
+    | '/_app/support/canned-responses'
+    | '/_app/support/comparisons'
     | '/_app/support/kb'
+    | '/_app/support/reports'
     | '/_app/support/tickets'
     | '/_app/users/$userId'
+    | '/_app/users/deleted'
     | '/_app/articles/'
     | '/_app/audit/'
     | '/_app/moderation/'
     | '/_app/support/'
     | '/_app/users/'
+    | '/_app/support/analytics/$id'
+    | '/_app/support/departments/$id'
+    | '/_app/support/teams/$id'
     | '/_app/support/tickets/$ticketId'
+    | '/_app/support/tickets/access-requests'
+    | '/_app/support/tickets/deleted'
+    | '/_app/support/departments/'
+    | '/_app/support/teams/'
+    | '/_app/support/tickets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -662,6 +856,20 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof AppRolesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/role-requests': {
+      id: '/_app/role-requests'
+      path: '/role-requests'
+      fullPath: '/role-requests'
+      preLoaderRoute: typeof AppRoleRequestsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/request-access': {
+      id: '/_app/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof AppRequestAccessRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/reports': {
@@ -825,6 +1033,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdvertisementsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/access-control': {
+      id: '/_app/access-control'
+      path: '/access-control'
+      fullPath: '/access-control'
+      preLoaderRoute: typeof AppAccessControlRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/users/': {
       id: '/_app/users/'
       path: '/'
@@ -860,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArticlesIndexRouteImport
       parentRoute: typeof AppArticlesRoute
     }
+    '/_app/users/deleted': {
+      id: '/_app/users/deleted'
+      path: '/deleted'
+      fullPath: '/users/deleted'
+      preLoaderRoute: typeof AppUsersDeletedRouteImport
+      parentRoute: typeof AppUsersRoute
+    }
     '/_app/users/$userId': {
       id: '/_app/users/$userId'
       path: '/$userId'
@@ -874,11 +1096,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSupportTicketsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/support/reports': {
+      id: '/_app/support/reports'
+      path: '/support/reports'
+      fullPath: '/support/reports'
+      preLoaderRoute: typeof AppSupportReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/support/kb': {
       id: '/_app/support/kb'
       path: '/support/kb'
       fullPath: '/support/kb'
       preLoaderRoute: typeof AppSupportKbRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/comparisons': {
+      id: '/_app/support/comparisons'
+      path: '/support/comparisons'
+      fullPath: '/support/comparisons'
+      preLoaderRoute: typeof AppSupportComparisonsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/canned-responses': {
+      id: '/_app/support/canned-responses'
+      path: '/support/canned-responses'
+      fullPath: '/support/canned-responses'
+      preLoaderRoute: typeof AppSupportCannedResponsesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/agents': {
+      id: '/_app/support/agents'
+      path: '/support/agents'
+      fullPath: '/support/agents'
+      preLoaderRoute: typeof AppSupportAgentsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/moderation/$reportId': {
@@ -909,12 +1159,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArticlesArticleIdRouteImport
       parentRoute: typeof AppArticlesRoute
     }
+    '/_app/support/tickets/': {
+      id: '/_app/support/tickets/'
+      path: '/'
+      fullPath: '/support/tickets/'
+      preLoaderRoute: typeof AppSupportTicketsIndexRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
+    }
+    '/_app/support/teams/': {
+      id: '/_app/support/teams/'
+      path: '/support/teams'
+      fullPath: '/support/teams/'
+      preLoaderRoute: typeof AppSupportTeamsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/departments/': {
+      id: '/_app/support/departments/'
+      path: '/support/departments'
+      fullPath: '/support/departments/'
+      preLoaderRoute: typeof AppSupportDepartmentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/tickets/deleted': {
+      id: '/_app/support/tickets/deleted'
+      path: '/deleted'
+      fullPath: '/support/tickets/deleted'
+      preLoaderRoute: typeof AppSupportTicketsDeletedRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
+    }
+    '/_app/support/tickets/access-requests': {
+      id: '/_app/support/tickets/access-requests'
+      path: '/access-requests'
+      fullPath: '/support/tickets/access-requests'
+      preLoaderRoute: typeof AppSupportTicketsAccessRequestsRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
+    }
     '/_app/support/tickets/$ticketId': {
       id: '/_app/support/tickets/$ticketId'
       path: '/$ticketId'
       fullPath: '/support/tickets/$ticketId'
       preLoaderRoute: typeof AppSupportTicketsTicketIdRouteImport
       parentRoute: typeof AppSupportTicketsRoute
+    }
+    '/_app/support/teams/$id': {
+      id: '/_app/support/teams/$id'
+      path: '/support/teams/$id'
+      fullPath: '/support/teams/$id'
+      preLoaderRoute: typeof AppSupportTeamsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/departments/$id': {
+      id: '/_app/support/departments/$id'
+      path: '/support/departments/$id'
+      fullPath: '/support/departments/$id'
+      preLoaderRoute: typeof AppSupportDepartmentsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/analytics/$id': {
+      id: '/_app/support/analytics/$id'
+      path: '/support/analytics/$id'
+      fullPath: '/support/analytics/$id'
+      preLoaderRoute: typeof AppSupportAnalyticsIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
@@ -974,11 +1280,13 @@ const AppModerationRouteWithChildren = AppModerationRoute._addFileChildren(
 
 interface AppUsersRouteChildren {
   AppUsersUserIdRoute: typeof AppUsersUserIdRoute
+  AppUsersDeletedRoute: typeof AppUsersDeletedRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
 }
 
 const AppUsersRouteChildren: AppUsersRouteChildren = {
   AppUsersUserIdRoute: AppUsersUserIdRoute,
+  AppUsersDeletedRoute: AppUsersDeletedRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
 }
 
@@ -988,16 +1296,23 @@ const AppUsersRouteWithChildren = AppUsersRoute._addFileChildren(
 
 interface AppSupportTicketsRouteChildren {
   AppSupportTicketsTicketIdRoute: typeof AppSupportTicketsTicketIdRoute
+  AppSupportTicketsAccessRequestsRoute: typeof AppSupportTicketsAccessRequestsRoute
+  AppSupportTicketsDeletedRoute: typeof AppSupportTicketsDeletedRoute
+  AppSupportTicketsIndexRoute: typeof AppSupportTicketsIndexRoute
 }
 
 const AppSupportTicketsRouteChildren: AppSupportTicketsRouteChildren = {
   AppSupportTicketsTicketIdRoute: AppSupportTicketsTicketIdRoute,
+  AppSupportTicketsAccessRequestsRoute: AppSupportTicketsAccessRequestsRoute,
+  AppSupportTicketsDeletedRoute: AppSupportTicketsDeletedRoute,
+  AppSupportTicketsIndexRoute: AppSupportTicketsIndexRoute,
 }
 
 const AppSupportTicketsRouteWithChildren =
   AppSupportTicketsRoute._addFileChildren(AppSupportTicketsRouteChildren)
 
 interface AppRouteChildren {
+  AppAccessControlRoute: typeof AppAccessControlRoute
   AppAdvertisementsRoute: typeof AppAdvertisementsRoute
   AppAiRoute: typeof AppAiRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
@@ -1021,6 +1336,8 @@ interface AppRouteChildren {
   AppPostsRoute: typeof AppPostsRoute
   AppProfileRoute: typeof AppProfileRoute
   AppReportsRoute: typeof AppReportsRoute
+  AppRequestAccessRoute: typeof AppRequestAccessRoute
+  AppRoleRequestsRoute: typeof AppRoleRequestsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStatusRoute: typeof AppStatusRoute
@@ -1029,12 +1346,22 @@ interface AppRouteChildren {
   AppUsersRoute: typeof AppUsersRouteWithChildren
   AppVideosRoute: typeof AppVideosRoute
   AppWebhooksRoute: typeof AppWebhooksRoute
+  AppSupportAgentsRoute: typeof AppSupportAgentsRoute
+  AppSupportCannedResponsesRoute: typeof AppSupportCannedResponsesRoute
+  AppSupportComparisonsRoute: typeof AppSupportComparisonsRoute
   AppSupportKbRoute: typeof AppSupportKbRoute
+  AppSupportReportsRoute: typeof AppSupportReportsRoute
   AppSupportTicketsRoute: typeof AppSupportTicketsRouteWithChildren
   AppSupportIndexRoute: typeof AppSupportIndexRoute
+  AppSupportAnalyticsIdRoute: typeof AppSupportAnalyticsIdRoute
+  AppSupportDepartmentsIdRoute: typeof AppSupportDepartmentsIdRoute
+  AppSupportTeamsIdRoute: typeof AppSupportTeamsIdRoute
+  AppSupportDepartmentsIndexRoute: typeof AppSupportDepartmentsIndexRoute
+  AppSupportTeamsIndexRoute: typeof AppSupportTeamsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAccessControlRoute: AppAccessControlRoute,
   AppAdvertisementsRoute: AppAdvertisementsRoute,
   AppAiRoute: AppAiRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
@@ -1058,6 +1385,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppPostsRoute: AppPostsRoute,
   AppProfileRoute: AppProfileRoute,
   AppReportsRoute: AppReportsRoute,
+  AppRequestAccessRoute: AppRequestAccessRoute,
+  AppRoleRequestsRoute: AppRoleRequestsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStatusRoute: AppStatusRoute,
@@ -1066,9 +1395,18 @@ const AppRouteChildren: AppRouteChildren = {
   AppUsersRoute: AppUsersRouteWithChildren,
   AppVideosRoute: AppVideosRoute,
   AppWebhooksRoute: AppWebhooksRoute,
+  AppSupportAgentsRoute: AppSupportAgentsRoute,
+  AppSupportCannedResponsesRoute: AppSupportCannedResponsesRoute,
+  AppSupportComparisonsRoute: AppSupportComparisonsRoute,
   AppSupportKbRoute: AppSupportKbRoute,
+  AppSupportReportsRoute: AppSupportReportsRoute,
   AppSupportTicketsRoute: AppSupportTicketsRouteWithChildren,
   AppSupportIndexRoute: AppSupportIndexRoute,
+  AppSupportAnalyticsIdRoute: AppSupportAnalyticsIdRoute,
+  AppSupportDepartmentsIdRoute: AppSupportDepartmentsIdRoute,
+  AppSupportTeamsIdRoute: AppSupportTeamsIdRoute,
+  AppSupportDepartmentsIndexRoute: AppSupportDepartmentsIndexRoute,
+  AppSupportTeamsIndexRoute: AppSupportTeamsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

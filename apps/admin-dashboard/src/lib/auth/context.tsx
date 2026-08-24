@@ -58,25 +58,73 @@ const REFRESH_TOKEN_KEY = "vellum.admin.refresh.v1";
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-function roleFromApiRole(apiRole: string): Role {
-  const roleMap: Record<string, Role> = {
+/**
+ * Converts an API role string to a display-friendly format
+ * Handles both predefined roles and custom roles
+ * 
+ * Examples:
+ * - ADMIN -> Admin
+ * - SUPPORT_ADMIN -> Support Admin
+ * - EXAMPLE_ROLE -> Example Role
+ * - CUSTOM_ROLE_NAME -> Custom Role Name
+ * 
+ * @param apiRole - The role string from the API (uppercase with underscores)
+ * @returns A formatted display name for the role
+ */
+
+// ─── Alternative: More robust version with handling for edge cases ───
+
+function roleFromApiRole(apiRole: string): string {
+  if (!apiRole || typeof apiRole !== "string") {
+    return "User";
+  }
+
+  // ─── Predefined role mapping ───
+  const roleMap: Record<string, string> = {
     ADMIN: "Admin",
     MODERATOR: "Moderator",
     CREATOR: "Creator",
     USER: "User",
     GUEST: "Guest",
+    SUPPORT_ADMIN: "SupportAdmin",
+    SUPPORT_AGENT: "SupportAgent",
+    SUPER_ADMIN: "SuperAdmin",
+    CONTENT_MANAGER: "ContentManager",
+    ANALYTICS_VIEWER: "AnalyticsViewer",
   };
-  return roleMap[apiRole] || "User";
+
+  // ─── Check if it's a predefined role ───
+  if (roleMap[apiRole]) {
+    return roleMap[apiRole];
+  }
+
+  // ─── Handle custom roles ───
+  // Split by underscore, capitalize each part, and join with spaces
+  const parts = apiRole.split("_");
+  const formatted = parts
+    .map((part) => {
+      // Handle edge cases like abbreviations (e.g., "API" -> "API")
+      if (part === part.toUpperCase() && part.length <= 3) {
+        return part;
+      }
+      // Capitalize first letter, keep the rest as is
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join("");
+
+  return formatted;
 }
+
 
 function mapApiUser(apiUser: any): AuthUser {
   const handle = apiUser.handle || apiUser.email?.split("@")[0] || "user";
-  return {
+
+   return {
     id: apiUser.id,
     name: apiUser.name,
     email: apiUser.email,
     handle: handle.startsWith("@") ? handle : `@${handle}`,
-    role: roleFromApiRole(apiUser.role),
+    role: roleFromApiRole(apiUser.role) as any,
     avatarSeed: handle,
     avatar: apiUser.avatar ?? null,
     bio: apiUser.bio ?? null,

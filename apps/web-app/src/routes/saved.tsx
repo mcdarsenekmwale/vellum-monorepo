@@ -5,6 +5,7 @@ import { Bookmark } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { SmartState } from "@/components/SmartState";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export const Route = createFileRoute("/saved")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/saved")({
 
 function SavedPage() {
   const { data, isLoading, error } = useBookmarkedArticles(1, 100);
+  const { t } = useI18n();
   const saved = data?.data || [];
 
   return (
@@ -28,7 +30,7 @@ function SavedPage() {
       <EnhancedErrorBoundary>
         <div className="max-w-[900px] mx-auto">
           <section className="mb-6">
-            <h1 className="text-3xl font-display italic mb-2">Saved</h1>
+            <h1 className="text-3xl font-display italic mb-2">{t("navigation.saved")}</h1>
             <p className="text-sm text-muted-foreground">
               {saved.length} {saved.length === 1 ? "story" : "stories"} in your library
             </p>
@@ -40,7 +42,7 @@ function SavedPage() {
             error={error}
             data={saved}
             useShimmer
-            emptyTitle="Nothing saved yet"
+            emptyTitle={t("emptyStates.noSavedArticles")}
             emptyDescription="Tap the bookmark on any story to keep it here."
             onRetry={() => window.location.reload()}
             shimmerComponent={

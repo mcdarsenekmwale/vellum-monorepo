@@ -1,6 +1,10 @@
-import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import { useLocalSearchParams, Link } from 'expo-router';
 import { useCategories, useArticles } from '../../hooks/useApi';
+import { useI18n } from 'context/I18nProvider';
+import { useTheme } from 'context/ThemeProvider';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CustomHeader, ThemedBackButton } from 'app/_layout';
 
 const timeAgo = (date: Date) => {
   const now = new Date();
@@ -19,6 +23,8 @@ const timeAgo = (date: Date) => {
 
 export default function CategoryPage() {
   const { name } = useLocalSearchParams();
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories();
   const { data: articlesData, isLoading: articlesLoading, error: articlesError, refetch: refetchArticles } = useArticles(1, 100);
 
@@ -36,7 +42,7 @@ export default function CategoryPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f4ee', justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#ff6b6b" />
       </View>
     );
@@ -44,43 +50,55 @@ export default function CategoryPage() {
 
   if (error || !category) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f4ee', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <Text style={{ fontSize: 16, color: '#666666', textAlign: 'center' }}>{error || 'Category not found'}</Text>
-        <TouchableOpacity onPress={handleRetry} style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#000000', borderRadius: 20 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>Retry</Text>
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <Text style={{ fontSize: 16, color: colors.textMuted, alignItems: 'center' }}>{error || 'Category not found'}</Text>
+        <TouchableOpacity onPress={handleRetry} style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 20 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primaryText }}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#f7f4ee', flex: 1 }}>
-      <View style={{ paddingHorizontal: 24, paddingVertical: 24 }}>
-        <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: '#666666' }}>Section</Text>
-        <Text style={{ fontSize: 32, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 8, color: '#000000' }}>{category.name}</Text>
-        <Text style={{ fontSize: 14, color: '#666666', marginTop: 8 }}>
-          {categoryArticles.length} stories in this section
-        </Text>
-      </View>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+      
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <CustomHeader
+     
+        left={<ThemedBackButton />}
+        title={t('settings.contactLabelCategory')}
+        edges={['left', 'right']}
 
-      <View style={{ paddingHorizontal: 24, paddingBottom: 100 }}>
-        <View style={{ gap: 24 }}>
-          {categoryArticles.map((a) => (
-            <Link key={a.slug} href={`/article/${a.slug}`} asChild>
-              <TouchableOpacity style={{ flexDirection: 'row', gap: 16 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 9, fontWeight: '600', color: '#ff6b6b', textTransform: 'uppercase', letterSpacing: 1 }}>{a.category.name}</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#000000', marginTop: 4 }}>{a.title}</Text>
-                  <Text style={{ fontSize: 12, color: '#666666', marginTop: 4 }}>
-                    {a.author.name} · {timeAgo(new Date(a.publishedAt || a.createdAt))} · {a.readMinutes} min
-                  </Text>
-                </View>
-                <Image source={{ uri: a.cover || '' }} style={{ width: 80, height: 80, borderRadius: 8 }} />
-              </TouchableOpacity>
-            </Link>
-          ))}
+      />
+      <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
+        <View style={{ paddingHorizontal: 24, paddingVertical: 24 }}>
+          <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: colors.textMuted }}>Section</Text>
+          <Text style={{ fontSize: 32, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 8, color: colors.text }}>{category.name}</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 8 }}>
+            {categoryArticles.length} stories in this section
+          </Text>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={{ paddingHorizontal: 24, paddingBottom: 100 }}>
+          <View style={{ gap: 24 }}>
+            {categoryArticles.map((a) => (
+              <Link key={a.slug} href={`/article/${a.slug}`} asChild>
+                <TouchableOpacity style={{ flexDirection: 'row', gap: 16 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '600', color: '#ff6b6b', textTransform: 'uppercase', letterSpacing: 1 }}>{a.category.name}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#000000', marginTop: 4 }}>{a.title}</Text>
+                    <Text style={{ fontSize: 12, color: '#666666', marginTop: 4 }}>
+                      {a.author.name} · {timeAgo(new Date(a.publishedAt || a.createdAt))} · {a.readMinutes} min
+                    </Text>
+                  </View>
+                  <Image source={{ uri: a.cover || '' }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+    

@@ -9,7 +9,7 @@
  * 2. Auto-detect based on Vite's DEV flag
  */
 
-const PROD_API_URL = 'https://x6f90klu3dvfsyiudrvzkh6i.ewr.prisma.build';
+const PROD_API_URL = 'https://ffzjnfcr4yvv2rn311ybs5tf.ewr.prisma.build';
 const DEV_API_URL = 'http://localhost:3001';
 
 export const apiBaseUrl: string =

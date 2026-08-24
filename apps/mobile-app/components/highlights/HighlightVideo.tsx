@@ -34,13 +34,32 @@ const HighlightVideo = memo(function HighlightVideo({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Video player setup using expo-video ~3.0 API
+  // Video player setup using expo-video ~3.0 API (exposes no `VideoView.onReadyForDisplay`).
+  // Hide the loading spinner once the player is ready; fall back to a short timeout.
   const player = useVideoPlayer(
     videoUrl ? { uri: videoUrl } : null,
-    (player) => {
-      if (player) {
-        player.loop = loop;
-        player.muted = isMuted;
+    (playerRef) => {
+      if (playerRef) {
+        playerRef.loop = loop;
+        playerRef.muted = isMuted;
+        const t = setTimeout(() => setIsLoading(false), 700);
+        try {
+          const anyPlayer = playerRef as any;
+          let cleaned = false;
+          const unsub = anyPlayer.addListener?.({
+            playbackStateChange: () => { if (!cleaned) { setIsLoading(false); cleanUp(); } },
+            statusChange: () => { if (!cleaned) { setIsLoading(false); cleanUp(); } },
+          });
+          function cleanUp() {
+            if (cleaned) return;
+            cleaned = true;
+            clearTimeout(t);
+            if (typeof unsub === 'function') unsub();
+          }
+          if (typeof unsub === 'function') return cleanUp;
+        } catch {
+          /* listener API varies */
+        }
       }
     }
   );
@@ -136,7 +155,6 @@ const HighlightVideo = memo(function HighlightVideo({
           style={[styles.videoView, mediaStyle, { opacity: isLoading ? 0 : 1 }]}
           contentFit="cover"
           nativeControls={false}
-          onReadyForDisplay={handleLoad}
         />
       ) : (
         <Image

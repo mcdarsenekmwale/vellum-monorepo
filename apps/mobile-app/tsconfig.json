@@ -15,6 +15,9 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@shared-i18n/*": [
+        "../../packages/shared-i18n/*"
       ]
     },
     "types": [

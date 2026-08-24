@@ -7,6 +7,8 @@ import type { Article, Story } from '@vellum/api-client/types';
 import ShimmerImage from '../components/ShimmerImage';
 import { Avatar } from '../components/Avatar';
 import { ArticleActions } from '../components/ArticleActions';
+import { useTheme } from '../context/ThemeProvider';
+import { useI18n } from '../context/I18nProvider';
 
 const STORY_24H = 24 * 60 * 60 * 1000;
 
@@ -22,6 +24,8 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export default function FeedPage() {
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const { user, isAuthenticated } = useAuthState();
   const { data: articlesData, isLoading: articlesLoading, error: articlesError, refetch: refetchArticles } = useArticles(1, 10);
   const { data: highlightsData, isLoading: highlightsLoading, error: highlightsError } = useHighlights(1, 10);
@@ -130,10 +134,10 @@ export default function FeedPage() {
 
   if (articlesLoading || highlightsLoading) {
     return (
-      <ScrollView style={{ backgroundColor: '#f7f4ee', flex: 1 }}>
+      <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#000000" />
-          <Text style={{ marginTop: 12, color: '#666666' }}>Loading content...</Text>
+          <ActivityIndicator size="large" color={colors.textPrimary} />
+          <Text style={{ marginTop: 12, color: colors.textSecondary }}>Loading content...</Text>
         </View>
       </ScrollView>
     );
@@ -141,11 +145,11 @@ export default function FeedPage() {
 
   if (articlesError || highlightsError) {
     return (
-      <ScrollView style={{ backgroundColor: '#f7f4ee', flex: 1 }}>
+      <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: '#e11d48', fontSize: 16 }}>Failed to load content</Text>
+          <Text style={{ color: colors.danger, fontSize: 16 }}>Failed to load content</Text>
           <TouchableOpacity onPress={refetchArticles} style={{ marginTop: 16 }}>
-            <Text style={{ color: '#d97706', fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: colors.warning, fontWeight: '600' }}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -153,12 +157,12 @@ export default function FeedPage() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: '#f7f4ee', flex: 1 }}>
+    <ScrollView style={{ backgroundColor: colors.background, flex: 1 }}>
       <ScrollView horizontal style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }} showsHorizontalScrollIndicator={false}>
         {isAuthenticated && user && (
           <Link href="/profile" asChild>
             <TouchableOpacity style={{ alignItems: 'center', width: 64, marginRight: 6 }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: '#d97706', padding: 2 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: colors.warning, padding: 2 }}>
                 <Avatar uri={user.avatar} name={user.name} handle={user.handle} size={54} />
               </View>
               <Text style={{ 
@@ -166,7 +170,7 @@ export default function FeedPage() {
                 textAlign: 'center', 
                 fontWeight: '600', 
                 marginTop: 5, 
-                color: '#000000', 
+                color: colors.textPrimary, 
                 textTransform: 'uppercase',
                 letterSpacing: 0.5 
                 }} numberOfLines={1}>Your Story</Text>
@@ -184,14 +188,14 @@ export default function FeedPage() {
                 <View style={{
                   width: 64, height: 64, borderRadius: 32,
                   borderWidth: 3,
-                  borderColor: unviewed ? '#d97706' : '#e5e5e5',
+                  borderColor: unviewed ? colors.warning : colors.border,
                   padding: 2,
                 }}>
                   <Avatar uri={s.avatar} name={s.name} handle={s.handle} size={54} />
                 </View>
                 <Text style={{
                   fontSize: 10, fontWeight: '600', marginTop: 5,
-                  color: unviewed ? '#000000' : '#999999',
+                  color: unviewed ? colors.textPrimary : colors.textMuted,
                   textAlign: 'center', width: '100%',
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -215,21 +219,21 @@ export default function FeedPage() {
                   resizeMode="cover"
                   borderRadius={16}
                 />
-                <View style={{ position: 'absolute', top: 12, left: 12, backgroundColor: '#ffffff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: '#000000' }}>Feature</Text>
+                <View style={{ position: 'absolute', top: 12, left: 12, backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: colors.textPrimary }}>Feature</Text>
                 </View>
               </View>
             </TouchableOpacity>
           </Link>
-          <Text style={{ fontSize: 10, fontWeight: '600', color: '#d97706', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Text style={{ fontSize: 10, fontWeight: '600', color: colors.warning, textTransform: 'uppercase', letterSpacing: 1 }}>
             {featured.category?.name || 'Article'} · {featured.readMinutes} min read
           </Text>
           <Link href={`/article/${featured.slug}`} asChild>
             <TouchableOpacity>
-              <Text style={{ fontSize: 28, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 8, color: '#000000', lineHeight: 32 }}>
+              <Text style={{ fontSize: 28, fontFamily: 'Georgia', fontStyle: 'italic', marginTop: 8, color: colors.textPrimary, lineHeight: 32 }}>
                 {featured.title}
               </Text>
-              <Text style={{ fontSize: 14, color: '#666666', marginTop: 8, lineHeight: 20 }}>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8, lineHeight: 20 }}>
                 {featured.excerpt}
               </Text>
             </TouchableOpacity>
@@ -244,8 +248,8 @@ export default function FeedPage() {
                   size={36}
                 />
                 <View>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>{featured.author?.name}</Text>
-                  <Text style={{ fontSize: 10, color: '#999999' }}>{formatRelativeTime(featured.publishedAt || featured.createdAt)}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textPrimary }}>{featured.author?.name}</Text>
+                  <Text style={{ fontSize: 10, color: colors.textMuted }}>{formatRelativeTime(featured.publishedAt || featured.createdAt)}</Text>
                 </View>
               </TouchableOpacity>
             </Link>
@@ -260,17 +264,17 @@ export default function FeedPage() {
               size="medium"
               showShare={true}
               showCounts={false}
-              tintColor="#0a0a0a"
-              activeTintColor="#e11d48"
+              tintColor={colors.textPrimary}
+              activeTintColor={colors.danger}
             />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-            <Eye size={12} color="#a3a3a3" />
-            <Text style={{ fontSize: 11, color: '#a3a3a3', fontWeight: '500' }}>
+            <Eye size={12} color={colors.textMuted} />
+            <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '500' }}>
               {(featured.views || 0).toLocaleString()} views
             </Text>
-            <Text style={{ fontSize: 11, color: '#a3a3a3' }}>·</Text>
-            <Text style={{ fontSize: 11, color: '#a3a3a3', fontWeight: '500' }}>
+            <Text style={{ fontSize: 11, color: colors.textMuted }}>·</Text>
+            <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '500' }}>
               {getLikesCount(featured).toLocaleString()} likes
             </Text>
           </View>
@@ -279,10 +283,10 @@ export default function FeedPage() {
 
       <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
-          <Text style={{ fontSize: 20, fontFamily: 'Georgia', fontStyle: 'italic', color: '#000000' }}>Atmospherics</Text>
+          <Text style={{ fontSize: 20, fontFamily: 'Georgia', fontStyle: 'italic', color: colors.textPrimary }}>Atmospherics</Text>
           <Link href="/highlights" asChild>
             <TouchableOpacity>
-              <Text style={{ fontSize: 10, fontWeight: '600', color: '#ff6b6b', textTransform: 'uppercase', letterSpacing: 1 }}>Watch All</Text>
+              <Text style={{ fontSize: 10, fontWeight: '600', color: colors.accent, textTransform: 'uppercase', letterSpacing: 1 }}>Watch All</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -291,9 +295,9 @@ export default function FeedPage() {
             <Link key={r.id} href="/highlights" asChild style={{ marginRight: 10 }}>
               <TouchableOpacity style={{ width: 150, aspectRatio: 9/16, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
                 <Image source={{ uri: r.cover || r.thumbnailUrl || 'https://via.placeholder.com/150x267' }} style={{ width: '100%', height: '100%' }} />
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', padding: 12 }}>
-                  <Text style={{ fontSize: 10, color: '#ffffff', opacity: 0.8 }}>{r.author?.handle || r.handle}</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#ffffff', marginTop: 4 }}>{r.title}</Text>
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.overlay, padding: 12 }}>
+                  <Text style={{ fontSize: 10, color: colors.inverseText, opacity: 0.8 }}>{r.author?.handle || r.handle}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.inverseText, marginTop: 4 }}>{r.title}</Text>
                 </View>
               </TouchableOpacity>
             </Link>
@@ -312,9 +316,9 @@ export default function FeedPage() {
               <Link href={`/article/${a.slug}`} asChild>
                 <TouchableOpacity style={{ flexDirection: 'row', gap: 16 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, fontWeight: '600', color: '#d97706', textTransform: 'uppercase', letterSpacing: 1 }}>{a.category?.name}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#000000', marginTop: 4, lineHeight: 20 }}>{a.title}</Text>
-                    <Text style={{ fontSize: 12, color: '#666666', marginTop: 4 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '600', color: colors.warning, textTransform: 'uppercase', letterSpacing: 1 }}>{a.category?.name}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.textPrimary, marginTop: 4, lineHeight: 20 }}>{a.title}</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
                       {a.author?.name} · {formatRelativeTime(a.publishedAt || a.createdAt)} · {a.readMinutes} min
                     </Text>
                   </View>
@@ -323,8 +327,8 @@ export default function FeedPage() {
               </Link>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Eye size={12} color="#a3a3a3" />
-                  <Text style={{ fontSize: 11, color: '#a3a3a3', fontWeight: '500' }}>
+                  <Eye size={12} color={colors.textMuted} />
+                  <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '500' }}>
                     {(a.views || 0).toLocaleString()} views
                   </Text>
                 </View>
@@ -340,8 +344,8 @@ export default function FeedPage() {
                   showShare={true}
                   showCounts={false}
                   variant="compact"
-                  tintColor="#525252"
-                  activeTintColor="#e11d48"
+                  tintColor={colors.textSecondary}
+                  activeTintColor={colors.danger}
                 />
               </View>
             </View>

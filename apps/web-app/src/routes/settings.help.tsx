@@ -45,6 +45,26 @@ import type {
   TicketStatus,
   TicketMessage as TicketMessageType,
 } from "@vellum/api-client/types";
+import { useI18n } from "@/components/providers/I18nProvider";
+
+const STATUS_KEY_MAP: Record<TicketStatus, string> = {
+  NEW: "settings.ticketStatusNew",
+  ASSIGNED: "settings.ticketStatusAssigned",
+  IN_PROGRESS: "settings.ticketStatusInProgress",
+  WAITING_ON_CUSTOMER: "settings.ticketStatusWaitingOnCustomer",
+  ESCALATED: "settings.ticketStatusEscalated",
+  RESOLVED: "settings.ticketStatusResolved",
+  CLOSED: "settings.ticketStatusClosed",
+  REOPENED: "settings.ticketStatusReopened",
+};
+
+const PRIORITY_KEY_MAP: Record<TicketPriority, string> = {
+  LOW: "settings.ticketPriorityLow",
+  MEDIUM: "settings.ticketPriorityMedium",
+  HIGH: "settings.ticketPriorityHigh",
+  CRITICAL: "settings.ticketPriorityCritical",
+  EMERGENCY: "settings.ticketPriorityEmergency",
+};
 
 export const Route = createFileRoute("/settings/help")({
   head: () => ({
@@ -74,17 +94,6 @@ const ICON_MAP: Record<string, React.FC<{ className?: string; strokeWidth?: numb
 
 type Tab = "kb" | "contact" | "tickets";
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  NEW: "New",
-  ASSIGNED: "Assigned",
-  IN_PROGRESS: "In Progress",
-  WAITING_ON_CUSTOMER: "Waiting on you",
-  ESCALATED: "Escalated",
-  RESOLVED: "Resolved",
-  CLOSED: "Closed",
-  REOPENED: "Reopened",
-};
-
 const STATUS_COLORS: Record<TicketStatus, string> = {
   NEW: "bg-blue-100 text-blue-700 border-blue-200",
   ASSIGNED: "bg-purple-100 text-purple-700 border-purple-200",
@@ -96,14 +105,8 @@ const STATUS_COLORS: Record<TicketStatus, string> = {
   REOPENED: "bg-yellow-100 text-yellow-700 border-yellow-200",
 };
 
-const PRIORITY_OPTIONS: { value: TicketPriority; label: string }[] = [
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-  { value: "CRITICAL", label: "Critical" },
-];
-
 function HelpPage() {
+  const { t, formatNumber, formatDate: fmtDate } = useI18n();
   const [tab, setTab] = useState<Tab>("kb");
   const [kbSearch, setKbSearch] = useState("");
   const [kbCategory, setKbCategory] = useState<string | null>(null);
@@ -173,7 +176,7 @@ function HelpPage() {
       return;
     }
     if (!formSubject.trim() || !formMessage.trim()) {
-      setFormError("Subject and message are required.");
+      setFormError(t("settings.contactErrorRequired"));
       return;
     }
     setFormError(null);
@@ -184,9 +187,7 @@ function HelpPage() {
         priority: formPriority,
         categoryId: formCategory || undefined,
       });
-      setFormSuccess(
-        `Thanks! Your ticket ${result.ticketNumber} has been submitted. We'll reply within 24 hours.`
-      );
+      setFormSuccess(t("settings.contactSuccessMessage", { ticketNumber: result.ticketNumber }));
       setFormSubject("");
       setFormMessage("");
       setFormCategory("");
@@ -194,7 +195,7 @@ function HelpPage() {
       refetchTickets();
       setTimeout(() => setFormSuccess(null), 6000);
     } catch (err: any) {
-      setFormError(err?.message || "Something went wrong. Please try again.");
+      setFormError(err?.message || t("settings.contactErrorGeneric"));
     }
   };
 
@@ -241,7 +242,7 @@ function HelpPage() {
   };
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, {
+    fmtDate(new Date(iso), {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -255,21 +256,21 @@ function HelpPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="size-4" strokeWidth={1.8} />
-          Back to settings
+          {t("settings.helpBackToSettings")}
         </Link>
 
-        <h1 className="text-3xl font-display italic mb-2">Help Center</h1>
+        <h1 className="text-3xl font-display italic mb-2">{t("settings.helpTitle")}</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Answers to common questions about using Vellum, or reach out to our team directly.
+          {t("settings.helpSubtitle")}
         </p>
 
         {/* Tabs */}
         <div className="flex items-center gap-1 mb-8 p-1 bg-muted/60 rounded-xl w-fit">
           {(
             [
-              { id: "kb", label: "Knowledge Base", icon: BookOpen },
-              { id: "contact", label: "Contact Support", icon: Mail },
-              { id: "tickets", label: "My Tickets", icon: MessageSquare },
+              { id: "kb", label: t("settings.helpTabKnowledgeBase"), icon: BookOpen },
+              { id: "contact", label: t("settings.helpTabContactSupport"), icon: Mail },
+              { id: "tickets", label: t("settings.helpTabMyTickets"), icon: MessageSquare },
             ] as { id: Tab; label: string; icon: React.FC<{ className?: string }> }[]
           ).map(({ id, label, icon: Icon }) => (
             <button
@@ -300,7 +301,7 @@ function HelpPage() {
                 value={kbSearch}
                 onChange={(e) => setKbSearch(e.target.value)}
                 type="text"
-                placeholder="Search help articles, topics, keywords…"
+                placeholder={t("settings.helpKbSearchPlaceholder")}
                 className="w-full h-11 pl-10 pr-10 rounded-xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm placeholder:text-muted-foreground"
               />
               {kbSearch && (
@@ -323,7 +324,7 @@ function HelpPage() {
                     : "bg-card text-muted-foreground border-border hover:text-foreground"
                 }`}
               >
-                All
+                {t("settings.helpCategoryAll")}
               </button>
               {allCategories.map((cat) => (
                 <button
@@ -349,7 +350,7 @@ function HelpPage() {
             {!articlesLoading && popularArticles.length > 0 && !kbSearch && !kbCategory && (
               <section>
                 <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-2">
-                  Popular
+                  {t("settings.helpSectionPopular")}
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {popularArticles.map((a) => (
@@ -371,7 +372,7 @@ function HelpPage() {
                           </p>
                           <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
                             <Clock className="size-3" />
-                            {a.readMinutes} min read ·{" "}
+                            {t("settings.helpMetaReadMinutes", { minutes: a.readMinutes })} ·{" "}
                             <span className="inline-flex items-center gap-1">
                               <Hash className="size-3" />
                               {a.category}
@@ -427,7 +428,7 @@ function HelpPage() {
                                   <p className="text-sm font-medium">{a.title}</p>
                                   {a.popular && (
                                     <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
-                                      Popular
+                                      {t("settings.helpPopularBadge")}
                                     </span>
                                   )}
                                 </div>
@@ -437,9 +438,9 @@ function HelpPage() {
                                 <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
                                   <span className="inline-flex items-center gap-1">
                                     <Clock className="size-3" />
-                                    {a.readMinutes} min
+                                    {t("settings.helpMetaReadMinutes", { minutes: a.readMinutes })}
                                   </span>
-                                  <span>{a.views.toLocaleString()} views</span>
+                                  <span>{formatNumber(a.views)} views</span>
                                 </div>
                               </div>
                             </div>
@@ -464,9 +465,9 @@ function HelpPage() {
             {!articlesLoading && articles?.length === 0 && (
               <div className="text-center py-16 bg-card border border-border rounded-2xl">
                 <Search className="size-8 text-muted-foreground mx-auto mb-3 opacity-40" />
-                <p className="text-sm font-medium mb-1">No articles found</p>
+                <p className="text-sm font-medium mb-1">{t("settings.helpNoArticlesFound")}</p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Try a different search or browse categories.
+                  {t("settings.helpNoArticlesDescription")}
                 </p>
                 {(kbSearch || kbCategory) && (
                   <Button
@@ -477,7 +478,7 @@ function HelpPage() {
                       setKbCategory(null);
                     }}
                   >
-                    Clear filters
+                    {t("settings.helpClearFilters")}
                   </Button>
                 )}
               </div>
@@ -494,11 +495,9 @@ function HelpPage() {
                   <Mail className="size-6" strokeWidth={1.8} />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Reach the Vellum support team</h3>
+                  <h3 className="font-semibold mb-1">{t("settings.contactReachTeam")}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Can't find what you're looking for in the knowledge base? Submit a ticket and
-                    a real human will get back to you — typically within 24 hours on business
-                    days.
+                    {t("settings.contactReachDescription")}
                   </p>
                 </div>
               </div>
@@ -509,14 +508,14 @@ function HelpPage() {
                 <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-amber-800 mb-1">
-                    You need to be signed in
+                    {t("settings.contactSignInRequired")}
                   </p>
                   <p className="text-xs text-amber-700 mb-3">
-                    Please sign in to submit a support ticket so we can follow up with you.
+                    {t("settings.contactSignInDescription")}
                   </p>
                   <Link to="/login">
                     <Button size="sm" variant="default">
-                      Sign in to Vellum
+                      {t("settings.contactSignIn")}
                     </Button>
                   </Link>
                 </div>
@@ -542,12 +541,12 @@ function HelpPage() {
               className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border"
             >
               <div className="p-5">
-                <label className="block text-sm font-medium mb-1.5">Subject *</label>
+                <label className="block text-sm font-medium mb-1.5">{t("settings.contactLabelSubject")}</label>
                 <input
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
                   type="text"
-                  placeholder="Briefly summarize your issue or question"
+                  placeholder={t("settings.contactSubjectPlaceholder")}
                   disabled={!isAuthenticated || creatingTicket}
                   className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm placeholder:text-muted-foreground disabled:opacity-50"
                 />
@@ -555,14 +554,14 @@ function HelpPage() {
 
               <div className="p-5 grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Category</label>
+                  <label className="block text-sm font-medium mb-1.5">{t("settings.contactLabelCategory")}</label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
                     disabled={!isAuthenticated || creatingTicket}
                     className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm disabled:opacity-50"
                   >
-                    <option value="">General question</option>
+                    <option value="">{t("settings.contactCategoryGeneral")}</option>
                     {categories?.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -571,16 +570,16 @@ function HelpPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Priority</label>
+                  <label className="block text-sm font-medium mb-1.5">{t("settings.contactLabelPriority")}</label>
                   <select
                     value={formPriority}
                     onChange={(e) => setFormPriority(e.target.value as TicketPriority)}
                     disabled={!isAuthenticated || creatingTicket}
                     className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm disabled:opacity-50"
                   >
-                    {PRIORITY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
+                    {(Object.keys(PRIORITY_KEY_MAP) as TicketPriority[]).map((val) => (
+                      <option key={val} value={val}>
+                        {t(PRIORITY_KEY_MAP[val])}
                       </option>
                     ))}
                   </select>
@@ -588,12 +587,12 @@ function HelpPage() {
               </div>
 
               <div className="p-5">
-                <label className="block text-sm font-medium mb-1.5">Message *</label>
+                <label className="block text-sm font-medium mb-1.5">{t("settings.contactLabelMessage")}</label>
                 <textarea
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
                   rows={6}
-                  placeholder="Please describe the issue in detail. Include steps to reproduce, any error messages, and your browser/device."
+                  placeholder={t("settings.contactMessagePlaceholder")}
                   disabled={!isAuthenticated || creatingTicket}
                   className="w-full px-3 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm placeholder:text-muted-foreground resize-none disabled:opacity-50"
                 />
@@ -601,26 +600,18 @@ function HelpPage() {
 
               <div className="p-5 flex items-center justify-between gap-3 bg-muted/30">
                 <p className="text-xs text-muted-foreground">
-                  By submitting, you agree to our{" "}
-                  <Link to="/settings/about" className="underline">
-                    Terms
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="/settings/privacy" className="underline">
-                    Privacy Policy
-                  </Link>
-                  .
+                  {t("settings.contactAgreement")}
                 </p>
                 <Button type="submit" disabled={!isAuthenticated || creatingTicket}>
                   {creatingTicket ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Sending…
+                      {t("settings.contactSending")}
                     </>
                   ) : (
                     <>
                       <Send className="size-4" />
-                      Submit ticket
+                      {t("settings.contactSubmitTicket")}
                     </>
                   )}
                 </Button>
@@ -677,7 +668,7 @@ function HelpPage() {
                           : "bg-card text-muted-foreground border-border hover:text-foreground"
                       }`}
                     >
-                      {STATUS_LABELS[s]}{" "}
+                      {t(STATUS_KEY_MAP[s])}{" "}
                       {myTicketsRaw?.data && (
                         <span className="opacity-70">
                           ({myTicketsRaw.data.filter((t: SupportTicket) => t.status === s).length})
@@ -696,31 +687,31 @@ function HelpPage() {
                 {!ticketsLoading && filteredTickets.length === 0 && (
                   <div className="text-center py-16 bg-card border border-border rounded-2xl">
                     <MessageSquare className="size-8 text-muted-foreground mx-auto mb-3 opacity-40" />
-                    <p className="text-sm font-medium mb-1">No tickets yet</p>
+                    <p className="text-sm font-medium mb-1">{t("settings.ticketsNoTicketsYet")}</p>
                     <p className="text-xs text-muted-foreground mb-4">
                       {ticketFilter === "ALL"
-                        ? "You haven't submitted any support tickets yet."
-                        : `No ${STATUS_LABELS[ticketFilter]} tickets.`}
+                        ? t("settings.ticketsNoTicketsDescription")
+                        : t("settings.ticketsNoStatusTickets", { status: t(STATUS_KEY_MAP[ticketFilter as TicketStatus]) })}
                     </p>
                     <Button size="sm" onClick={() => setTab("contact")}>
                       <Mail className="size-4" />
-                      Contact support
+                      {t("settings.ticketsContactSupport")}
                     </Button>
                   </div>
                 )}
 
                 {!ticketsLoading && filteredTickets.length > 0 && (
                   <div className="space-y-3">
-                    {filteredTickets.map((t: SupportTicket) => {
-                      const isOpen = openTicketId === t.id;
-                      const ticketStatus = t.status as TicketStatus;
+                    {filteredTickets.map((ticket: SupportTicket) => {
+                      const isOpen = openTicketId === ticket.id;
+                      const ticketStatus = ticket.status as TicketStatus;
                       return (
                         <div
-                          key={t.id}
+                          key={ticket.id}
                           className="bg-card border border-border rounded-2xl overflow-hidden"
                         >
                           <button
-                            onClick={() => setOpenTicketId(isOpen ? null : t.id)}
+                            onClick={() => setOpenTicketId(isOpen ? null : ticket.id)}
                             className="w-full text-left p-4 hover:bg-muted/40 transition-colors"
                           >
                             <div className="flex items-start gap-3">
@@ -741,29 +732,29 @@ function HelpPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                  <p className="text-sm font-medium truncate">{t.subject}</p>
+                                  <p className="text-sm font-medium truncate">{ticket.subject}</p>
                                   <span
                                     className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
                                       STATUS_COLORS[ticketStatus]
                                     }`}
                                   >
-                                    {STATUS_LABELS[ticketStatus]}
+                                    {t(STATUS_KEY_MAP[ticketStatus])}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                                  <span className="font-mono">{t.ticketNumber}</span>
+                                  <span className="font-mono">{ticket.ticketNumber}</span>
                                   <span>·</span>
-                                  <span>{formatDate(t.createdAt)}</span>
-                                  {t.category && (
+                                  <span>{formatDate(ticket.createdAt)}</span>
+                                  {ticket.category && (
                                     <>
                                       <span>·</span>
-                                      <span>{t.category.name}</span>
+                                      <span>{ticket.category.name}</span>
                                     </>
                                   )}
-                                  {t.assignee && (
+                                  {ticket.assignee && (
                                     <>
                                       <span>·</span>
-                                      <span>Assigned to {t.assignee.name}</span>
+                                      <span>{t("settings.ticketsAssignedTo", { name: ticket.assignee.name })}</span>
                                     </>
                                   )}
                                 </div>
@@ -783,23 +774,23 @@ function HelpPage() {
                                 {/* Initial message */}
                                 <div className="flex gap-3">
                                   <div className="size-8 shrink-0 rounded-full bg-muted grid place-items-center text-xs font-medium text-muted-foreground">
-                                    You
+                                    {t("settings.ticketsYou")}
                                   </div>
                                   <div className="flex-1">
                                     <div className="bg-card border border-border rounded-2xl rounded-tl-sm p-3.5">
                                       <p className="text-[11px] text-muted-foreground mb-1">
-                                        You · {formatDate(t.createdAt)}
+                                        {t("settings.ticketsYou")} · {formatDate(ticket.createdAt)}
                                       </p>
                                       <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                                        {t.message}
+                                        {ticket.message}
                                       </p>
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Subsequent messages */}
-                                {t.messages?.map((m: TicketMessageType) => {
-                                  const isYou = m.authorId === t.userId;
+                                {ticket.messages?.map((m: TicketMessageType) => {
+                                  const isYou = m.authorId === ticket.userId;
                                   return (
                                     <div key={m.id} className={`flex gap-3 ${isYou ? "" : "flex-row-reverse"}`}>
                                       <div
@@ -809,7 +800,7 @@ function HelpPage() {
                                             : "bg-accent/15 text-accent"
                                         }`}
                                       >
-                                        {isYou ? "You" : (m.author.name?.[0] ?? "A")}
+                                        {isYou ? t("settings.ticketsYou") : (m.author.name?.[0] ?? "A")}
                                       </div>
                                       <div className={`flex-1 max-w-[80%] ${isYou ? "" : "text-right"}`}>
                                         <div
@@ -833,24 +824,24 @@ function HelpPage() {
                               </div>
 
                               {/* Reply box */}
-                              {t.status !== "CLOSED" && t.status !== "RESOLVED" ? (
+                              {ticket.status !== "CLOSED" && ticket.status !== "RESOLVED" ? (
                                 <div className="p-4 border-t border-border bg-card">
                                   <div className="flex gap-2 items-end">
                                     <textarea
-                                      value={replyDraft[t.id] ?? ""}
+                                      value={replyDraft[ticket.id] ?? ""}
                                       onChange={(e) =>
                                         setReplyDraft((prev) => ({
                                           ...prev,
-                                          [t.id]: e.target.value,
+                                          [ticket.id]: e.target.value,
                                         }))
                                       }
                                       rows={2}
-                                      placeholder="Write a reply…"
+                                      placeholder={t("settings.ticketsReplyPlaceholder")}
                                       className="flex-1 px-3 py-2 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 text-sm placeholder:text-muted-foreground resize-none"
                                     />
                                     <Button
-                                      onClick={() => handleReply(t.id)}
-                                      disabled={!replyDraft[t.id]?.trim() || replying}
+                                      onClick={() => handleReply(ticket.id)}
+                                      disabled={!replyDraft[ticket.id]?.trim() || replying}
                                       size="sm"
                                     >
                                       {replying ? (
@@ -865,8 +856,7 @@ function HelpPage() {
                                 <div className="p-4 border-t border-border text-center">
                                   <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
                                     <CheckCircle2 className="size-3.5" />
-                                    This ticket is {STATUS_LABELS[ticketStatus].toLowerCase()}. If
-                                    you need further help, please open a new one.
+                                    {t("settings.ticketsClosedNotice", { status: t(STATUS_KEY_MAP[ticketStatus]).toLowerCase() })}
                                   </p>
                                 </div>
                               )}

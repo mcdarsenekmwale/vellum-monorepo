@@ -5,8 +5,12 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCategories } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
+import { useTheme } from 'context/ThemeProvider';
+import { useI18n } from '../context/I18nProvider';
 
 export default function ComposePage() {
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -93,9 +97,9 @@ export default function ComposePage() {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]} edges={['top']}>
         <StatusBar barStyle="dark-content" backgroundColor="#faf8f4" />
-        <Text style={{ fontSize: 16, color: '#666666', textAlign: 'center' }}>{error}</Text>
-        <TouchableOpacity onPress={refetch} style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#000000', borderRadius: 20 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>Retry</Text>
+        <Text style={{ fontSize: 16, color: colors.textMuted, textAlign: 'center' }}>{error}</Text>
+        <TouchableOpacity onPress={refetch} style={{ marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: colors.buttonPrimary, borderRadius: 20 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.buttonText }}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -112,8 +116,8 @@ export default function ComposePage() {
           style={styles.cancelButton}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={16} color="#666666" strokeWidth={2.5} />
-          <Text style={styles.cancelText}>CANCEL</Text>
+          <ChevronLeft size={16} color={colors.textMuted} strokeWidth={2.5} />
+          <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
 
         <Text style={styles.draftStatus}>DRAFT · 1 MIN</Text>
@@ -124,7 +128,7 @@ export default function ComposePage() {
           activeOpacity={0.8}
           disabled={submitting}
         >
-          <Text style={styles.publishText}>{submitting ? 'PUBLISHING...' : 'PUBLISH'}</Text>
+          <Text style={styles.publishText}>{submitting ? 'PUBLISHING...' : t('compose.publish')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -141,7 +145,7 @@ export default function ComposePage() {
         >
         {/* Cover Image Upload Area */}
         <TouchableOpacity style={styles.coverUpload} activeOpacity={0.7}>
-          <ImagePlus size={28} color="#999999" strokeWidth={1.5} />
+          <ImagePlus size={28} color={colors.textMuted} strokeWidth={1.5} />
           <Text style={styles.coverUploadText}>ADD COVER IMAGE</Text>
         </TouchableOpacity>
 
@@ -179,7 +183,7 @@ export default function ComposePage() {
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Your title"
+          placeholder={t('compose.titlePlaceholder')}
           placeholderTextColor="#cccccc"
           style={styles.titleInput}
           multiline
@@ -190,7 +194,7 @@ export default function ComposePage() {
         <TextInput
           value={body}
           onChangeText={setBody}
-          placeholder="Start writing..."
+          placeholder={t('compose.bodyPlaceholder')}
           placeholderTextColor="#999999"
           style={styles.bodyInput}
           multiline
@@ -201,7 +205,7 @@ export default function ComposePage() {
 
       {/* Bottom Toolbar */}
       <Animated.View style={[styles.bottomToolbar, { paddingBottom: toolbarAnimation }]}>
-        <Text style={styles.wordCount}>{wordCount} WORDS</Text>
+        <Text style={styles.wordCount}>{t('compose.wordCount', { count: wordCount })}</Text>
         <TouchableOpacity
           style={styles.suggestButton}
           onPress={handleSuggestTitle}

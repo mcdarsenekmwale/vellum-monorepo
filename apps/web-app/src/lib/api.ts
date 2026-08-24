@@ -37,4 +37,8 @@ export type {
   TicketType,
   CreateTicketRequest,
   TicketListResponse,
+  Subscription,
+  SubscriptionPlan,
+  SubscriptionStatus,
+  RestorePurchasesResult,
 } from '@vellum/api-client/types';

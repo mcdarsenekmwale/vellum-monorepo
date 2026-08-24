@@ -4,8 +4,12 @@ import { Bookmark } from 'lucide-react-native';
 import { apiClient } from '../lib/api';
 import { useState, useEffect } from 'react';
 import type { Article } from '@vellum/api-client/types';
+import { useTheme } from 'context/ThemeProvider';
+import { useI18n } from '../context/I18nProvider';
 
 export default function SavedPage() {
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const [savedArticles, setSavedArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +33,7 @@ export default function SavedPage() {
 
   if (isLoading) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.emptyContent}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.emptyContent}>
         <View style={{ padding: 40, alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#000000" />
           <Text style={{ marginTop: 12, color: '#666666' }}>Loading saved articles...</Text>
@@ -40,11 +44,11 @@ export default function SavedPage() {
 
   if (error) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.emptyContent}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.emptyContent}>
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: '#e11d48', fontSize: 16 }}>{error}</Text>
+          <Text style={{ color: colors.danger, fontSize: 16 }}>{error}</Text>
           <TouchableOpacity onPress={loadSaved} style={{ marginTop: 16 }}>
-            <Text style={{ color: '#d97706', fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -52,24 +56,24 @@ export default function SavedPage() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={savedArticles.length === 0 ? styles.emptyContent : undefined}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={savedArticles.length === 0 ? styles.emptyContent : undefined}>
       {/* Subtitle */}
-      <Text style={styles.subtitle}>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         {savedArticles.length} {savedArticles.length === 1 ? 'STORY' : 'STORIES'} IN YOUR LIBRARY
       </Text>
 
       {savedArticles.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.iconCircle}>
-            <Bookmark size={24} color="#999999" strokeWidth={1.5} />
+            <Bookmark size={24} color={colors.textMuted} strokeWidth={1.5} />
           </View>
-          <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+          <Text style={styles.emptyTitle}>{t('emptyStates.noSavedArticles')}</Text>
           <Text style={styles.emptyDescription}>
             Tap the bookmark on any story{'\n'}to keep it here.
           </Text>
           <Link href="/" asChild>
             <TouchableOpacity style={styles.browseButton} activeOpacity={0.8}>
-              <Text style={styles.browseButtonText}>BROWSE FEED</Text>
+              <Text style={[styles.browseButtonText, { color: colors.inverseText }]}>BROWSE FEED</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -81,8 +85,8 @@ export default function SavedPage() {
                 <TouchableOpacity style={styles.articleItem}>
                   <View style={styles.articleContent}>
                     <Text style={styles.category}>{a.category?.name}</Text>
-                    <Text style={styles.articleTitle}>{a.title}</Text>
-                    <Text style={styles.author}>{a.author?.name}</Text>
+                    <Text style={[styles.articleTitle, { color: colors.textPrimary }]}>{a.title}</Text>
+                    <Text style={[styles.author, { color: colors.textMuted }]}>{a.author?.name}</Text>
                   </View>
                   <Image source={{ uri: a.cover || 'https://via.placeholder.com/64' }} style={styles.articleImage} />
                 </TouchableOpacity>
@@ -97,13 +101,13 @@ export default function SavedPage() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f7f4ee',
+    
     flex: 1,
   },
   subtitle: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#666666',
+   
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     paddingHorizontal: 24,
@@ -152,7 +156,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   browseButtonText: {
-    color: '#ffffff',
+    
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 1.5,
@@ -184,13 +188,13 @@ const styles = StyleSheet.create({
   articleTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000000',
+  
     marginTop: 4,
     lineHeight: 22,
   },
   author: {
     fontSize: 12,
-    color: '#666666',
+    
     marginTop: 4,
   },
   articleImage: {
@@ -199,3 +203,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 });
+
+

@@ -1,0 +1,126 @@
+{
+  "provider": "mock",
+  "apply": true,
+  "languages": {
+    "fr": {
+      "missing": 1,
+      "translated": 1
+    },
+    "es": {
+      "missing": 1,
+      "translated": 1
+    },
+    "de": {
+      "missing": 1,
+      "translated": 1
+    },
+    "it": {
+      "missing": 1,
+      "translated": 1
+    },
+    "pt": {
+      "missing": 1,
+      "translated": 1
+    },
+    "nl": {
+      "missing": 1,
+      "translated": 1
+    },
+    "sv": {
+      "missing": 1,
+      "translated": 1
+    },
+    "da": {
+      "missing": 1,
+      "translated": 1
+    },
+    "fi": {
+      "missing": 1,
+      "translated": 1
+    },
+    "no": {
+      "missing": 1,
+      "translated": 1
+    },
+    "pl": {
+      "missing": 1,
+      "translated": 1
+    },
+    "cs": {
+      "missing": 1,
+      "translated": 1
+    },
+    "hu": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ro": {
+      "missing": 1,
+      "translated": 1
+    },
+    "bg": {
+      "missing": 1,
+      "translated": 1
+    },
+    "uk": {
+      "missing": 1,
+      "translated": 1
+    },
+    "el": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ar": {
+      "missing": 1,
+      "translated": 1
+    },
+    "he": {
+      "missing": 1,
+      "translated": 1
+    },
+    "fa": {
+      "missing": 2,
+      "translated": 2
+    },
+    "tr": {
+      "missing": 1,
+      "translated": 1
+    },
+    "hi": {
+      "missing": 1,
+      "translated": 1
+    },
+    "id": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ms": {
+      "missing": 1,
+      "translated": 1
+    },
+    "th": {
+      "missing": 1,
+      "translated": 1
+    },
+    "zh": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ja": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ko": {
+      "missing": 1,
+      "translated": 1
+    },
+    "vi": {
+      "missing": 1,
+      "translated": 1
+    },
+    "ru": {
+      "missing": 1,
+      "translated": 1
+    }
+  }
+}

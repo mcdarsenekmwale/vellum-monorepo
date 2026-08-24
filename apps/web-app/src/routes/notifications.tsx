@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { apiClient } from "@/lib/api";
 import { Heart, MessageCircle, UserPlus, Bookmark } from "lucide-react";
 import type { ComponentType } from "react";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 function formatRelativeTime(dateStr: string | undefined): string {
   if (!dateStr) return "";
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/notifications")({
 
 function NotificationsPage() {
   const { data, isLoading, error, refetch } = useNotifications(1, 50);
+  const { t } = useI18n();
   const notifications = data?.data || [];
 
   const unreadCount = notifications.filter((a) => !a.read).length;
@@ -110,7 +112,7 @@ function NotificationsPage() {
             onClick={markAllRead}
             className="text-sm font-semibold text-accent hover:opacity-70"
           >
-            Mark all read
+            {t("notifications.markAllRead")}
           </button>
         </section>
 
@@ -120,7 +122,7 @@ function NotificationsPage() {
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
           {notifications.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-12">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-12">{t("notifications.empty")}</p>
           )}
           {notifications.map((n) => {
             const actor = n.actor;

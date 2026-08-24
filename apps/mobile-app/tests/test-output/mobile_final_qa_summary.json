@@ -1,0 +1,82 @@
+{
+  "session": {
+    "generated_at": "2026-08-19T23:42:50.724499+00:00",
+    "app": "http://localhost:19006",
+    "api": "http://localhost:3001",
+    "user": "user1@example.com"
+  },
+  "continuous_login_stability": {
+    "attempts": 10,
+    "passed": 10,
+    "failed": 0,
+    "success_rate_pct": 100.0,
+    "avg_duration_ms": 1457,
+    "max_duration_ms": 1920,
+    "console_errors_total": 10
+  },
+  "settings_qa_summary": {
+    "assertions_total": 29,
+    "assertions_passed": 27,
+    "assertions_failed": 2,
+    "pass_rate_pct": 93.1,
+    "api_calls_total": 16,
+    "api_endpoints_unique": 9,
+    "console_errors_total": 1,
+    "screenshots_dir": "apps/mobile-app/tests/test-output/screenshots",
+    "screenshots_count": 60
+  },
+  "settings_qa_by_category": {
+    "auth": {
+      "pass": 1,
+      "fail": 0,
+      "total": 1,
+      "pass_rate_pct": 100.0
+    },
+    "nav": {
+      "pass": 1,
+      "fail": 0,
+      "total": 1,
+      "pass_rate_pct": 100.0
+    },
+    "theme": {
+      "pass": 4,
+      "fail": 0,
+      "total": 4,
+      "pass_rate_pct": 100.0
+    },
+    "i18n": {
+      "pass": 7,
+      "fail": 0,
+      "total": 7,
+      "pass_rate_pct": 100.0
+    },
+    "privacy": {
+      "pass": 8,
+      "fail": 0,
+      "total": 8,
+      "pass_rate_pct": 100.0
+    },
+    "subscription": {
+      "pass": 6,
+      "fail": 2,
+      "total": 8,
+      "pass_rate_pct": 75.0
+    }
+  },
+  "failed_assertions": [
+    {
+      "ts": "2026-08-19T23:42:41.721252+00:00",
+      "category": "subscription",
+      "name": "open subscription page",
+      "detail": "path after tap: /settings",
+      "passed": false
+    },
+    {
+      "ts": "2026-08-19T23:42:43.932801+00:00",
+      "category": "subscription",
+      "name": "open subscription page (fallback: router.push)",
+      "detail": "path=/settings",
+      "passed": false
+    }
+  ]
+}

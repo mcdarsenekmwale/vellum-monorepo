@@ -15,6 +15,7 @@ import { useLoginPrompt } from "@/components/LoginPrompt";
 import { SmartState } from "@/components/SmartState";
 import { GuestGuard } from "@/components/GuestGuard";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 const STORY_24H = 24 * 60 * 60 * 1000;
 
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/")({
 });
 
 function FeedPage() {
+  const { t } = useI18n();
   const {
     data: articles,
     isLoading: articlesLoading,
@@ -46,8 +48,8 @@ function FeedPage() {
   } = useInfiniteArticles(10);
   const { data: highlightsData, isLoading: highlightsLoading } = useHighlights(1, 10);
   const { data: storiesData, isLoading: storiesLoading } = useStories();
-  const { user, isAuthenticated } = useAuthState();
-  const { promptLogin, LoginPromptComponent } = useLoginPrompt();
+  const { user } = useAuthState();
+  const { LoginPromptComponent } = useLoginPrompt();
 
   const highlights = highlightsData?.data || [];
   const stories = storiesData || [];
@@ -98,7 +100,7 @@ function FeedPage() {
           {/* Stories Row */}
           <section className="mb-8">
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-3">
-              Stories
+              {t("common.stories")}
             </h3>
             <SmartState
               isLoading={storiesLoading}
@@ -238,7 +240,7 @@ function FeedPage() {
           {/* Latest Articles */}
           <section className="mb-8">
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600 mb-4">
-              Latest
+              {t("home.latest")}
             </h3>
             <SmartState
               isLoading={articlesLoading}
@@ -246,7 +248,7 @@ function FeedPage() {
               error={articlesError}
               data={rest}
               useShimmer
-              emptyTitle="No articles yet"
+              emptyTitle={t("emptyStates.noArticles")}
               emptyDescription="New articles will appear here as they are published."
               onRetry={refetch}
               shimmerComponent={

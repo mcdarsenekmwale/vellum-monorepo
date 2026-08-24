@@ -3,38 +3,51 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 
 @Injectable()
 export class SearchService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async search(query: string, page = 1, limit = 10, type?: 'users' | 'articles' | 'highlights') {
-    const skip = (page - 1) * limit;
-    const lowerQuery = query.toLowerCase();
+    try {
+      const skip = (page - 1) * limit;
 
-    if (type === 'users') {
-      return this.searchUsers(lowerQuery, skip, limit);
+      if (!query.trim()) {
+        return { users: [], articles: [], highlights: [], total: 0 };
+      }
+      if (query.length < 3) {
+        return { users: [], articles: [], highlights: [], total: 0 };
+      }
+
+      const lowerQuery = query.toLowerCase();
+
+      if (type === 'users') {
+        return this.searchUsers(lowerQuery, skip, limit);
+      }
+
+      if (type === 'articles') {
+        return this.searchArticles(lowerQuery, skip, limit);
+      }
+
+      if (type === 'highlights') {
+        return this.searchHighlights(lowerQuery, skip, limit);
+      }
+
+      const [users, articles, highlights] = await this.prisma.retryOnConnectionError(() =>
+        Promise.all([
+          this.searchUsers(lowerQuery, skip, limit),
+          this.searchArticles(lowerQuery, skip, limit),
+          this.searchHighlights(lowerQuery, skip, limit),
+        ])
+      );
+
+      return {
+        users: users.data,
+        articles: articles.data,
+        highlights: highlights.data,
+        total: users.total + articles.total + highlights.total,
+      };
+    } catch (error) {
+      console.error('Search failed:', error);
+      throw error;
     }
-
-    if (type === 'articles') {
-      return this.searchArticles(lowerQuery, skip, limit);
-    }
-
-    if (type === 'highlights') {
-      return this.searchHighlights(lowerQuery, skip, limit);
-    }
-
-    const [users, articles, highlights] = await this.prisma.retryOnConnectionError(() =>
-      Promise.all([
-        this.searchUsers(lowerQuery, skip, limit),
-        this.searchArticles(lowerQuery, skip, limit),
-        this.searchHighlights(lowerQuery, skip, limit),
-      ])
-    );
-
-    return {
-      users: users.data,
-      articles: articles.data,
-      highlights: highlights.data,
-      total: users.total + articles.total + highlights.total,
-    };
   }
 
   private async searchUsers(query: string, skip: number, limit: number) {
@@ -44,6 +57,9 @@ export class SearchService {
           OR: [
             { handle: { contains: query, mode: 'insensitive' } },
             { name: { contains: query, mode: 'insensitive' } },
+            { bio: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } },
+
           ],
           isActive: true,
         },
@@ -56,6 +72,8 @@ export class SearchService {
           OR: [
             { handle: { contains: query, mode: 'insensitive' } },
             { name: { contains: query, mode: 'insensitive' } },
+            { bio: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } },
           ],
           isActive: true,
         },
@@ -72,6 +90,25 @@ export class SearchService {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { excerpt: { contains: query, mode: 'insensitive' } },
+            { body: { has: query } },
+            {
+              category: {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' } }
+                ],
+              }
+            },
+            {
+              author: {
+                OR: [
+                  { handle: { contains: query, mode: 'insensitive' } },
+                  { name: { contains: query, mode: 'insensitive' } },
+                  { bio: { contains: query, mode: 'insensitive' } },
+                  { email: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            },
+            { slug: { contains: query, mode: 'insensitive' } },
           ],
           isPublished: true,
         },
@@ -87,6 +124,23 @@ export class SearchService {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { excerpt: { contains: query, mode: 'insensitive' } },
+            { body: { has: query } },
+            {
+              category: {
+                OR: [
+                  { name: { contains: query, mode: 'insensitive' } }
+                ],
+              }
+            }, {
+              author: {
+                OR: [
+                  { handle: { contains: query, mode: 'insensitive' } },
+                  { name: { contains: query, mode: 'insensitive' } },
+                  { bio: { contains: query, mode: 'insensitive' } },
+                  { email: { contains: query, mode: 'insensitive' } },
+                ],
+              }
+            },
           ],
           isPublished: true,
         },
@@ -103,6 +157,8 @@ export class SearchService {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { description: { contains: query, mode: 'insensitive' } },
+            { handle: { contains: query, mode: 'insensitive' } },
+            { music: { contains: query, mode: 'insensitive' } },
           ],
           isPublished: true,
         },
@@ -117,6 +173,8 @@ export class SearchService {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { description: { contains: query, mode: 'insensitive' } },
+            { handle: { contains: query, mode: 'insensitive' } },
+            { music: { contains: query, mode: 'insensitive' } },
           ],
           isPublished: true,
         },

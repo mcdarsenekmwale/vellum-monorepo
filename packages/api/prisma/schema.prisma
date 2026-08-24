@@ -10,77 +10,134 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  emailVerified DateTime?
-  passwordHash  String
-  resetToken    String?        @unique
-  resetTokenExpiresAt DateTime?
-  verificationToken    String?  @unique
+  id                         String                       @id @default(uuid())
+  email                      String                       @unique
+  emailVerified              DateTime?
+  passwordHash               String
+  resetToken                 String?                      @unique
+  resetTokenExpiresAt        DateTime?
+  verificationToken          String?                      @unique
   verificationTokenExpiresAt DateTime?
-  handle        String         @unique
-  name          String
-  avatar        String?
-  bio           String?
-  website       String?
-  location      String?
-  publication   String?
-  role          Role           @default(USER)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
-  apiKeys       ApiKey[]       @relation("ApiKeyUser")
-  articles      Article[]      @relation("ArticleAuthor")
-  auditLogs     AuditLog[]     @relation("AuditLogUser")
-  bookmarks     Bookmark[]     @relation("BookmarkUser")
-  comments      Comment[]      @relation("CommentAuthor")
-  followers     Follow[]       @relation("Followers")
-  following     Follow[]       @relation("Following")
-  highlights    Highlight[]    @relation("HighlightAuthor")
-  likes         Like[]         @relation("LikeUser")
-  mediaUploads  Media[]        @relation("MediaUploader")
-  notifications Notification[] @relation("NotificationUser")
-  refreshTokens RefreshToken[] @relation("RefreshTokenUser")
-  sessions      Session[]      @relation("SessionUser")
-  stories       Story[]        @relation("StoryAuthor")
-  storyViews    StoryView[]    @relation("StoryViewViewer")
-  settings      UserSettings?  @relation("UserSettings")
-  reports       Report[]       @relation("ReportReporter")
-  supportTickets SupportTicket[] @relation("SupportTicketUser")
-  assignedTickets SupportTicket[] @relation("SupportTicketAssignee")
-  roleAssignments UserRoleAssignment[] @relation("UserRoleAssignments")
-  permissionOverrides UserPermissionOverride[] @relation("UserPermissionOverrides")
-  roleHistory     RoleAssignmentHistory[] @relation("RoleAssignmentHistory")
-  supportAgent    SupportAgent?  @relation("SupportAgentUser")
-  ticketMessages  TicketMessage[] @relation("TicketMessageAuthor")
-  ticketNotes     TicketInternalNote[] @relation("TicketNoteAuthor")
-  ticketAttachments TicketAttachment[] @relation("TicketAttachmentUploader")
-  ticketAssignments TicketAssignment[] @relation("TicketAssignmentAgent")
-  ticketStatusChanges TicketStatusHistory[] @relation("TicketStatusChanger")
-  activityLogs    ActivityLog[]  @relation("ActivityLogUser")
-  helpArticleVersions HelpArticleVersion[] @relation("HelpArticleVersionAuthor")
-  roleRequestsSubmitted RolePermissionRequest[] @relation("RoleRequestRequester")
-  roleRequestsReviewed  RolePermissionRequest[] @relation("RoleRequestReviewer")
-  roleRequestEvents     RolePermissionRequestEvent[]
+  handle                     String                       @unique
+  name                       String
+  avatar                     String?
+  bio                        String?
+  website                    String?
+  location                   String?
+  publication                String?
+  role                       Role                         @default(USER)
+  isActive                   Boolean                      @default(true)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  deletedAt                  DateTime?
+  apiKeys                    ApiKey[]                     @relation("ApiKeyUser")
+  articles                   Article[]                    @relation("ArticleAuthor")
+  auditLogs                  AuditLog[]                   @relation("AuditLogUser")
+  bookmarks                  Bookmark[]                   @relation("BookmarkUser")
+  comments                   Comment[]                    @relation("CommentAuthor")
+  followers                  Follow[]                     @relation("Followers")
+  following                  Follow[]                     @relation("Following")
+  highlights                 Highlight[]                  @relation("HighlightAuthor")
+  likes                      Like[]                       @relation("LikeUser")
+  mediaUploads               Media[]                      @relation("MediaUploader")
+  notifications              Notification[]               @relation("NotificationUser")
+  refreshTokens              RefreshToken[]               @relation("RefreshTokenUser")
+  sessions                   Session[]                    @relation("SessionUser")
+  stories                    Story[]                      @relation("StoryAuthor")
+  storyViews                 StoryView[]                  @relation("StoryViewViewer")
+  settings                   UserSettings?                @relation("UserSettings")
+  reports                    Report[]                     @relation("ReportReporter")
+  supportTickets             SupportTicket[]              @relation("SupportTicketUser")
+  assignedTickets            SupportTicket[]              @relation("SupportTicketAssignee")
+  roleAssignments            UserRoleAssignment[]         @relation("UserRoleAssignments")
+  permissionOverrides        UserPermissionOverride[]     @relation("UserPermissionOverrides")
+  roleHistory                RoleAssignmentHistory[]      @relation("RoleAssignmentHistory")
+  supportAgent               SupportAgent?                @relation("SupportAgentUser")
+  ticketMessages             TicketMessage[]              @relation("TicketMessageAuthor")
+  ticketNotes                TicketInternalNote[]         @relation("TicketNoteAuthor")
+  ticketAttachments          TicketAttachment[]           @relation("TicketAttachmentUploader")
+  ticketAssignments          TicketAssignment[]           @relation("TicketAssignmentAgent")
+  ticketStatusChanges        TicketStatusHistory[]        @relation("TicketStatusChanger")
+  activityLogs               ActivityLog[]                @relation("ActivityLogUser")
+  helpArticleVersions        HelpArticleVersion[]         @relation("HelpArticleVersionAuthor")
+  roleRequestsSubmitted      RolePermissionRequest[]      @relation("RoleRequestRequester")
+  roleRequestsReviewed       RolePermissionRequest[]      @relation("RoleRequestReviewer")
+  accessRequestsSubmitted    AccessRequest[]              @relation("AccessRequestRequester")
+  accessRequestsReviewed     AccessRequest[]              @relation("AccessRequestReviewer")
+  accessRequestEvents        AccessRequestEvent[]
+  resourceAccess             UserResourceAccess[]         @relation("UserResourceAccessUser")
+  roleRequestEvents          RolePermissionRequestEvent[]
+  // Phase 1 — inverses for department-head / team-lead named relations
+  supportDepartmentsHead     SupportDepartment[]          @relation("SupportDepartmentHead")
+  supportTeamsLead           SupportTeam[]                @relation("SupportTeamLead")
 
   @@index([handle])
   @@index([email])
   @@index([role])
+  @@index([deletedAt])
+  @@index([isActive, deletedAt])
 }
 
 model UserSettings {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  emailNotifications Boolean  @default(true)
-  pushNotifications  Boolean  @default(true)
-  emailMarketing     Boolean  @default(false)
-  allowComments      Boolean  @default(true)
-  allowLikes         Boolean  @default(true)
-  showOnlineStatus   Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation("UserSettings", fields: [userId], references: [id], onDelete: Cascade)
+  id                 String                   @id @default(uuid())
+  userId             String                   @unique
+  emailNotifications Boolean                  @default(true)
+  pushNotifications  Boolean                  @default(true)
+  emailMarketing     Boolean                  @default(false)
+  allowComments      Boolean                  @default(true)
+  allowLikes         Boolean                  @default(true)
+  showOnlineStatus   Boolean                  @default(true)
+  profileVisibility  String                   @default("public")
+  showLikesCount     Boolean                  @default(true)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  user               User                     @relation("UserSettings", fields: [userId], references: [id], onDelete: Cascade)
+  notificationPrefs  NotificationPreferences?
+  subscription       UserSubscription?
+}
+
+model NotificationPreferences {
+  id              String       @id @default(uuid())
+  userSettingsId  String       @unique
+  pushLikes       Boolean      @default(true)
+  pushComments    Boolean      @default(true)
+  pushReplies     Boolean      @default(true)
+  pushFollows     Boolean      @default(true)
+  pushMentions    Boolean      @default(true)
+  pushNewArticles Boolean      @default(false)
+  pushSystem      Boolean      @default(true)
+  emailDigest     Boolean      @default(true)
+  emailMarketing  Boolean      @default(false)
+  soundsEnabled   Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  userSettings    UserSettings @relation(fields: [userSettingsId], references: [id], onDelete: Cascade)
+}
+
+model UserSubscription {
+  id                String       @id @default(uuid())
+  userId            String       @unique
+  planName          String       @default("Free")
+  status            String       @default("active")
+  renewalDate       DateTime?
+  cancelAtPeriodEnd Boolean      @default(false)
+  aiDrafts          Int          @default(5)
+  customDomain      Boolean      @default(false)
+  analytics         Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  userSettings      UserSettings @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model FaqItem {
+  id        String   @id @default(uuid())
+  category  String
+  question  String   @db.Text
+  answer    String   @db.Text
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([category])
 }
 
 model Article {
@@ -324,15 +381,15 @@ model Webhook {
 }
 
 model WebhookLog {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   webhookId  String?
   event      String
   payload    Json
   statusCode Int?
   response   String?
   error      String?
-  createdAt  DateTime  @default(now())
-  webhook    Webhook?  @relation("WebhookLog", fields: [webhookId], references: [id])
+  createdAt  DateTime @default(now())
+  webhook    Webhook? @relation("WebhookLog", fields: [webhookId], references: [id])
 
   @@index([webhookId])
 }
@@ -344,12 +401,12 @@ model AuditLog {
   resource   String
   resourceId String?
   details    Json?
-  metadata   Json?    // Additional metadata (description, etc.)
-  changes    Json?    // Field changes (old/new values)
+  metadata   Json? // Additional metadata (description, etc.)
+  changes    Json? // Field changes (old/new values)
   success    Boolean  @default(true)
   ipAddress  String?
   userAgent  String?
-  location   String?  // Geographic location from IP
+  location   String? // Geographic location from IP
   createdAt  DateTime @default(now())
   user       User?    @relation("AuditLogUser", fields: [userId], references: [id])
 
@@ -376,22 +433,22 @@ model ApiKey {
 }
 
 model Report {
-  id          String   @id @default(uuid())
-  targetType  String   // "Article" | "Highlight" | "Comment" | "User"
-  targetId    String
-  reason      String   // "spam" | "harassment" | "copyright" | "inappropriate" | "other"
-  reporterId  String
-  status      String   @default("open") // "open" | "reviewing" | "resolved" | "dismissed"
-  priority    String   @default("medium") // "low" | "medium" | "high" | "critical"
-  aiScore     Int?     // AI risk score (0-100)
-  aiCategory  String?  // AI detected category
-  notes       String?
+  id           String    @id @default(uuid())
+  targetType   String // "Article" | "Highlight" | "Comment" | "User"
+  targetId     String
+  reason       String // "spam" | "harassment" | "copyright" | "inappropriate" | "other"
+  reporterId   String
+  status       String    @default("open") // "open" | "reviewing" | "resolved" | "dismissed"
+  priority     String    @default("medium") // "low" | "medium" | "high" | "critical"
+  aiScore      Int? // AI risk score (0-100)
+  aiCategory   String? // AI detected category
+  notes        String?
   resolvedById String?
-  resolvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  reporter    User     @relation("ReportReporter", fields: [reporterId], references: [id])
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id])
 
   @@index([targetType, targetId])
   @@index([status])
@@ -400,22 +457,22 @@ model Report {
 }
 
 model Tag {
-  id        String    @id @default(uuid())
-  name      String    @unique
-  slug      String    @unique
-  createdAt DateTime  @default(now())
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
 
   @@index([slug])
 }
 
 model FeatureFlag {
-  id        String   @id @default(uuid())
-  key       String   @unique
+  id          String   @id @default(uuid())
+  key         String   @unique
   description String
-  enabled   Boolean  @default(false)
-  rollout   Int      @default(0) // 0-100 percentage
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  enabled     Boolean  @default(false)
+  rollout     Int      @default(0) // 0-100 percentage
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([key])
 }
@@ -452,16 +509,16 @@ model Advertisement {
 }
 
 model AIAgent {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String?
-  model       String   @default("gpt-4")
-  status      String   @default("idle") // "idle" | "running" | "error" | "disabled"
-  runs        Int      @default(0)
+  model       String    @default("gpt-4")
+  status      String    @default("idle") // "idle" | "running" | "error" | "disabled"
+  runs        Int       @default(0)
   lastRunAt   DateTime?
   config      Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status])
 }
@@ -471,7 +528,7 @@ model BackgroundJob {
   name      String
   queue     String   @default("default")
   status    String   @default("pending") // "pending" | "running" | "success" | "failed" | "retry"
-  duration  Int?     // milliseconds
+  duration  Int? // milliseconds
   error     String?
   payload   Json?
   ranAt     DateTime @default(now())
@@ -531,8 +588,8 @@ model HelpArticle {
   title       String
   description String
   content     String[]
-  category    String   // "Basics" | "Access" | "Trust & Safety" | "Developers" | "Analytics" | "AI"
-  icon        String   // icon name like "BookOpen", "Users", etc.
+  category    String // "Basics" | "Access" | "Trust & Safety" | "Developers" | "Analytics" | "AI"
+  icon        String // icon name like "BookOpen", "Users", etc.
   readMinutes Int      @default(3)
   popular     Boolean  @default(false)
   views       Int      @default(0)
@@ -546,36 +603,41 @@ model HelpArticle {
 }
 
 model SupportTicket {
-  id             String         @id @default(uuid())
-  ticketNumber   String         @unique
-  subject        String
-  message        String
-  description    String?
-  type           TicketType     @default(CUSTOMER)
-  priority       TicketPriority @default(MEDIUM)
-  status         TicketStatus   @default(NEW)
-  userId         String
-  assigneeId     String?
-  departmentId   String?
-  categoryId     String?
-  slaPolicyId    String?
-  dueAt          DateTime?
-  firstResponseAt DateTime?
-  resolvedAt     DateTime?
-  closedAt       DateTime?
-  reopenedAt     DateTime?
-  satisfaction   Int?
-  version        Int            @default(1)
-  metadata       Json?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  deletedAt      DateTime?
+  id                String         @id @default(uuid())
+  ticketNumber      String         @unique
+  subject           String
+  message           String
+  description       String?
+  type              TicketType     @default(CUSTOMER)
+  priority          TicketPriority @default(MEDIUM)
+  status            TicketStatus   @default(NEW)
+  userId            String
+  assigneeId        String?
+  departmentId      String?
+  teamId            String?
+  categoryId        String?
+  slaPolicyId       String?
+  dueAt             DateTime?
+  firstResponseAt   DateTime?
+  resolvedAt        DateTime?
+  closedAt          DateTime?
+  reopenedAt        DateTime?
+  satisfaction      Int?
+  interactionsCount Int?           @default(0)
+  slaMetResponse    Boolean?
+  slaMetResolution  Boolean?
+  version           Int            @default(1)
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
 
-  user           User           @relation("SupportTicketUser", fields: [userId], references: [id])
-  assignee       User?          @relation("SupportTicketAssignee", fields: [assigneeId], references: [id])
-  department     SupportDepartment? @relation(fields: [departmentId], references: [id])
-  category       TicketCategory? @relation(fields: [categoryId], references: [id])
-  slaPolicy      SlaPolicy?     @relation(fields: [slaPolicyId], references: [id])
+  user           User                  @relation("SupportTicketUser", fields: [userId], references: [id])
+  assignee       User?                 @relation("SupportTicketAssignee", fields: [assigneeId], references: [id])
+  department     SupportDepartment?    @relation(fields: [departmentId], references: [id])
+  team           SupportTeam?          @relation(fields: [teamId], references: [id])
+  category       TicketCategory?       @relation(fields: [categoryId], references: [id])
+  slaPolicy      SlaPolicy?            @relation(fields: [slaPolicyId], references: [id])
   messages       TicketMessage[]
   internalNotes  TicketInternalNote[]
   attachments    TicketAttachment[]
@@ -589,10 +651,13 @@ model SupportTicket {
   @@index([status])
   @@index([priority])
   @@index([departmentId])
+  @@index([teamId])
   @@index([categoryId])
   @@index([ticketNumber])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([slaMetResponse])
+  @@index([slaMetResolution])
 }
 
 // ─── Enterprise RBAC ───────────────────────────────────────────────────────────
@@ -612,16 +677,16 @@ model PermissionGroup {
 }
 
 model Permission {
-  id          String       @id @default(uuid())
-  key         String       @unique
-  name        String
-  description String?
-  groupId     String
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  deletedAt   DateTime?
-  group       PermissionGroup @relation(fields: [groupId], references: [id])
+  id              String                   @id @default(uuid())
+  key             String                   @unique
+  name            String
+  description     String?
+  groupId         String
+  sortOrder       Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  deletedAt       DateTime?
+  group           PermissionGroup          @relation(fields: [groupId], references: [id])
   rolePermissions RolePermission[]
   userOverrides   UserPermissionOverride[]
 
@@ -630,22 +695,22 @@ model Permission {
 }
 
 model RbacRole {
-  id          String       @id @default(uuid())
-  key         String       @unique
-  name        String
-  description String?
-  isSystem    Boolean      @default(false)
-  isActive    Boolean      @default(true)
-  parentId    String?
-  rank        Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  deletedAt   DateTime?
-  parent      RbacRole?    @relation("RoleInheritance", fields: [parentId], references: [id])
-  children    RbacRole[]   @relation("RoleInheritance")
-  permissions RolePermission[]
+  id              String                  @id @default(uuid())
+  key             String                  @unique
+  name            String
+  description     String?
+  isSystem        Boolean                 @default(false)
+  isActive        Boolean                 @default(true)
+  parentId        String?
+  rank            Int                     @default(0)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  deletedAt       DateTime?
+  parent          RbacRole?               @relation("RoleInheritance", fields: [parentId], references: [id])
+  children        RbacRole[]              @relation("RoleInheritance")
+  permissions     RolePermission[]
   userAssignments UserRoleAssignment[]
-  roleHistory RoleAssignmentHistory[]
+  roleHistory     RoleAssignmentHistory[]
 
   @@index([key])
   @@index([isSystem])
@@ -722,107 +787,276 @@ model RoleAssignmentHistory {
 // ─── Role / Permission Request Center ──────────────────────────────────────────
 
 model RolePermissionRequest {
-  id                 String                        @id @default(uuid())
-  requesterId        String
-  reviewerId         String?
-  requestedRoleKey   String
-  type               RolePermissionRequestType
-  status             RolePermissionRequestStatus  @default(PENDING)
-  justification      String                        @db.Text
-  adminJustification String?                       @db.Text
-  startsAt           DateTime?
-  expiresAt          DateTime?
-  reviewedAt         DateTime?
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
+  id                    String                       @id @default(uuid())
+  requesterId           String
+  reviewerId            String?
+  requestedRoleKey      String
+  type                  RolePermissionRequestType
+  status                RolePermissionRequestStatus  @default(PENDING)
+  justification         String                       @db.Text
+  adminJustification    String?                      @db.Text
+  startsAt              DateTime?
+  expiresAt             DateTime?
+  reviewedAt            DateTime?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
   // Reverse pointer to any assignments created on APPROVED (auditability)
   resultingAssignmentId String?
-  history            RolePermissionRequestEvent[]
-  requester          User                          @relation("RoleRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  reviewer           User?                         @relation("RoleRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  history               RolePermissionRequestEvent[]
+  requester             User                         @relation("RoleRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer              User?                        @relation("RoleRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
 
+  // Avoid duplicate open requests for the same role
+  @@unique([requesterId, requestedRoleKey, status], name: "RolePermissionRequest_requester_rolekey_status_unique")
   @@index([requesterId])
   @@index([reviewerId])
   @@index([status])
   @@index([type])
   @@index([createdAt])
   @@index([expiresAt])
-  // Avoid duplicate open requests for the same role
-  @@unique([requesterId, requestedRoleKey, status], name: "RolePermissionRequest_requester_rolekey_status_unique")
 }
 
 model RolePermissionRequestEvent {
-  id        String                       @id @default(uuid())
-  requestId String
-  actorId   String?
+  id         String                      @id @default(uuid())
+  requestId  String
+  actorId    String?
   transition RolePermissionRequestStatus // resulting status after event
-  reason    String?                      @db.Text
-  metadata  Json?
-  createdAt DateTime                     @default(now())
-  request   RolePermissionRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  actor     User?                        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  reason     String?                     @db.Text
+  metadata   Json?
+  createdAt  DateTime                    @default(now())
+  request    RolePermissionRequest       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor      User?                       @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([requestId])
   @@index([actorId])
   @@index([createdAt])
 }
 
-// ─── Support Center ────────────────────────────────────────────────────────────
+// ─── Access Control Center (resource-level access requests) ────────────────────
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AccessRequestType {
+  PERMANENT
+  TEMPORARY
+}
+
+model AccessRequest {
+  id                 String               @id @default(uuid())
+  requesterId        String
+  reviewerId         String?
+  resourceType       String
+  resourceId         String?
+  permissionKey      String
+  type               AccessRequestType
+  status             AccessRequestStatus  @default(PENDING)
+  justification      String               @db.Text
+  adminJustification String?              @db.Text
+  startsAt           DateTime?
+  expiresAt          DateTime?
+  reviewedAt         DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  history            AccessRequestEvent[]
+  requester          User                 @relation("AccessRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewer           User?                @relation("AccessRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@unique([requesterId, resourceType, permissionKey, status], name: "AccessRequest_requester_resource_perm_status_unique")
+  @@index([requesterId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([type])
+  @@index([resourceType])
+  @@index([permissionKey])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+model AccessRequestEvent {
+  id         String              @id @default(uuid())
+  requestId  String
+  actorId    String?
+  transition AccessRequestStatus
+  reason     String?             @db.Text
+  metadata   Json?
+  createdAt  DateTime            @default(now())
+  request    AccessRequest       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor      User?               @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([requestId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model ResourcePermission {
+  id             String   @id @default(uuid())
+  resourceType   String
+  permissionKey  String   @unique
+  permissionName String
+  description    String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([resourceType])
+}
+
+model UserResourceAccess {
+  id            String    @id @default(uuid())
+  userId        String
+  resourceType  String
+  resourceId    String?
+  permissionKey String
+  grantedAt     DateTime  @default(now())
+  grantedBy     String?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  user          User      @relation("UserResourceAccessUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, permissionKey], name: "UserResourceAccess_user_resource_perm_unique")
+  @@index([userId])
+  @@index([resourceType])
+  @@index([permissionKey])
+  @@index([expiresAt])
+}
 
 model SupportDepartment {
-  id          String         @id @default(uuid())
-  key         String         @unique
-  name        String
-  description String?
-  email       String?
-  isActive    Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  deletedAt   DateTime?
+  id                      String    @id @default(uuid())
+  key                     String    @unique
+  // name is globally unique across org
+  name                    String    @unique
+  description             String?
+  email                   String?
+  isActive                Boolean   @default(true)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  deletedAt               DateTime?
+  // ─── Phase 1 additions ─────────────────────────────────────────────────────
+  // Department head/manager (User.id). Nullable — an open headcount is valid.
+  headId                  String?
+  head                    User?     @relation("SupportDepartmentHead", fields: [headId], references: [id], onDelete: SetNull)
+  // SLA targets for this department
+  firstResponseSlaMinutes Int       @default(30)
+  resolutionSlaMinutes    Int       @default(1440) // 24 h default
+  slaAdherenceTargetPct   Int       @default(95) // 0..100
+  // Business hours expressed as minutes from midnight in the dept's timezone
+  businessHoursStartMin   Int       @default(540) // 09:00
+  businessHoursEndMin     Int       @default(1020) // 17:00
+  // ISO weekday mask: 0 = Sun .. 6 = Sat; default Mon–Fri
+  businessDays            Int[]     @default([1, 2, 3, 4, 5])
+  timezone                String    @default("UTC") // IANA timezone string
+  // Optional budgeting / capacity fields
+  budgetAllocated         Decimal?
+  resourceCapacityFte     Decimal?
+
   teams       SupportTeam[]
   agents      SupportAgent[]
   tickets     SupportTicket[]
   slaPolicies SlaPolicy[]
 
   @@index([key])
+  @@index([name])
+  @@index([isActive])
 }
 
 model SupportTeam {
-  id           String            @id @default(uuid())
-  name         String
-  departmentId String
-  description  String?
-  isActive     Boolean           @default(true)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  deletedAt    DateTime?
-  department   SupportDepartment @relation(fields: [departmentId], references: [id])
-  agents       SupportAgent[]
+  id                            String                       @id @default(uuid())
+  departmentId                  String
+  // Team name unique within a department.
+  name                          String
+  description                   String?
+  isActive                      Boolean                      @default(true)
+  createdAt                     DateTime                     @default(now())
+  updatedAt                     DateTime                     @updatedAt
+  deletedAt                     DateTime?
+  department                    SupportDepartment            @relation(fields: [departmentId], references: [id])
+  // Legacy single-team FK on SupportAgent; kept so existing queries work
+  agents                        SupportAgent[]
+  // ─── Phase 1 additions ─────────────────────────────────────────────────────
+  // Team lead (references User.id, usually but not always an agent user)
+  leadId                        String?
+  lead                          User?                        @relation("SupportTeamLead", fields: [leadId], references: [id], onDelete: SetNull)
+  // SLA: inherit=true means use department values (override fields ignored)
+  slaInheritFromDept            Boolean                      @default(true)
+  firstResponseSlaMinutes       Int?
+  resolutionSlaMinutes          Int?
+  // Business-hours: inherit=true means use the department's settings
+  businessHoursInherit          Boolean                      @default(true)
+  businessHoursStartMin         Int?
+  businessHoursEndMin           Int?
+  // Prisma doesn't support nullable list types; use businessHoursInherit to decide whether to read these.
+  // An empty array signals "no override" when businessHoursInherit=true.
+  businessDays                  Int[]                        @default([])
+  timezone                      String?
+  // Capacity settings per team
+  maxTicketsPerAgent            Int                          @default(10)
+  concurrentTicketLimitPerAgent Int                          @default(4)
+  // Skill specialization label: technical | billing | product | ...
+  skillSpecialization           String?
+  // M:N memberships with agents (history + primary flag)
+  memberships                   SupportAgentTeamMembership[]
+  // Tickets directly routed to this team (opposite of SupportTicket.team)
+  assignedTickets               SupportTicket[]
 
+  @@unique([departmentId, name])
   @@index([departmentId])
+  @@index([isActive])
 }
 
 model SupportAgent {
-  id              String            @id @default(uuid())
-  userId          String            @unique
-  departmentId    String?
-  teamId          String?
-  status          AgentStatus       @default(OFFLINE)
-  maxTickets      Int               @default(10)
-  activeTickets   Int               @default(0)
-  skills          String[]
-  isActive        Boolean           @default(true)
-  vacationUntil   DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
-  user            User              @relation("SupportAgentUser", fields: [userId], references: [id])
-  department      SupportDepartment? @relation(fields: [departmentId], references: [id])
-  team            SupportTeam?      @relation(fields: [teamId], references: [id])
+  id            String                       @id @default(uuid())
+  userId        String                       @unique
+  departmentId  String?
+  teamId        String?
+  status        AgentStatus                  @default(OFFLINE)
+  maxTickets    Int                          @default(10)
+  activeTickets Int                          @default(0)
+  skills        String[]
+  isActive      Boolean                      @default(true)
+  vacationUntil DateTime?
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+  deletedAt     DateTime?
+  user          User                         @relation("SupportAgentUser", fields: [userId], references: [id])
+  department    SupportDepartment?           @relation(fields: [departmentId], references: [id])
+  team          SupportTeam?                 @relation(fields: [teamId], references: [id])
+  // ─── Phase 1 additions ─────────────────────────────────────────────────────
+  memberships   SupportAgentTeamMembership[]
 
   @@index([departmentId])
   @@index([teamId])
   @@index([status])
+}
+
+/**
+ * M:N join table tracking which agents belong to which teams,
+ * including historical memberships and primary-team designation.
+ * Invariants (enforced by the service layer):
+ * • An agent may have only one ACTIVE primary team
+ * (SupportAgentTeamMembership where agentId=X AND endDate IS NULL AND isPrimary=true → unique).
+ * • An agent/team pair has at most one open (endDate IS NULL) row at any time.
+ */
+model SupportAgentTeamMembership {
+  id         String    @id @default(uuid())
+  agentId    String
+  teamId     String
+  isPrimary  Boolean   @default(false)
+  startDate  DateTime  @default(now())
+  endDate    DateTime?
+  assignedBy String? // User.id of the admin/manager performing the assignment
+  assignedAt DateTime  @default(now())
+
+  agent SupportAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  team  SupportTeam  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, teamId, endDate]) // prevent duplicate active memberships
+  @@index([agentId, isPrimary])
+  @@index([teamId, isPrimary])
+  @@index([agentId, endDate])
+  @@index([teamId, endDate])
 }
 
 model TicketCategory {
@@ -840,10 +1074,10 @@ model TicketCategory {
 }
 
 model TicketTag {
-  id          String              @id @default(uuid())
-  name        String              @unique
-  color       String              @default("#6B7280")
-  createdAt   DateTime            @default(now())
+  id          String                @id @default(uuid())
+  name        String                @unique
+  color       String                @default("#6B7280")
+  createdAt   DateTime              @default(now())
   assignments TicketTagAssignment[]
 
   @@index([name])
@@ -953,65 +1187,68 @@ model TicketWatcher {
 }
 
 model SlaPolicy {
-  id                  String            @id @default(uuid())
-  name                String
-  departmentId        String?
-  priority            TicketPriority
+  id                   String             @id @default(uuid())
+  name                 String
+  departmentId         String?
+  priority             TicketPriority
   firstResponseMinutes Int
-  resolutionMinutes   Int
-  escalationMinutes   Int?
-  isActive            Boolean           @default(true)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  department          SupportDepartment? @relation(fields: [departmentId], references: [id])
-  tickets             SupportTicket[]
-  escalationRules     EscalationRule[]
+  resolutionMinutes    Int
+  escalationMinutes    Int?
+  isActive             Boolean            @default(true)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  department           SupportDepartment? @relation(fields: [departmentId], references: [id])
+  tickets              SupportTicket[]
+  escalationRules      EscalationRule[]
 
   @@index([departmentId])
   @@index([priority])
 }
 
 model EscalationRule {
-  id          String    @id @default(uuid())
-  slaPolicyId String
-  name        String
+  id                  String    @id @default(uuid())
+  slaPolicyId         String
+  name                String
   triggerAfterMinutes Int
-  action      String
-  targetRole  String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  slaPolicy   SlaPolicy @relation(fields: [slaPolicyId], references: [id], onDelete: Cascade)
+  action              String
+  targetRole          String?
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  slaPolicy           SlaPolicy @relation(fields: [slaPolicyId], references: [id], onDelete: Cascade)
 
   @@index([slaPolicyId])
 }
 
 model CannedResponse {
-  id          String   @id @default(uuid())
-  title       String
-  body        String
-  category    String?
-  shortcut    String?  @unique
-  isActive    Boolean  @default(true)
-  usageCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id         String    @id @default(uuid())
+  title      String
+  body       String
+  category   String?
+  shortcut   String?   @unique
+  isActive   Boolean   @default(true)
+  usageCount Int       @default(0)
+  tags       String[]  @default([])
+  variables  String[]  @default([])
+  shortcuts  String[]  @default([])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([category])
   @@index([shortcut])
 }
 
 model HelpArticleVersion {
-  id          String   @id @default(uuid())
-  articleId   String
-  version     Int
-  title       String
-  content     String[]
-  authorId    String?
-  changeNote  String?
-  createdAt   DateTime @default(now())
-  author      User?    @relation("HelpArticleVersionAuthor", fields: [authorId], references: [id])
+  id         String   @id @default(uuid())
+  articleId  String
+  version    Int
+  title      String
+  content    String[]
+  authorId   String?
+  changeNote String?
+  createdAt  DateTime @default(now())
+  author     User?    @relation("HelpArticleVersionAuthor", fields: [authorId], references: [id])
 
   @@unique([articleId, version])
   @@index([articleId])

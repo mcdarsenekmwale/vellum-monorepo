@@ -16,26 +16,28 @@ import {
 import type { ReactNode } from "react";
 import { useAuthState, useArticles } from "@/hooks/useApi";
 import { SuggestedAuthorsSidebar } from "@/components/SuggestedAuthorsSidebar";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 // Navigation items for authenticated users
 const authNavItems = [
-  { to: "/", label: "Feed", icon: Home },
-  { to: "/discover", label: "Find", icon: Compass },
-  { to: "/highlights", label: "Highlights", icon: PlaySquare },
-  { to: "/saved", label: "Saved", icon: Bookmark },
-  { to: "/profile", label: "Profile", icon: User },
+  { to: "/", label: "navigation.home", icon: Home },
+  { to: "/discover", label: "navigation.discover", icon: Compass },
+  { to: "/highlights", label: "navigation.highlights", icon: PlaySquare },
+  { to: "/saved", label: "navigation.saved", icon: Bookmark },
+  { to: "/profile", label: "navigation.profile", icon: User },
 ] as const;
 
 // Navigation items for guests (public only)
 const guestNavItems = [
-  { to: "/", label: "Feed", icon: Home },
-  { to: "/discover", label: "Discover", icon: Compass },
-  { to: "/highlights", label: "Highlights", icon: PlaySquare },
+  { to: "/", label: "navigation.home", icon: Home },
+  { to: "/discover", label: "navigation.discover", icon: Compass },
+  { to: "/highlights", label: "navigation.highlights", icon: PlaySquare },
 ] as const;
 
 export function WebShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuthState();
+  const { user, isAuthenticated } = useAuthState();
+  const { t } = useI18n();
   const { data: articlesData, isLoading: articlesLoading } = useArticles(1, 10);
 
   const articles = articlesData?.data ?? [];
@@ -60,6 +62,7 @@ export function WebShell({ children }: { children: ReactNode }) {
       }>,
     )
     .slice(0, 5);
+
 
   const userDisplay = {
     name: user?.name || "Guest",
@@ -101,7 +104,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                     className="size-6"
                     strokeWidth={active ? 2.2 : 1.8}
                   />
-                  <span className="text-base">{item.label}</span>
+                  <span className="text-base">{t(item.label)}</span>
                 </Link>
               );
             })}
@@ -112,7 +115,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                 className="mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent text-white font-semibold hover:opacity-90 transition-opacity"
               >
                 <Plus className="size-5" strokeWidth={2.2} />
-                <span>Create</span>
+                <span>{t("navigation.compose")}</span>
               </Link>
             ) : (
               <div className="mt-4 space-y-2">
@@ -121,14 +124,14 @@ export function WebShell({ children }: { children: ReactNode }) {
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity"
                 >
                   <LogIn className="size-5" strokeWidth={2.2} />
-                  <span>Sign In</span>
+                  <span>{t("auth.signIn")}</span>
                 </Link>
                 <Link
                   to="/register"
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-foreground font-semibold hover:bg-muted transition-colors"
                 >
                   <UserPlus className="size-5" strokeWidth={2.2} />
-                  <span>Create Account</span>
+                  <span>{t("auth.createAccount")}</span>
                 </Link>
               </div>
             )}
@@ -163,7 +166,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                   className="mt-2 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted text-muted-foreground"
                 >
                   <Settings className="size-5" strokeWidth={1.8} />
-                  <span className="text-sm">Settings</span>
+                  <span className="text-sm">{t("navigation.settings")}</span>
                 </Link>
               </>
             ) : (
@@ -192,7 +195,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                   <Search className="size-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder={t("navigation.search")}
                     className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
                   />
                 </div>
@@ -223,7 +226,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                       to="/login"
                       className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-muted transition-colors"
                     >
-                      Sign In
+                      {t("auth.signIn")}
                     </Link>
                     <Link
                       to="/register"
@@ -242,12 +245,19 @@ export function WebShell({ children }: { children: ReactNode }) {
         {/* Right Sidebar */}
         <aside className="hidden lg:block w-[320px] flex-none p-8 sticky top-0 h-screen overflow-y-auto">
           {/* Suggested Authors */}
-          <SuggestedAuthorsSidebar limit={5} />
+          <SuggestedAuthorsSidebar
+            limit={5}
+            suggestedAuthors={suggestedAuthors.map((a) => ({
+              ...a,
+              followersCount: 0,
+              articlesCount: 0,
+            }))}
+          />
 
           {/* Trending */}
           <div className="mb-8">
             <span className="text-sm text-muted-foreground font-semibold mb-4 block">
-              Trending now
+              {t("home.trending")} {t("common.now")}
             </span>
             <div className="space-y-3">
               {articlesLoading
@@ -290,23 +300,23 @@ export function WebShell({ children }: { children: ReactNode }) {
           <div className="text-xs text-muted-foreground/70 leading-relaxed">
             <div className="flex flex-wrap gap-x-2 gap-y-1 mb-2">
               <Link to="/settings/about" className="hover:underline">
-                About
+                {t("common.about")}
               </Link>
               <Link to="/settings/help" className="hover:underline">
-                Help
+                {t("common.help")}
               </Link>
               <Link to="/settings/privacy" className="hover:underline">
-                Privacy
+                {t("common.privacy")}
               </Link>
               <Link to="/settings/about" className="hover:underline">
-                Terms
+                {t("common.terms")}
               </Link>
               <Link to="/discover" className="hover:underline">
-                Discover
+                {t("navigation.discover")}
               </Link>
               {isAuthenticated && (
                 <Link to="/compose" className="hover:underline">
-                  Write
+                  {t("navigation.compose")}
                 </Link>
               )}
             </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { memo, useState, useEffect } from 'react';
+import { View, Image, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -87,6 +87,10 @@ export default function ShimmerImage({
           style={[
             styles.image,
             { borderRadius, opacity: status === 'loaded' ? 1 : 0 },
+            // Web-only smooth opacity fade. Cast keeps RN typecheck happy.
+            (Platform.OS === 'web'
+              ? ({ transitionProperty: 'opacity', transitionDuration: '300ms' } as any)
+              : null),
           ]}
           resizeMode={resizeMode}
           onLoad={handleLoad}
@@ -107,8 +111,6 @@ const styles = StyleSheet.create({
   },
   image: {
     ...StyleSheet.absoluteFillObject,
-    transitionProperty: 'opacity',
-    transitionDuration: '300ms',
   },
   errorContainer: {
     ...StyleSheet.absoluteFillObject,

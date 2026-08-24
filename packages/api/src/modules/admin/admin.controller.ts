@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
@@ -7,6 +7,8 @@ import { Role, RolePermissionRequestStatus, RolePermissionRequestType } from '@p
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { SupportAdminGuard } from '../auth/support-admin.guard';
+
 
 // Role validation is handled by AdminService.resolveRole() / resolveRoleOrThrow
 // which accepts both legacy enum values AND custom RbacRole.key/name rows,
@@ -15,10 +17,36 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 const _ = Role;
 const __unused = [RolePermissionRequestStatus, RolePermissionRequestType]; // silence lint
 
+/**
+ * Defensive helper to extract the authenticated user id no matter which
+ * naming convention the `req.user` object follows.
+ *
+ * Two shapes coexist in the codebase:
+ *   - JWT convention: `req.user.sub` (what AdminController + RoleRequestsController
+ *     historically expect since the JWT payload carries `sub`).
+ *   - Prisma convention: `req.user.id` (what 90% of the other controllers use
+ *     because validateUser used to return the raw prisma user row).
+ *
+ * `AuthService.validateUser` was fixed to attach BOTH fields, but keeping this
+ * helper at every call site means a future refactor that drops one field will
+ * still not silently regress into assertActorAuthenticated failures.
+ *
+ * Call this as `actorId(req)` inside a controller.
+ */
+function actorId(req: { user?: { sub?: string | null; id?: string | null } }): string | undefined {
+  const u = req.user;
+  const raw = u?.sub ?? u?.id;
+  if (!raw) return undefined;
+  const trimmed = typeof raw === 'string' ? raw.trim() : '';
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 @ApiTags('Admin')
 @Controller('api/admin')
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+  ) { }
 
   @Post('seed')
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -37,11 +65,25 @@ export class AdminController {
   }
 
   @Get('users')
-  @ApiOperation({ summary: 'List all users' })
+  @ApiOperation({ summary: 'List all users (excludes soft-deleted by default)' })
   @ApiResponse({ status: 200, description: 'Users retrieved' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async listUsers(@Query('page') page?: number, @Query('limit') limit?: number, @Query('except') except?: string) {
-    return this.adminService.listUsers(page, limit, except);
+  async listUsers(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('except') except?: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    const include = includeDeleted === 'true' || includeDeleted === '1';
+    return this.adminService.listUsers(page, limit, except, include);
+  }
+
+  @Get('users/deleted')
+  @ApiOperation({ summary: 'List all soft-deleted users' })
+  @ApiResponse({ status: 200, description: 'Deleted users retrieved' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async listDeletedUsers(@Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.adminService.listDeletedUsers(page, limit);
   }
 
   @Get('users/:id')
@@ -71,7 +113,21 @@ export class AdminController {
     @Req() req: any,
     @Body() body: { email: string; name: string; handle: string; role: Role | string; password: string },
   ) {
-    return this.adminService.createUser(req.user.sub, body.email, body.name, body.handle, body.role, body.password);
+    return this.adminService.createUser(actorId(req), body.email, body.name, body.handle, body.role, body.password);
+  }
+
+  @Post('users/:id/reset-password')
+  @ApiOperation({ summary: 'Reset a user password' })
+  @ApiResponse({ status: 200, description: 'Password reset' })
+  @ApiResponse({ status: 400, description: 'Invalid password length' })
+  @ApiResponse({ status: 403, description: 'Self-password reset not allowed' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async resetUserPassword(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { password: string },
+  ) {
+    return this.adminService.resetUserPassword(actorId(req), id, body);
   }
 
   @Put('users/:id')
@@ -85,16 +141,38 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: { name?: string; handle?: string; bio?: string; website?: string; location?: string; email?: string; role?: Role | string; avatar?: string; publication?: string; isActive?: boolean },
   ) {
-    return this.adminService.updateUser(req.user.sub, id, body);
+    return this.adminService.updateUser(actorId(req), id, body);
   }
 
   @Delete('users/:id')
-  @ApiOperation({ summary: 'Soft-delete a user' })
-  @ApiResponse({ status: 200, description: 'User deleted' })
+  @ApiOperation({ summary: 'Soft-delete a user (30-day retention before permanent deletion)' })
+  @ApiResponse({ status: 200, description: 'User soft-deleted' })
+  @ApiResponse({ status: 400, description: 'User is already soft-deleted' })
   @ApiResponse({ status: 403, description: 'Self-deletion not allowed' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   async deleteUser(@Req() req: any, @Param('id') id: string) {
-    return this.adminService.deleteUser(req.user.sub, id);
+    return this.adminService.deleteUser(actorId(req), id);
+  }
+
+  @Put('users/:id/restore')
+  @ApiOperation({ summary: 'Restore a soft-deleted user' })
+  @ApiResponse({ status: 200, description: 'User restored' })
+  @ApiResponse({ status: 400, description: 'User is not soft-deleted' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async restoreUser(@Req() req: any, @Param('id') id: string) {
+    return this.adminService.restoreUser(actorId(req), id);
+  }
+
+  @Delete('users/:id/purge')
+  @ApiOperation({ summary: 'Permanently delete a soft-deleted user and all related data (IRREVERSIBLE)' })
+  @ApiResponse({ status: 200, description: 'User permanently deleted' })
+  @ApiResponse({ status: 400, description: 'User must be soft-deleted first' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async purgeUser(@Req() req: any, @Param('id') id: string) {
+    return this.adminService.purgeUser(actorId(req), id);
   }
 
   @Put('users/:id/role')
@@ -108,7 +186,7 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: { role: Role | string },
   ) {
-    return this.adminService.updateUserRole(req.user.sub, id, body.role);
+    return this.adminService.updateUserRole(actorId(req), id, body.role);
   }
 
   @Put('users/:id/status')
@@ -117,7 +195,7 @@ export class AdminController {
   @ApiResponse({ status: 403, description: 'Self-status edit not allowed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   async toggleUserStatus(@Req() req: any, @Param('id') id: string) {
-    return this.adminService.toggleUserStatus(req.user.sub, id);
+    return this.adminService.toggleUserStatus(actorId(req), id);
   }
 
   @Post('users/:id/avatar')
@@ -126,7 +204,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  async uploadAvatar(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  async uploadAvatar(@Req() req: any, @Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    // Actor id extracted but not required by service today — keep extracting so
+    // audit trails can be added later without controller changes.
+    actorId(req);
     return this.adminService.uploadAvatar(id, file);
   }
 
@@ -134,7 +215,8 @@ export class AdminController {
   @ApiOperation({ summary: 'Remove user avatar' })
   @ApiResponse({ status: 200, description: 'Avatar removed' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async removeAvatar(@Param('id') id: string) {
+  async removeAvatar(@Req() req: any, @Param('id') id: string) {
+    actorId(req);
     return this.adminService.removeAvatar(id);
   }
 
@@ -308,15 +390,22 @@ export class AdminController {
   @ApiOperation({ summary: 'List all notifications across users' })
   @ApiResponse({ status: 200, description: 'Notifications retrieved' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async listAllNotifications(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.adminService.listAllNotifications(page, limit);
+  async listAllNotifications(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Req() req?: { user?: { id: string; role?: Role | null } },
+  ) {
+    const actor = req?.user ? { id: req.user.id, role: req.user.role ?? null } : undefined;
+    return this.adminService.listAllNotifications(page, limit, actor);
   }
 
   @Put('notifications/:id/read')
   @ApiOperation({ summary: 'Mark a notification as read (admin)' })
   @ApiResponse({ status: 200, description: 'Notification marked as read' })
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async markNotificationRead(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  async markNotificationRead(
+    @Param('id') id: string,
+  ) {
     return this.adminService.markNotificationRead(id);
   }
 
@@ -451,12 +540,51 @@ export class AdminController {
     return this.adminService.listReports(page, limit);
   }
 
+  @Get('reports/:id')
+  @ApiOperation({ summary: 'Get a single report by id' })
+  @ApiResponse({ status: 200, description: 'Report retrieved' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getReport(@Param('id') id: string) {
+    return this.adminService.getReportById(id);
+  }
+
   @Put('reports/:id/status')
   @ApiOperation({ summary: 'Update report status' })
   @ApiResponse({ status: 200, description: 'Report status updated' })
   @UseGuards(JwtAuthGuard, AdminGuard)
-  async updateReportStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.adminService.updateReportStatus(id, body.status);
+  async updateReportStatus(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { status: string; note?: string },
+  ) {
+    return this.adminService.updateReportStatus(id, body.status, actorId(req), body.note);
+  }
+
+  @Delete('reports/:id')
+  @ApiOperation({ summary: 'Delete a report' })
+  @ApiResponse({ status: 200, description: 'Report deleted' })
+  @ApiResponse({ status: 404, description: 'Report not found' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async deleteReport(@Req() req: any, @Param('id') id: string) {
+    await this.adminService.deleteReport(actorId(req), id);
+    return { id, deleted: true };
+  }
+
+  @Put(['reports/bulk/status'])
+  @ApiOperation({ summary: 'Bulk update status for multiple reports' })
+  @ApiResponse({ status: 200, description: 'Reports status updated' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async bulkUpdateReportStatus(
+    @Req() req: any,
+    @Body() body: { ids: string[]; status: string; note?: string },
+  ) {
+    return this.adminService.bulkUpdateReportStatus(
+      actorId(req),
+      body.ids ?? [],
+      body.status,
+      body.note,
+    );
   }
 
   @Get('analytics/overview')
@@ -823,9 +951,9 @@ export class AdminController {
   }
 
   @Get('support-tickets')
-  @ApiOperation({ summary: 'List support tickets (admin)' })
+  @ApiOperation({ summary: 'List support tickets (support admin)' })
   @ApiResponse({ status: 200, description: 'Support tickets retrieved' })
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, SupportAdminGuard)
   async listSupportTickets(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -835,10 +963,32 @@ export class AdminController {
     return this.adminService.listSupportTickets({ page, limit, status, priority });
   }
 
+
+
+
+  //restore support ticket
+  @Put('support-tickets/deleted/:id/restore')
+  @ApiOperation({ summary: 'Restore support ticket' })
+  @ApiResponse({ status: 200, description: 'Support ticket restored' })
+  @UseGuards(JwtAuthGuard, SupportAdminGuard)
+  async restoreSupportTicket(@Param('id') id: string) {
+    return this.adminService.restoreSupportTicket(id);
+  }
+
+  //permanent delete support ticket
+  @Delete('support-tickets/deleted/:id/permanently-delete')
+  @ApiOperation({ summary: 'Permanently delete support ticket' })
+  @ApiResponse({ status: 200, description: 'Support ticket permanently deleted' })
+  @UseGuards(JwtAuthGuard, SupportAdminGuard)
+  async permanentlyDeleteSupportTicket(@Param('id') id: string) {
+    return this.adminService.permanentlyDeleteSupportTicket(id);
+  }
+
+  //
   @Get('support-tickets/:id')
   @ApiOperation({ summary: 'Get support ticket by ID' })
   @ApiResponse({ status: 200, description: 'Support ticket retrieved' })
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, SupportAdminGuard)
   async getSupportTicket(@Param('id') id: string) {
     return this.adminService.getSupportTicket(id);
   }
@@ -846,7 +996,7 @@ export class AdminController {
   @Put('support-tickets/:id/status')
   @ApiOperation({ summary: 'Update support ticket status' })
   @ApiResponse({ status: 200, description: 'Support ticket status updated' })
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, SupportAdminGuard)
   async updateSupportTicketStatus(@Param('id') id: string, @Body() body: { status: string }) {
     return this.adminService.updateSupportTicketStatus(id, body.status);
   }

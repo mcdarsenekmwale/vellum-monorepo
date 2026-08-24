@@ -28,6 +28,47 @@ export interface UserSettings {
   updatedAt: string;
 }
 
+export type SubscriptionStatus =
+  | 'active'
+  | 'canceled'
+  | 'past_due'
+  | 'trialing'
+  | 'paused'
+  | 'inactive';
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  planId: string;
+  planName: string;
+  status: SubscriptionStatus;
+  amountCents?: number;
+  currency?: string;
+  interval?: 'month' | 'year' | 'week';
+  renewalDate?: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  amountCents: number;
+  currency: string;
+  interval: 'month' | 'year' | 'week';
+  popular?: boolean;
+  features: string[];
+}
+
+export interface RestorePurchasesResult {
+  success: boolean;
+  restored: number;
+  subscription: Subscription | null;
+}
+
 // Article Types
 export interface Article {
   id: string;

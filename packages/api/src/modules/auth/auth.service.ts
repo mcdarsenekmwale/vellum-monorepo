@@ -313,7 +313,15 @@ export class AuthService {
       // ignore transient errors during validation
     }
 
-    return user;
+    // Attach both `id` (native prisma field) and `sub` (JWT subject claim),
+    // because two conventions exist across the callers:
+    //   - 90% of controllers read `req.user.id` (follows Prisma shape).
+    //   - AdminController and RoleRequestsController historically read `req.user.sub`
+    //     (follows JWT claim shape).
+    // If we return only one of them, the other family fails with "missing actorId"
+    // (see assertActorAuthenticated in AdminService). Always include both.
+    const sanitized = this.sanitizeUser(user);
+    return { ...sanitized, sub: sanitized.id };
   }
 
   private sanitizeUser(user: any) {

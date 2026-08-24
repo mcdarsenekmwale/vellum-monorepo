@@ -6,6 +6,8 @@ import { apiClient } from '../lib/api';
 import { useMemo } from 'react';
 import type { Notification } from '@vellum/api-client/types';
 import { Avatar } from '../components/Avatar';
+import { useTheme } from 'context/ThemeProvider';
+import { useI18n } from '../context/I18nProvider';
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -19,6 +21,8 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const { data: notificationsData, isLoading, error, refetch } = useNotifications(1, 20);
   const { data: articlesData } = useArticles(1, 50);
@@ -78,11 +82,11 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: '#e11d48', fontSize: 16 }}>Failed to load notifications</Text>
+          <Text style={{ color: colors.danger, fontSize: 16 }}>Failed to load notifications</Text>
           <TouchableOpacity onPress={refetch} style={{ marginTop: 16 }}>
-            <Text style={{ color: '#d4653a', fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -90,14 +94,14 @@ export default function NotificationsPage() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Subtitle Header */}
       <View style={styles.subtitleRow}>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {unreadCount} NEW · THIS WEEK
         </Text>
         <TouchableOpacity onPress={markAllRead} activeOpacity={0.7}>
-          <Text style={styles.markAllRead}>MARK ALL READ</Text>
+          <Text style={[styles.markAllRead, { color: colors.accent }]}>{t('notifications.markAllRead')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -138,17 +142,17 @@ export default function NotificationsPage() {
               <View style={styles.content}>
                 <Text style={styles.message} numberOfLines={3}>
                   <Text style={styles.actorName}>{actor?.name || 'Someone'}</Text>
-                  <Text style={styles.verb}> {verbFor(n.kind)}</Text>
+                  <Text style={[styles.verb, { color: colors.textMuted }]}> {verbFor(n.kind)}</Text>
                   {article && (
-                    <Text style={styles.articleTitle}> "{article.title}"</Text>
+                    <Text style={[styles.articleTitle, { color: colors.textPrimary }]}> "{article.title}"</Text>
                   )}
                 </Text>
                 {n.body && (
-                  <Text style={styles.replyPreview} numberOfLines={1}>
+                  <Text style={[styles.replyPreview, { color: colors.textSecondary }]} numberOfLines={1}>
                     "{n.body}"
                   </Text>
                 )}
-                <Text style={styles.timeAgo}>{formatRelativeTime(n.createdAt)}</Text>
+                <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{formatRelativeTime(n.createdAt)}</Text>
               </View>
 
               {/* Article thumbnail */}
@@ -165,7 +169,6 @@ export default function NotificationsPage() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f7f4ee',
     flex: 1,
   },
   subtitleRow: {
@@ -179,14 +182,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#666666',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   markAllRead: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#d4653a',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
@@ -242,14 +243,13 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   verb: {
-    color: '#666666',
+    
   },
   articleTitle: {
-    color: '#333333',
+    
   },
   replyPreview: {
     fontSize: 13,
-    color: '#999999',
     fontStyle: 'italic',
     marginTop: 6,
     lineHeight: 18,
@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
   timeAgo: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#999999',
     marginTop: 6,
     textTransform: 'uppercase',
   },

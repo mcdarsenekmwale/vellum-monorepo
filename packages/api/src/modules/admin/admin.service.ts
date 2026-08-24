@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException, NotFoundException,
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -25,13 +25,13 @@ import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type Sett
 type ResolvedRole =
   | { kind: 'legacy'; raw: string; legacyRole: Role; rbacRoleKey: string }
   | {
-      kind: 'custom';
-      raw: string;
-      legacyRole: Role;
-      rbacRoleId: string;
-      rbacRoleKey: string;
-      rbacRoleName: string;
-    };
+    kind: 'custom';
+    raw: string;
+    legacyRole: Role;
+    rbacRoleId: string;
+    rbacRoleKey: string;
+    rbacRoleName: string;
+  };
 
 @Injectable()
 export class AdminService {
@@ -44,12 +44,49 @@ export class AdminService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private cache: CacheService,
-  ) {}
+  ) { }
 
   /** Strip sensitive fields before returning a user to callers. */
   private sanitizeUser(user: any) {
     const { passwordHash, resetToken, resetTokenExpiresAt, verificationToken, verificationTokenExpiresAt, ...sanitized } = user;
     return sanitized;
+  }
+
+  /**
+   * Best-effort audit log writer. Mirrors the pattern in RbacService — never
+   * throws, never breaks the primary operation. Captures actor, action,
+   * resource, resourceId, field-level changes, and success/failure.
+   */
+  private async audit(
+    userId: string | null,
+    action: string,
+    resource: string,
+    opts?: {
+      resourceId?: string;
+      details?: Record<string, unknown>;
+      changes?: Record<string, unknown>;
+      success?: boolean;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+  ) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          action,
+          resource,
+          resourceId: opts?.resourceId ?? null,
+          details: opts?.details ? (opts.details as any) : null,
+          changes: opts?.changes ? (opts.changes as any) : null,
+          success: opts?.success ?? true,
+          ipAddress: opts?.ipAddress ?? null,
+          userAgent: opts?.userAgent ?? null,
+        },
+      });
+    } catch {
+      /* audit logging is best-effort; never break primary flows */
+    }
   }
 
   /** Deterministic HMAC-SHA256 hash for API keys (so we can look them up by hash). */
@@ -256,27 +293,27 @@ export class AdminService {
     const byLowerKey = byExactKey
       ? null
       : await this.prisma.rbacRole.findFirst({
-          where: { key: trimmed.toLowerCase(), deletedAt: null, isActive: true },
-        });
+        where: { key: trimmed.toLowerCase(), deletedAt: null, isActive: true },
+      });
 
     const byNormalizedRbacKey = byExactKey ?? byLowerKey
       ? null
       : await this.prisma.rbacRole.findFirst({
-          where: {
-            // Convert the UPPER_SNAKE normalized value back to lower_snake
-            // so an enum-style input can still be matched against a
-            // snake_case-native RbacRole.key in the database.
-            key: normalized.toLowerCase(),
-            deletedAt: null,
-            isActive: true,
-          },
-        });
+        where: {
+          // Convert the UPPER_SNAKE normalized value back to lower_snake
+          // so an enum-style input can still be matched against a
+          // snake_case-native RbacRole.key in the database.
+          key: normalized.toLowerCase(),
+          deletedAt: null,
+          isActive: true,
+        },
+      });
 
     const byName = (byExactKey ?? byLowerKey ?? byNormalizedRbacKey)
       ? null
       : await this.prisma.rbacRole.findFirst({
-          where: { name: { equals: trimmed, mode: 'insensitive' }, deletedAt: null, isActive: true },
-        });
+        where: { name: { equals: trimmed, mode: 'insensitive' }, deletedAt: null, isActive: true },
+      });
 
     const rbacRole = byExactKey ?? byLowerKey ?? byNormalizedRbacKey ?? byName;
     if (rbacRole) {
@@ -301,6 +338,9 @@ export class AdminService {
       `Invalid role "${raw}". Valid legacy roles: ${legacyList}. Additional custom roles (from RbacRole table): ${customList}.`,
     );
   }
+
+
+
 
   /**
    * Apply the resolved role — writes legacyRole to user row, and upserts the
@@ -468,12 +508,17 @@ export class AdminService {
     };
   }
 
-  async listUsers(page = 1, limit = 20, except?: string) {
+  async listUsers(page = 1, limit = 20, except?: string, includeDeleted = false) {
     const skip = (page - 1) * limit;
 
     const where: Record<any, any> = {};
     if (except) {
       where.NOT = { role: except as Role | undefined };
+    }
+    // Filter out soft-deleted users by default — only include them when
+    // explicitly requested via includeDeleted=true.
+    if (!includeDeleted) {
+      where.deletedAt = null;
     }
 
     const [users, total] = await Promise.all([
@@ -493,12 +538,47 @@ export class AdminService {
           publication: true,
           role: true,
           isActive: true,
+          deletedAt: true,
           createdAt: true,
           updatedAt: true,
         },
         where,
       }),
-      this.prisma.user.count({ where}),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { data: users, total, page, pageSize: limit };
+  }
+
+  /**
+   * List only soft-deleted users (deletedAt IS NOT NULL), ordered by deletion
+   * date descending so the most recently deleted appear first. Supports
+   * standard pagination.
+   */
+  async listDeletedUsers(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const where = { deletedAt: { not: null } };
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        orderBy: { deletedAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          handle: true,
+          name: true,
+          avatar: true,
+          role: true,
+          isActive: true,
+          deletedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        where,
+      }),
+      this.prisma.user.count({ where }),
     ]);
 
     return { data: users, total, page, pageSize: limit };
@@ -598,6 +678,10 @@ export class AdminService {
 
     await this.applyRole(created.id, resolved, { replacedBy: 'admin createUser', assignedBy: actorId });
     await this.prisma.userSettings.create({ data: { userId: created.id } }).catch(() => null);
+    await this.audit(actorId, 'CREATE_USER', 'user', {
+      resourceId: created.id,
+      details: { email, name, handle, role: resolved.rbacRoleKey },
+    });
     return this.sanitizeUser(created);
   }
 
@@ -647,17 +731,380 @@ export class AdminService {
     if (resolved !== undefined) {
       await this.applyRole(id, resolved, { replacedBy: 'admin updateUser', assignedBy: actorId });
     }
+    await this.audit(actorId, 'UPDATE_USER', 'user', {
+      resourceId: id,
+      details: { fields: Object.keys(data) },
+      changes: { ...(data.role !== undefined ? { role: data.role } : {}), ...(data.isActive !== undefined ? { isActive: data.isActive } : {}) },
+    });
     return this.sanitizeUser(updated);
   }
 
   async deleteUser(actorId: string, id: string) {
     this.ensureActorIsNotTarget(actorId, id, 'deleteUser');
+
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.deletedAt) {
+      throw new BadRequestException('User is already soft-deleted');
+    }
+
+    const now = new Date();
     const updated = await this.prisma.user.update({
       where: { id },
-      data: { deletedAt: new Date() },
+      data: {
+        isActive: false,
+        deletedAt: now,
+      },
+    });
+
+    // Revoke all active sessions and refresh tokens for security.
+    await this.prisma.session.deleteMany({ where: { userId: id } }).catch(() => null);
+    await this.prisma.refreshToken.deleteMany({ where: { userId: id } }).catch(() => null);
+    // Invalidate any active API keys.
+    await this.prisma.apiKey.updateMany({
+      where: { userId: id, isActive: true },
+      data: { isActive: false },
+    }).catch(() => null);
+
+    await this.audit(actorId, 'SOFT_DELETE_USER', 'user', {
+      resourceId: id,
+      details: { email: target.email, handle: target.handle, deletedAt: now },
+      changes: { isActive: { from: true, to: false }, deletedAt: { from: null, to: now } },
     });
     return this.sanitizeUser(updated);
   }
+
+
+  // Reset User Password
+  async resetUserPassword(actorId: string, id: string, data: { password: string }) {
+    this.ensureActorIsNotTarget(actorId, id, 'resetUserPassword');
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (target.deletedAt) {
+      throw new BadRequestException('User is soft-deleted');
+    }
+
+    // §1 — If password is less than 8 characters, deny with BadRequestException.
+    if (data.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters long');
+    }
+    // §2 — If password is empty, deny with BadRequestException.
+    if (data.password.trim() === '') {
+      throw new BadRequestException('Password cannot be empty');
+    }
+
+    // §3 — If password is the same as the current password, deny with BadRequestException.
+    const isPasswordValid = await bcrypt.compare(data.password, target.passwordHash);
+    if (isPasswordValid) {
+      throw new BadRequestException('Password cannot be the same as the current password');
+    }
+
+    // §4 — If password is valid, update the password hash.
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash: hashedPassword },
+    });
+
+    // §5 — If password is valid, update the password hash.
+    await this.audit(actorId, 'RESET_USER_PASSWORD', 'user', {
+      resourceId: id,
+      details: { password: data.password },
+      changes: { passwordHash: hashedPassword },
+    });
+    return this.sanitizeUser(target);
+  }
+
+  /**
+   * Restore a soft-deleted user: clears deletedAt and reactivates the account.
+   * Does NOT re-issue sessions or tokens — the user must log in again.
+   */
+  async restoreUser(actorId: string, id: string) {
+    this.assertActorAuthenticated(actorId, 'restoreUser');
+
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (!target.deletedAt) {
+      throw new BadRequestException('User is not soft-deleted');
+    }
+
+    const restoredAt = new Date();
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        isActive: true,
+        deletedAt: null,
+      },
+    });
+
+    await this.audit(actorId, 'RESTORE_USER', 'user', {
+      resourceId: id,
+      details: { email: target.email, handle: target.handle, restoredAt },
+      changes: { isActive: { from: false, to: true }, deletedAt: { from: target.deletedAt, to: null } },
+    });
+    return this.sanitizeUser(updated);
+  }
+
+  // ─── Notification Access Control ─────────────────────────────────────────────
+
+  /**
+   * Build a Prisma `where` clause that restricts notifications to those the actor
+   * is allowed to see. Admin roles get an empty filter (sees everything).
+   * Everyone else sees notifications where:
+   *   - they are the recipient (userId), OR
+   *   - they are the sender (senderId), OR
+   *   - they are mentioned in the notification, OR
+   *   - they are a follower of the notification's entity, OR
+   *   - they have explicit access via notification grants, OR
+   *   - they are a team member associated with the notification
+   */
+  private async buildNotificationAccessWhere(
+    userId: string,
+    role: Role | undefined | null,
+  ): Promise<Prisma.NotificationWhereInput> {
+    // ─── Admin override ──────────────────────────────────────────────────────
+    if (this.isNotificationAccessAdmin(role)) return {};
+
+    const orBranches: Prisma.NotificationWhereInput[] = [
+      // ─── Direct involvement ──────────────────────────────────────────────
+      { userId }, // Recipient
+      { actorId: userId }, // Sender
+    ];
+
+    // ─── Entity followers ──────────────────────────────────────────────────
+
+    // ─── Team membership access ──────────────────────────────────────────
+    // Notifications related to tickets or entities in the user's teams
+    const agentRecord = await this.prisma.supportAgent.findUnique({
+      where: { userId },
+      select: { id: true },
+    }).catch(() => null);
+
+    if (agentRecord) {
+      const teamMemberships = await this.prisma.supportAgentTeamMembership.findMany({
+        where: { agentId: agentRecord.id, endDate: null },
+        select: { teamId: true },
+      }).catch(() => [] as { teamId: string }[]);
+
+      if (teamMemberships.length) {
+        const teamIds = teamMemberships.map((m) => m.teamId);
+
+        // Notifications about tickets assigned to user's teams
+        const teamTicketIds = await this.prisma.supportTicket.findMany({
+          where: {
+            teamId: { in: teamIds },
+            deletedAt: null,
+          },
+          select: { id: true },
+        }).catch(() => [] as { id: string }[]);
+
+      }
+    }
+
+    // ─── Explicit notification grants ─────────────────────────────────────
+    // Users who have been explicitly granted access to specific notifications
+    const notificationGrants = await this.prisma.notification.findMany({
+      where: {
+        userId,
+      },
+      select: { id: true },
+    }).catch(() => [] as { id: string }[]);
+
+    const grantedNotificationIds = notificationGrants
+      .map((g) => g.id)
+      .filter((id): id is string => !!id);
+
+    if (grantedNotificationIds.length) {
+      orBranches.push({ id: { in: grantedNotificationIds } });
+    }
+
+    // ─── Notification categories subscription ────────────────────────────
+
+    // ─── Priority-based access ────────────────────────────────────────────
+    // Certain priority notifications are visible to all (e.g., system alerts)
+    const systemAlerts = await this.prisma.notification.findMany({
+      where: {
+        kind: 'SYSTEM',
+      },
+      select: { id: true },
+    }).catch(() => [] as { id: string }[]);
+
+    if (systemAlerts.length) {
+      orBranches.push({
+        id: { in: systemAlerts.map((a) => a.id) },
+      });
+    }
+
+    // ─── Notification chain access ────────────────────────────────────────
+    // ─── Return combined OR conditions ──────────────────────────────────
+    return { OR: orBranches };
+  }
+
+  // ─── Helper: Check if user is admin for notifications ──────────────────
+
+  private isNotificationAccessAdmin(role: Role | undefined | null): boolean {
+    if (!role) return false;
+    const adminRoles = ['Admin', 'SuperAdmin', 'SupportAdmin'];
+    return adminRoles.includes(role);
+  }
+
+  /**
+   * Permanently delete a user and all related records. This is IRREVERSIBLE.
+   * Must be called within a transaction to maintain referential integrity.
+   * Audit log entries are preserved (their userId is nullable → SetNull).
+   */
+  async purgeUser(actorId: string, id: string) {
+    this.assertActorAuthenticated(actorId, 'purgeUser');
+
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+    if (!target.deletedAt) {
+      throw new BadRequestException('User must be soft-deleted before it can be permanently deleted. Soft-delete first, then purge.');
+    }
+
+    // Write audit entry BEFORE deleting the user (so userId FK is valid).
+    await this.audit(actorId, 'PURGE_USER', 'user', {
+      resourceId: id,
+      details: {
+        email: target.email,
+        handle: target.handle,
+        name: target.name,
+        role: target.role,
+        softDeletedAt: target.deletedAt,
+        purgedAt: new Date(),
+      },
+    });
+
+    // Delete all related records in dependency order, then the user.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.storyView.deleteMany({ where: { viewerId: id } });
+      await tx.like.deleteMany({ where: { userId: id } });
+      await tx.bookmark.deleteMany({ where: { userId: id } });
+      await tx.highlight.deleteMany({ where: { authorId: id } });
+      await tx.comment.deleteMany({ where: { authorId: id } });
+      await tx.article.deleteMany({ where: { authorId: id } });
+      await tx.story.deleteMany({ where: { authorId: id } });
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.session.deleteMany({ where: { userId: id } });
+      await tx.refreshToken.deleteMany({ where: { userId: id } });
+      await tx.apiKey.deleteMany({ where: { userId: id } });
+      await tx.media.deleteMany({ where: { uploadedBy: id } });
+      await tx.follow.deleteMany({ where: { OR: [{ followerId: id }, { followingId: id }] } });
+      await tx.userRoleAssignment.deleteMany({ where: { userId: id } });
+      await tx.userPermissionOverride.deleteMany({ where: { userId: id } });
+      await tx.roleAssignmentHistory.deleteMany({ where: { userId: id } });
+      await tx.rolePermissionRequestEvent.deleteMany({ where: { actorId: id } });
+      await tx.rolePermissionRequest.deleteMany({ where: { requesterId: id } });
+      // Set reviewer references to null (SetNull semantics) for requests reviewed by this user.
+      await tx.rolePermissionRequest.updateMany({ where: { reviewerId: id }, data: { reviewerId: null } });
+      await tx.report.deleteMany({ where: { reporterId: id } });
+      await tx.ticketAttachment.deleteMany({ where: { uploadedById: id } });
+      await tx.ticketInternalNote.deleteMany({ where: { authorId: id } });
+      await tx.ticketMessage.deleteMany({ where: { authorId: id } });
+      await tx.ticketAssignment.deleteMany({ where: { agentId: id } });
+      await tx.ticketStatusHistory.deleteMany({ where: { changedById: id } });
+      await tx.supportTicket.deleteMany({ where: { OR: [{ userId: id }, { assigneeId: id }] } });
+      await tx.supportAgent.deleteMany({ where: { userId: id } });
+      await tx.activityLog.deleteMany({ where: { userId: id } });
+      await tx.helpArticleVersion.deleteMany({ where: { authorId: id } });
+      await tx.userSettings.deleteMany({ where: { userId: id } });
+      // AuditLog.userId is nullable — set to null to preserve history.
+      await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } });
+      // Finally, delete the user row.
+      await tx.user.delete({ where: { id } });
+    });
+
+    return { id, purged: true };
+  }
+
+  /**
+   * Idempotent sweep that permanently deletes users soft-deleted more than
+   * `retentionDays` ago (default 30). Designed to be called from a daily cron.
+   * Returns the number of users purged.
+   */
+  async purgeExpiredSoftDeletedUsers(retentionDays = 30): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - retentionDays);
+
+    const expired = await this.prisma.user.findMany({
+      where: {
+        deletedAt: { not: null, lt: cutoff },
+      },
+      select: { id: true, email: true, handle: true, name: true, role: true, deletedAt: true },
+    });
+
+    if (expired.length === 0) return 0;
+
+    let purged = 0;
+    for (const user of expired) {
+      try {
+        await this.purgeUserInternal(user);
+        purged++;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(`[SoftDelete] Failed to purge user ${user.id}:`, err);
+      }
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(`[SoftDelete] Purged ${purged}/${expired.length} expired soft-deleted users (retention=${retentionDays}d)`);
+    return purged;
+  }
+
+  /**
+   * Internal purge without actorId — used by the automated cron sweep.
+   * Writes an audit log entry with userId=null (system action).
+   */
+  private async purgeUserInternal(target: { id: string; email: string; handle: string; name: string; role: any; deletedAt: Date | null }) {
+    await this.audit(null, 'PURGE_USER_AUTO', 'user', {
+      resourceId: target.id,
+      details: {
+        email: target.email,
+        handle: target.handle,
+        name: target.name,
+        role: target.role,
+        softDeletedAt: target.deletedAt,
+        purgedAt: new Date(),
+        reason: '30-day retention period expired',
+      },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.storyView.deleteMany({ where: { viewerId: target.id } });
+      await tx.like.deleteMany({ where: { userId: target.id } });
+      await tx.bookmark.deleteMany({ where: { userId: target.id } });
+      await tx.highlight.deleteMany({ where: { authorId: target.id } });
+      await tx.comment.deleteMany({ where: { authorId: target.id } });
+      await tx.article.deleteMany({ where: { authorId: target.id } });
+      await tx.story.deleteMany({ where: { authorId: target.id } });
+      await tx.notification.deleteMany({ where: { userId: target.id } });
+      await tx.session.deleteMany({ where: { userId: target.id } });
+      await tx.refreshToken.deleteMany({ where: { userId: target.id } });
+      await tx.apiKey.deleteMany({ where: { userId: target.id } });
+      await tx.media.deleteMany({ where: { uploadedBy: target.id } });
+      await tx.follow.deleteMany({ where: { OR: [{ followerId: target.id }, { followingId: target.id }] } });
+      await tx.userRoleAssignment.deleteMany({ where: { userId: target.id } });
+      await tx.userPermissionOverride.deleteMany({ where: { userId: target.id } });
+      await tx.roleAssignmentHistory.deleteMany({ where: { userId: target.id } });
+      await tx.rolePermissionRequestEvent.deleteMany({ where: { actorId: target.id } });
+      await tx.rolePermissionRequest.deleteMany({ where: { requesterId: target.id } });
+      await tx.rolePermissionRequest.updateMany({ where: { reviewerId: target.id }, data: { reviewerId: null } });
+      await tx.report.deleteMany({ where: { reporterId: target.id } });
+      await tx.ticketAttachment.deleteMany({ where: { uploadedById: target.id } });
+      await tx.ticketInternalNote.deleteMany({ where: { authorId: target.id } });
+      await tx.ticketMessage.deleteMany({ where: { authorId: target.id } });
+      await tx.ticketAssignment.deleteMany({ where: { agentId: target.id } });
+      await tx.ticketStatusHistory.deleteMany({ where: { changedById: target.id } });
+      await tx.supportTicket.deleteMany({ where: { OR: [{ userId: target.id }, { assigneeId: target.id }] } });
+      await tx.supportAgent.deleteMany({ where: { userId: target.id } });
+      await tx.activityLog.deleteMany({ where: { userId: target.id } });
+      await tx.helpArticleVersion.deleteMany({ where: { authorId: target.id } });
+      await tx.userSettings.deleteMany({ where: { userId: target.id } });
+      await tx.auditLog.updateMany({ where: { userId: target.id }, data: { userId: null } });
+      await tx.user.delete({ where: { id: target.id } });
+    });
+  }
+
 
   async updateUserRole(actorId: string, userId: string, role: Role | string) {
     this.ensureActorIsNotTarget(actorId, userId, 'updateUserRole');
@@ -673,6 +1120,11 @@ export class AdminService {
       });
     });
     await this.applyRole(userId, resolved, { replacedBy: 'admin updateUserRole', assignedBy: actorId });
+    await this.audit(actorId, 'UPDATE_USER_ROLE', 'user', {
+      resourceId: userId,
+      details: { newRole: resolved.rbacRoleKey },
+      changes: { role: resolved.rbacRoleKey },
+    });
     return this.sanitizeUser(updated);
   }
 
@@ -743,6 +1195,11 @@ export class AdminService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: !user.isActive },
+    });
+    await this.audit(actorId, 'TOGGLE_USER_STATUS', 'user', {
+      resourceId: userId,
+      details: { from: user.isActive, to: !user.isActive },
+      changes: { isActive: { from: user.isActive, to: !user.isActive } },
     });
     return this.sanitizeUser(updated);
   }
@@ -1031,8 +1488,21 @@ export class AdminService {
     });
   }
 
-  async listAllNotifications(page = 1, limit = 20) {
+  async listAllNotifications(page = 1, limit = 20, actor?: { id: string; role: Role | null }) {
     const skip = (page - 1) * limit;
+
+    const where: Prisma.NotificationWhereInput = {};
+
+    // Apply role-based visibility filter when an actor is supplied.
+    if (actor) {
+      const accessWhere = await this.buildNotificationAccessWhere(
+        actor.id,
+        actor.role ?? null,
+      );
+      if (Object.keys(accessWhere).length > 0) {
+        (where as any).AND = [...((where as any).AND ?? []), accessWhere];
+      }
+    }
 
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
@@ -1042,16 +1512,17 @@ export class AdminService {
         include: {
           user: { select: { id: true, handle: true, name: true, email: true } },
         },
+        where,
       }),
-      this.prisma.notification.count(),
+      this.prisma.notification.count({ where }),
     ]);
 
     const actorIds = [...new Set(notifications.map(n => n.actorId).filter(Boolean))] as string[];
     const actors = actorIds.length
       ? await this.prisma.user.findMany({
-          where: { id: { in: actorIds } },
-          select: { id: true, handle: true, name: true },
-        })
+        where: { id: { in: actorIds } },
+        select: { id: true, handle: true, name: true },
+      })
       : [];
     const actorMap = new Map(actors.map(a => [a.id, a]));
 
@@ -1064,6 +1535,7 @@ export class AdminService {
   }
 
   async markNotificationRead(id: string) {
+
     return this.prisma.notification.update({
       where: { id },
       data: { read: true, readAt: new Date() },
@@ -1243,23 +1715,100 @@ export class AdminService {
     return { data: reports, total, page, pageSize: limit };
   }
 
-  async updateReportStatus(id: string, status: string, resolvedById?: string) {
-    const isResolved = status === 'resolved' || status === 'dismissed';
+  async updateReportStatus(id: string, status: string, resolvedById?: string, note?: string) {
+    const norm = status.toLowerCase();
+    const isTerminal = norm === 'resolved' || norm === 'dismissed';
+    const isReopening = norm === 'pending' || norm === 'in_progress' || norm === 'open';
     return this.prisma.report.update({
       where: { id },
       data: {
         status,
-        ...(isResolved
+        ...(note !== undefined ? { notes: note } : {}),
+        ...(isTerminal
           ? {
-              resolvedById: resolvedById || null,
-              resolvedAt: new Date(),
-            }
+            resolvedById: resolvedById || null,
+            resolvedAt: new Date(),
+          }
+          : {}),
+        ...(isReopening
+          ? {
+            resolvedById: null,
+            resolvedAt: null,
+          }
           : {}),
       },
       include: {
         reporter: { select: { id: true, handle: true, name: true, email: true } },
       },
     });
+  }
+
+  async getReportById(id: string) {
+    const report = await this.prisma.report.findUnique({
+      where: { id },
+      include: {
+        reporter: { select: { id: true, handle: true, name: true, email: true } },
+      },
+    });
+    if (!report) {
+      throw new NotFoundException(`Report ${id} not found`);
+    }
+    return report;
+  }
+
+  async deleteReport(actorId: string, id: string) {
+    const existing = await this.prisma.report.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Report ${id} not found`);
+    }
+    await this.audit(actorId, 'DELETE_REPORT', 'report', {
+      resourceId: id,
+      details: {
+        targetType: existing.targetType,
+        targetId: existing.targetId,
+        reason: existing.reason,
+        statusBefore: existing.status,
+      },
+    });
+    return this.prisma.report.delete({ where: { id } });
+  }
+
+  async bulkUpdateReportStatus(
+    actorId: string,
+    ids: string[],
+    status: string,
+    note?: string,
+  ): Promise<{ updated: number; reports: any[] }> {
+    if (!ids || ids.length === 0) {
+      return { updated: 0, reports: [] };
+    }
+    const norm = status.toLowerCase();
+    const isTerminal = norm === 'resolved' || norm === 'dismissed';
+    const isReopening = norm === 'pending' || norm === 'open';
+
+    const updateData: Record<string, any> = { status };
+    if (note !== undefined) updateData.notes = note;
+    if (isTerminal) {
+      updateData.resolvedById = actorId;
+      updateData.resolvedAt = new Date();
+    } else if (isReopening) {
+      updateData.resolvedById = null;
+      updateData.resolvedAt = null;
+    }
+
+    const result = await this.prisma.report.updateMany({
+      where: { id: { in: ids } },
+      data: updateData,
+    });
+
+    const reports = await this.prisma.report.findMany({
+      where: { id: { in: ids } },
+      include: {
+        reporter: { select: { id: true, handle: true, name: true, email: true } },
+      },
+    });
+
+    return { updated: result.count, reports };
   }
 
   async getAnalyticsOverview() {
@@ -1861,7 +2410,7 @@ export class AdminService {
   async testAIModeration(content: string, thresholds?: { high: number; medium: number }) {
     const highThreshold = thresholds?.high ?? 80;
     const mediumThreshold = thresholds?.medium ?? 50;
-    
+
     const categoryWords: Record<string, string[]> = {
       spam: ['free', 'buy now', 'click here', 'win', 'lottery', 'earn money'],
       harassment: ['stupid', 'idiot', 'fool', 'hate', 'die', 'kill'],
@@ -2125,6 +2674,29 @@ export class AdminService {
 
     return { data: tickets, total, page: params?.page ?? 1, pageSize: params?.limit ?? 20 };
   }
+
+  //-----------------
+
+  //Restore support ticket
+  async restoreSupportTicket(id: string) {
+    return this.prisma.supportTicket.update({
+      where: { id },
+      data: { deletedAt: null },
+      include: {
+        user: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
+        assignee: { select: { id: true, email: true, name: true, handle: true, avatar: true } },
+      },
+    });
+  }
+
+  //Permanently delete support ticket
+  async permanentlyDeleteSupportTicket(id: string) {
+    return this.prisma.supportTicket.delete({
+      where: { id },
+    });
+  }
+
+  //----------------
 
   async updateSupportTicketStatus(id: string, status: string) {
     const statusMap: Record<string, string> = {

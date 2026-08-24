@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("vellum.web.theme");
+          var v1Raw = localStorage.getItem("vellum.web.settings.v1");
+          var v1 = v1Raw ? JSON.parse(v1Raw) : {};
+          var mode = raw || v1.appearance || "system";
+          var isDark = false;
+          if (mode === "dark") isDark = true;
+          else if (mode === "system") isDark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var h = document.documentElement;
+          if (isDark) h.classList.add("dark"); else h.classList.remove("dark");
+          h.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

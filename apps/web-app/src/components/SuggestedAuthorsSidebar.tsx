@@ -9,9 +9,11 @@ import { Avatar } from "@/components/Avatar";
 import { useLoginPrompt } from "@/components/LoginPrompt";
 import { useAuthState } from "@/hooks/useApi";
 import type { SuggestedAuthor } from "@/lib/api";
+import { useI18n } from "./providers/I18nProvider";
 
 interface SuggestedAuthorsSidebarProps {
   limit?: number;
+  suggestedAuthors?: SuggestedAuthor[];
 }
 
 type LoadingState = "idle" | "loading" | "error" | "success";
@@ -21,8 +23,9 @@ interface AuthorState {
   replacing: boolean;
 }
 
-export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarProps) {
-  const [authors, setAuthors] = useState<SuggestedAuthor[]>([]);
+export function SuggestedAuthorsSidebar({ limit = 5, suggestedAuthors = [] }: SuggestedAuthorsSidebarProps) {
+  const { t } = useI18n();
+  const [authors, setAuthors] = useState<SuggestedAuthor[]>(suggestedAuthors);
   const [loadingState, setLoadingState] = useState<LoadingState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [authorStates, setAuthorStates] = useState<Record<string, AuthorState>>({});
@@ -60,6 +63,7 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
   const handleRetry = () => {
     fetchSuggested();
   };
+
 
   const handleFollow = async (author: SuggestedAuthor) => {
     if (!isAuthenticated) {
@@ -121,7 +125,7 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
       <div className="mb-8" ref={containerRef}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-muted-foreground font-semibold">
-            Suggested for you
+            {t("home.suggestedForYou")}
           </span>
         </div>
         <div className="space-y-4" style={{ minHeight: `${limit * 60}px` }}>
@@ -145,7 +149,7 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
       <div className="mb-8" ref={containerRef}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-muted-foreground font-semibold">
-            Suggested for you
+            {t("home.suggestedForYou")}
           </span>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
@@ -174,7 +178,7 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
       <div className="mb-8" ref={containerRef}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-muted-foreground font-semibold">
-            Suggested for you
+            {t("home.suggestedForYou")}
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -189,7 +193,7 @@ export function SuggestedAuthorsSidebar({ limit = 5 }: SuggestedAuthorsSidebarPr
     <div className="mb-8" ref={containerRef}>
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-muted-foreground font-semibold">
-          {isAuthenticated ? "Suggested for you" : "Featured writers"}
+          {isAuthenticated ? t("home.suggestedForYou") : "Featured writers"}
         </span>
       </div>
       <div className="space-y-4" style={{ minHeight: `${Math.max(authors.length, 1) * 60}px` }}>

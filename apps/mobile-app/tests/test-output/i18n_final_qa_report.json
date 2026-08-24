@@ -1,0 +1,129 @@
+{
+  "generated_at": "2026-08-20T10:38:34.302891Z",
+  "summary": {
+    "languages_supported": 31,
+    "namespaces": 12,
+    "total_translation_keys": 277,
+    "total_dict_files": 32,
+    "shared_package_path": "packages/shared-i18n/",
+    "compile_check_pass": true,
+    "todo_markers_remaining": 0,
+    "web_app_ts_errors": 22,
+    "mobile_app_ts_errors": 0,
+    "hardcoded_strings_remaining": 148,
+    "hardcoded_strings_files": 46
+  },
+  "mobile_qa": {
+    "assertions_total": 32,
+    "assertions_passed": 28,
+    "assertions_failed": 4,
+    "pass_rate_pct": 87.5,
+    "by_category": {
+      "auth": {
+        "pass": 1,
+        "fail": 0,
+        "total": 1,
+        "pass_rate_pct": 100.0
+      },
+      "nav": {
+        "pass": 1,
+        "fail": 0,
+        "total": 1,
+        "pass_rate_pct": 100.0
+      },
+      "theme": {
+        "pass": 4,
+        "fail": 0,
+        "total": 4,
+        "pass_rate_pct": 100.0
+      },
+      "i18n": {
+        "pass": 8,
+        "fail": 2,
+        "total": 10,
+        "pass_rate_pct": 80.0
+      },
+      "privacy": {
+        "pass": 8,
+        "fail": 0,
+        "total": 8,
+        "pass_rate_pct": 100.0
+      },
+      "subscription": {
+        "pass": 6,
+        "fail": 2,
+        "total": 8,
+        "pass_rate_pct": 75.0
+      }
+    }
+  },
+  "i18n_penetration": {
+    "shared_package": {
+      "types_ts": "packages/shared-i18n/types.ts",
+      "locales_ts": "packages/shared-i18n/locales.ts (31 languages + RTL)",
+      "dictionaries": "31 language files + index.ts barrel",
+      "index_ts": "packages/shared-i18n/index.ts"
+    },
+    "web_app": {
+      "provider": "I18nProvider.tsx \u2014 updated with {{var}} placeholder support",
+      "dictionaries_ts": "Re-exports DICTIONARIES from @shared-i18n",
+      "types_ts": "Re-exports LocaleTag, Dict, NamespaceDict from @shared-i18n",
+      "tsconfig": "Path alias @shared-i18n/* added",
+      "t_penetrated_files": [
+        "routes/__root.tsx",
+        "routes/login.tsx",
+        "routes/register.tsx",
+        "routes/index.tsx",
+        "routes/discover.tsx",
+        "routes/compose.tsx",
+        "routes/profile.index.tsx",
+        "routes/notifications.tsx",
+        "routes/saved.tsx",
+        "components/SmartState.tsx",
+        "components/EnhancedErrorBoundary.tsx",
+        "components/WebShell.tsx"
+      ]
+    },
+    "mobile_app": {
+      "provider": "I18nProvider.tsx \u2014 imports DICTIONARIES from @shared-i18n, {{var}} regex aligned",
+      "settings_store": "LocaleTag expanded to 31 languages",
+      "tsconfig": "Path alias @shared-i18n/* added",
+      "metro_config": "metro.config.js created with watchFolders + extraNodeModules for @shared-i18n",
+      "t_penetrated_files": [
+        "app/_layout.tsx",
+        "app/login.tsx",
+        "app/index.tsx",
+        "app/discover.tsx",
+        "app/compose.tsx",
+        "app/profile.tsx",
+        "app/notifications.tsx",
+        "app/saved.tsx"
+      ]
+    }
+  },
+  "ai_translation_cli": {
+    "script": "scripts/i18n-missing-translate.ts",
+    "providers": [
+      "mock (default)",
+      "deepseek",
+      "openai"
+    ],
+    "features": [
+      "Dry-run mode (default) \u2014 prints diff without writing",
+      "--apply flag to persist translations",
+      "--lang filter for specific languages",
+      "Batch processing (\u226420 keys per batch)",
+      "Sibling context for tone matching",
+      "Fallback: EN values on API failure",
+      "Review gate: --dry-run output before --apply"
+    ],
+    "status": "All 2220 TODO markers filled with EN fallback (mock provider). Use --provider=deepseek --apply for AI-translated values."
+  },
+  "tooling": {
+    "audit_script": "scripts/i18n-audit.py \u2014 scans for hardcoded English strings",
+    "compile_check": "scripts/i18n-compile-check.ts \u2014 verifies all 31 dicts have all EN keys",
+    "ai_cli": "scripts/i18n-missing-translate.ts \u2014 AI-powered translation tool",
+    "web_smoke_test": "apps/web-app/tests/i18n_smoke.spec.ts \u2014 Playwright language switching test",
+    "mobile_qa_extended": "mobile_settings_qa.py \u2014 ES/DE spot-checks added to i18n section"
+  }
+}

@@ -7,6 +7,7 @@ import { Pencil, Grid3x3, Bookmark, Heart } from "lucide-react";
 import { useState } from "react";
 import { SmartState } from "@/components/SmartState";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 function formatRelativeTime(dateStr: string | undefined): string {
   if (!dateStr) return "";
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/profile/")({
 function ProfileIndexPage() {
   const { profile, likes, comments } = useSocial();
   const { user, isAuthenticated, isLoading: authLoading } = useAuthState();
+  const { t } = useI18n();
   const { data: likedData, isLoading: likedLoading } = useLikedArticles(1, 100);
   const { data: bookmarkedData, isLoading: bookmarkedLoading } = useBookmarkedArticles(1, 100);
   const { data: myArticlesData, isLoading: myArticlesLoading } = useArticlesByAuthor(user?.handle || "", 1, 100);
@@ -41,9 +43,9 @@ function ProfileIndexPage() {
   const currentProfile = user || profile;
 
   const stats = [
-    { label: "Posts", value: myArticlesData?.total ?? myArticles.length, link: null },
-    { label: "Followers", value: (user as any)?.followerCount ?? 0, link: user ? `/author/${user.handle}/followers` : null },
-    { label: "Following", value: (user as any)?.followingCount ?? 0, link: user ? `/author/${user.handle}/following` : null },
+    { label: t("profile.articles"), value: myArticlesData?.total ?? myArticles.length, link: null },
+    { label: t("profile.followers"), value: (user as any)?.followerCount ?? 0, link: user ? `/author/${user.handle}/followers` : null },
+    { label: t("profile.following"), value: (user as any)?.followingCount ?? 0, link: user ? `/author/${user.handle}/following` : null },
   ];
 
   const isLoading = authLoading || likedLoading || bookmarkedLoading || myArticlesLoading;
@@ -95,7 +97,7 @@ function ProfileIndexPage() {
                         to="/profile/edit"
                         className="px-4 py-1.5 bg-muted hover:bg-muted/70 rounded-lg text-sm font-semibold flex items-center gap-2"
                       >
-                        <Pencil className="size-4" /> Edit profile
+                        <Pencil className="size-4" /> {t("profile.editProfile")}
                       </Link>
                     </div>
                     <div className="flex gap-6 mb-4">
@@ -126,19 +128,19 @@ function ProfileIndexPage() {
                 <div className="bg-card border border-border rounded-2xl p-5 text-center">
                   <div className="font-display italic text-3xl">{likedArticles.length + savedArticles.length}</div>
                   <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mt-1">
-                    Reading
+                    {t("profile.reading")}
                   </div>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5 text-center">
                   <div className="font-display italic text-3xl">{likedArticles.length}</div>
                   <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mt-1">
-                    Likes
+                    {t("profile.likes")}
                   </div>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5 text-center">
                   <div className="font-display italic text-3xl">{totalComments}</div>
                   <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mt-1">
-                    Replies
+                    {t("profile.replies")}
                   </div>
                 </div>
               </section>

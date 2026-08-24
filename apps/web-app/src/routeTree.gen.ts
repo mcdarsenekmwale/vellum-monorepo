@@ -21,6 +21,7 @@ import { Route as ComposeRouteImport } from './routes/compose'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as ProfileIndexRouteImport } from './routes/profile.index'
+import { Route as SettingsSubscriptionRouteImport } from './routes/settings.subscription'
 import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
 import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
 import { Route as SettingsHelpRouteImport } from './routes/settings.help'
@@ -92,6 +93,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProfileRoute,
+} as any)
+const SettingsSubscriptionRoute = SettingsSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
   id: '/privacy',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/subscription': typeof SettingsSubscriptionRoute
   '/profile/': typeof ProfileIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/author/$id/followers': typeof AuthorIdFollowersRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/subscription': typeof SettingsSubscriptionRoute
   '/profile': typeof ProfileIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/author/$id/followers': typeof AuthorIdFollowersRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/settings/help': typeof SettingsHelpRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/privacy': typeof SettingsPrivacyRoute
+  '/settings/subscription': typeof SettingsSubscriptionRoute
   '/profile/': typeof ProfileIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/author/$id/followers': typeof AuthorIdFollowersRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/settings/subscription'
     | '/profile/'
     | '/settings/'
     | '/author/$id/followers'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/settings/subscription'
     | '/profile'
     | '/settings'
     | '/author/$id/followers'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/settings/help'
     | '/settings/language'
     | '/settings/privacy'
+    | '/settings/subscription'
     | '/profile/'
     | '/settings/'
     | '/author/$id/followers'
@@ -402,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof ProfileRoute
     }
+    '/settings/subscription': {
+      id: '/settings/subscription'
+      path: '/subscription'
+      fullPath: '/settings/subscription'
+      preLoaderRoute: typeof SettingsSubscriptionRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/privacy': {
       id: '/settings/privacy'
       path: '/privacy'
@@ -500,6 +519,7 @@ interface SettingsRouteChildren {
   SettingsHelpRoute: typeof SettingsHelpRoute
   SettingsLanguageRoute: typeof SettingsLanguageRoute
   SettingsPrivacyRoute: typeof SettingsPrivacyRoute
+  SettingsSubscriptionRoute: typeof SettingsSubscriptionRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
@@ -508,6 +528,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsHelpRoute: SettingsHelpRoute,
   SettingsLanguageRoute: SettingsLanguageRoute,
   SettingsPrivacyRoute: SettingsPrivacyRoute,
+  SettingsSubscriptionRoute: SettingsSubscriptionRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 

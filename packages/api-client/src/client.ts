@@ -29,6 +29,9 @@ import type {
   CreateTicketRequest,
   TicketListResponse,
   TicketStatus,
+  Subscription,
+  SubscriptionPlan,
+  RestorePurchasesResult,
 } from './types/index';
 
 // Storage interface for cross-platform compatibility
@@ -132,6 +135,8 @@ export class ApiClient {
     return response.accessToken;
   }
 
+  private static readonly REQUEST_TIMEOUT_MS = 15_000;
+
   // Core request method
   private async request<T>(
     path: string,
@@ -153,6 +158,21 @@ export class ApiClient {
       });
       url += `?${params.toString()}`;
     }
+
+    const buildController = () => {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      if (controller) {
+        timeoutId = setTimeout(() => {
+          try {
+            controller.abort();
+          } catch {
+            // ignore abort errors
+          }
+        }, ApiClient.REQUEST_TIMEOUT_MS);
+      }
+      return { controller, clear: () => timeoutId && clearTimeout(timeoutId) };
+    };
 
     const headers: Record<string, string> = {};
 
@@ -177,14 +197,42 @@ export class ApiClient {
       fetchOptions.body = JSON.stringify(body);
     }
 
-    const response = await fetch(url, fetchOptions);
+    const { controller: ctrl, clear: clearCtrl } = buildController();
+    if (ctrl) fetchOptions.signal = ctrl.signal;
+
+    let response: Response;
+    try {
+      response = await fetch(url, fetchOptions);
+    } catch (err: any) {
+      if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
+        throw new ApiClientError('Request timed out. Please try again.', 408);
+      }
+      if (err && typeof err.message === 'string') {
+        throw new ApiClientError(err.message, 0);
+      }
+      throw new ApiClientError('Network error', 0);
+    } finally {
+      clearCtrl();
+    }
 
     // Handle 401 - try refresh token
     if (response.status === 401 && !skipAuth && retries < 1) {
       try {
         const newToken = await this.refreshAccessToken();
         headers['Authorization'] = `Bearer ${newToken}`;
-        const retryResponse = await fetch(url, { ...fetchOptions, headers, credentials: this.withCredentials ? 'include' : 'same-origin' });
+        const retryOpts: RequestInit = {
+          ...fetchOptions,
+          headers,
+          credentials: this.withCredentials ? 'include' : 'same-origin',
+        };
+        const { controller: ctrl2, clear: clearCtrl2 } = buildController();
+        if (ctrl2) retryOpts.signal = ctrl2.signal;
+        let retryResponse: Response;
+        try {
+          retryResponse = await fetch(url, retryOpts);
+        } finally {
+          clearCtrl2();
+        }
         return this.handleResponse<T>(retryResponse);
       } catch {
         await this.clearTokens();
@@ -198,15 +246,42 @@ export class ApiClient {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const error = await response.json() as ApiError;
-      throw new ApiClientError(error.message, error.statusCode, error);
+      let message = `Request failed (${response.status})`;
+      let parsed: ApiError | undefined;
+      const text = await response.text();
+      try {
+        parsed = JSON.parse(text) as ApiError;
+        if (parsed && typeof parsed.message === 'string') {
+          message = parsed.message;
+        } else if (text && text.length > 0 && text.length < 300) {
+          message = text;
+        }
+      } catch {
+        // Response body was not JSON (e.g. 502 Bad Gateway HTML page). Use a
+        // safe, generic error rather than exposing raw infrastructure HTML.
+        if (text && text.length > 0 && text.length < 300) {
+          // Very short plain text responses are OK to surface
+          message = text;
+        }
+      }
+      throw new ApiClientError(message, response.status, parsed);
     }
 
     if (response.status === 204) {
       return {} as T;
     }
 
-    return response.json() as Promise<T>;
+    const raw = await response.text();
+    if (!raw || raw.trim().length === 0) {
+      return {} as T;
+    }
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      // Server returned non-JSON success body (e.g. plain text or HTML).
+      // Surface this as a string error rather than letting a SyntaxError crash callers.
+      throw new ApiClientError('Unexpected response format from server', response.status);
+    }
   }
 
   // Auth endpoints
@@ -270,6 +345,29 @@ export class ApiClient {
   async searchUsers(query: string, page = 1, limit = 20): Promise<PaginatedResponse<User>> {
     return this.request<PaginatedResponse<User>>('/api/users/search', {
       query: { query, page, limit },
+    });
+  }
+
+  // Friendly alias for settings/profile screens so call sites can use
+  // `updateProfile({ name, handle, bio })` instead of `updateUser` (which
+  // semantically implies an admin call).
+  async updateProfile(data: Partial<User>): Promise<User> {
+    return this.updateUser(data);
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+      skipAuth: true,
+    });
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: { token, password },
+      skipAuth: true,
     });
   }
 
@@ -512,9 +610,9 @@ export class ApiClient {
   }
 
   // Search endpoint
-  async search(query: string, page = 1, limit = 20): Promise<SearchResults> {
+  async search(query: string, page = 1, limit = 20, type?: 'users' | 'articles' | 'highlights'): Promise<SearchResults> {
     return this.request<SearchResults>('/api/search', {
-      query: { query, page, limit },
+      query: { query, page, limit, type: type || 'all' },
     });
   }
 
@@ -701,6 +799,47 @@ export class ApiClient {
     return this.request<TicketMessage>(`/api/help/tickets/${ticketId}/messages`, {
       method: 'POST',
       body: { body },
+    });
+  }
+
+  // ─── Subscription ────────────────────────────────────────────────────────
+  async getSubscription(): Promise<Subscription | null> {
+    try {
+      return await this.request<Subscription>('/api/users/me/subscription');
+    } catch (err: any) {
+      if (err?.statusCode === 404) return null;
+      throw err;
+    }
+  }
+
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return this.request<SubscriptionPlan[]>('/api/subscription/plans');
+  }
+
+  async createSubscriptionCheckout(data: { planId: string; successUrl?: string; cancelUrl?: string }): Promise<{ checkoutUrl?: string; subscription?: Subscription }> {
+    return this.request('/api/subscription/checkout', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async cancelSubscription(data?: { reason?: string }): Promise<Subscription> {
+    return this.request<Subscription>('/api/users/me/subscription/cancel', {
+      method: 'POST',
+      body: data ?? {},
+    });
+  }
+
+  async resumeSubscription(): Promise<Subscription> {
+    return this.request<Subscription>('/api/users/me/subscription/resume', {
+      method: 'POST',
+    });
+  }
+
+  async restorePurchases(data?: { receipt?: string }): Promise<RestorePurchasesResult> {
+    return this.request<RestorePurchasesResult>('/api/users/me/subscription/restore', {
+      method: 'POST',
+      body: data ?? {},
     });
   }
 }

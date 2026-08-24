@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { SETTINGS_DEFINITIONS } from '../src/modules/admin/settings-definitions';
+import { seedSupportAgents } from './seed-support-agents';
 
 const prisma = new PrismaClient();
 
@@ -415,6 +416,131 @@ async function main() {
     });
   }
   console.log(`Seeded ${SETTINGS_DEFINITIONS.length} system settings`);
+
+  // ─── Seed Support Agents + Ticket Ecosystem (idempotent, upsert-based) ───
+  console.log('Seeding support agents + ticket ecosystem...');
+  await seedSupportAgents(prisma);
+  console.log('Support agents + ticket ecosystem complete.');
+
+  // ─── Seed Help Center FAQs (idempotent by question+category key) ───
+  console.log('Seeding help center FAQs...');
+  const FAQS: Array<{ category: string; question: string; answer: string }> = [
+    {
+      category: 'Getting Started',
+      question: 'How do I create my first article?',
+      answer:
+        "Tap the pen (+) button in the bottom navigation bar to open the composer. Give your story a title, then start writing. Use the toolbar to format text, insert images, add highlights, and attach embeds. When you're ready, hit Publish — you can always edit it later.",
+    },
+    {
+      category: 'Getting Started',
+      question: 'How do I personalize my feed?',
+      answer:
+        'Follow authors you enjoy reading, bookmark articles you love, and react to the stories that resonate. Vellum surfaces content based on the topics you engage with. You can also tap Discover to explore new categories and trending topics curated just for you.',
+    },
+    {
+      category: 'Getting Started',
+      question: 'Can I import articles from another platform?',
+      answer:
+        'Yes. Open Profile → Settings → Import Content, paste a URL or upload an HTML/Markdown export, and we will do our best to preserve formatting, images, and metadata. All imported drafts are private until you publish them.',
+    },
+    {
+      category: 'Account & Billing',
+      question: 'How do I change my email or password?',
+      answer:
+        'Open Settings → Account. For email changes, you will receive a confirmation link at the new address. For passwords, we will ask for your current password first. If you signed in with a social provider, connect an email and password first before attempting a password change.',
+    },
+    {
+      category: 'Account & Billing',
+      question: 'What is included in the Vellum Pro plan?',
+      answer:
+        'Vellum Pro includes AI-powered drafts and edits (up to 500/month), a custom domain for your publication, advanced analytics with audience geography and retention curves, priority customer support, and removal of Vellum branding from newsletters you send.',
+    },
+    {
+      category: 'Account & Billing',
+      question: 'How do I cancel my subscription?',
+      answer:
+        'Go to Settings → Subscription and tap "Cancel renewal". Your plan remains active until the end of the billing cycle and no further charges are made. You can reactivate at any time from the same screen before it expires.',
+    },
+    {
+      category: 'Content & Writing',
+      question: 'Does Vellum support Markdown?',
+      answer:
+        "Yes — the composer accepts pasted Markdown and renders it instantly. If you prefer to write in Markdown, toggle the Markdown mode switch in the composer's three-dot menu to get a split preview pane.",
+    },
+    {
+      category: 'Content & Writing',
+      question: 'Can I schedule an article to publish later?',
+      answer:
+        "Absolutely. When a story is ready, tap Publish, then choose Schedule. Pick a date and time in your local timezone. You can edit or reschedule up until the publish moment from the Scheduled tab of your profile.",
+    },
+    {
+      category: 'Content & Writing',
+      question: 'How do SEO and social previews work?',
+      answer:
+        'Every published article automatically generates a social card using your cover image, title, and excerpt. You can override the SEO title, description, or social image per article under Article Settings → Social Sharing Cards. Google typically indexes new Vellum articles within 24-48 hours.',
+    },
+    {
+      category: 'Notifications',
+      question: 'Why am I not receiving push notifications?',
+      answer:
+        'First, make sure notifications are enabled for Vellum in your device Settings (iOS: Settings → Notifications → Vellum; Android: Long-press the app icon → App Info → Notifications). Then visit Settings → Notifications inside Vellum and confirm the specific categories you want are on. If everything is on, try logging out and back in — this refreshes your push token.',
+    },
+    {
+      category: 'Notifications',
+      question: 'Can I get only important notifications, not every like?',
+      answer:
+        "Yes. Go to Settings → Notifications and turn off the toggles you don't need (for example, leave Comments and Replies on but switch Likes off). You can also disable Marketing emails and only keep the Weekly digest.",
+    },
+    {
+      category: 'Safety & Privacy',
+      question: 'How do I block or mute another user?',
+      answer:
+        "Open their profile, tap the three-dot menu, and choose Block or Mute. Blocked users cannot comment on your articles or send you direct messages. Muting simply hides their content from your feeds. You can review the list from Settings → Privacy → Blocked Accounts.",
+    },
+    {
+      category: 'Safety & Privacy',
+      question: 'Can I make my profile private so only followers see my content?',
+      answer:
+        "Yes. Open Settings → Privacy → Profile Visibility and choose Followers. New followers will need your approval before they can read full articles or see your likes history. Your public bio and avatar remain discoverable so people can request access.",
+    },
+    {
+      category: 'Troubleshooting',
+      question: 'The app is slow or keeps freezing — what should I do?',
+      answer:
+        'Start by force-closing the app and reopening. If that does not help, clear the cache from Settings → About → Clear cached data. On iOS you can also offload and reinstall the app without losing your account data. Persistent slowdowns usually mean a weak connection or low storage — try a different network and free up space.',
+    },
+    {
+      category: 'Troubleshooting',
+      question: 'Why are my images failing to upload?',
+      answer:
+        'Vellum accepts JPG, PNG, WebP, and HEIC images up to 25 MB each. Animated GIFs are supported up to 10 MB. If an upload fails, check the file size, try reducing the resolution, or switch to a faster network. Uploads automatically retry three times before giving up.',
+    },
+    {
+      category: 'Troubleshooting',
+      question: 'I forgot my password — how do I reset it?',
+      answer:
+        "On the login screen, tap Forgot Password and enter the email you used to create your account. You'll receive a one-time reset link that expires after 30 minutes. If the email does not arrive, check your spam folder or try the account-recovery option inside Help Center → Contact Support.",
+    },
+  ];
+
+  let faqCreated = 0;
+  let faqUpdated = 0;
+  for (const f of FAQS) {
+    const existing = await prisma.faqItem.findFirst({
+      where: { category: f.category, question: f.question },
+    });
+    if (existing) {
+      await prisma.faqItem.update({
+        where: { id: existing.id },
+        data: { answer: f.answer },
+      });
+      faqUpdated++;
+    } else {
+      await prisma.faqItem.create({ data: f });
+      faqCreated++;
+    }
+  }
+  console.log(`FAQs seeded (created=${faqCreated}, updated=${faqUpdated}, total=${FAQS.length})`);
 }
 
 main()

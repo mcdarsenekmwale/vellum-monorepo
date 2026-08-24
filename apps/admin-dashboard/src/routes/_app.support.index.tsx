@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   Headphones,
   Ticket,
@@ -7,16 +7,13 @@ import {
   CheckCircle2,
   Clock,
   ArrowUpRight,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Inbox,
   Shield,
   Zap,
-  BarChart3,
   ChevronRight,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -24,9 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChartSkeleton } from "@/components/dashboard/skeletons";
 import { PermissionGuard } from "@/components/dashboard/permission-guard";
-import { getSupportDashboard, getAgentLeaderboard } from "@/lib/api/services";
+import { useSupportDashboard, useAgentLeaderboard } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
 
 export const Route = createFileRoute("/_app/support/")({
   head: () => ({ meta: [{ title: "Support Dashboard · Vellum Admin" }] }),
@@ -35,16 +31,6 @@ export const Route = createFileRoute("/_app/support/")({
 
 /* ---------- Types ---------- */
 
-interface StatusItem {
-  status: string;
-  _count: number;
-}
-
-interface PriorityItem {
-  priority: string;
-  _count: number;
-}
-
 interface AgentLeaderboardItem {
   userId: string;
   user: { name: string; avatar?: string | null };
@@ -52,20 +38,18 @@ interface AgentLeaderboardItem {
   escalationRate: number;
 }
 
-interface DashboardSummary {
-  openTickets: number;
-  unassigned: number;
-  inProgress: number;
-  onlineAgents: number;
-  resolved: number;
-  escalated: number;
-  closed: number;
-}
-
-interface DashboardData {
-  summary: DashboardSummary;
-  byStatus: StatusItem[];
-  byPriority: PriorityItem[];
+interface SupportData {
+  summary: {
+    openTickets: number;
+    unassigned: number;
+    inProgress: number;
+    onlineAgents: number;
+    resolved: number;
+    escalated: number;
+    closed: number;
+  };
+  byStatus: Array<{ status: string; _count: number }>;
+  byPriority: Array<{ priority: string; _count: number }>;
 }
 
 /* ---------- Constants ---------- */
@@ -113,34 +97,28 @@ const STATUS_ORDER = [
 /* ---------- Components ---------- */
 
 function SupportDashboardPage() {
-  const { data: dashboard, isLoading } = useQuery<DashboardData>({
-    queryKey: ["support-dashboard"],
-    queryFn: getSupportDashboard,
-  });
-  const { data: leaderboard, isLoading: isLeaderboardLoading } = useQuery<AgentLeaderboardItem[]>({
-    queryKey: ["agent-leaderboard"],
-    queryFn: async () => (await getAgentLeaderboard()) as AgentLeaderboardItem[],
-  });
+  const { data: dashboard, isLoading, isError, error, refetch } = useSupportDashboard();
+  const { data: leaderboard, isLoading: isLeaderboardLoading } = useAgentLeaderboard();
 
-  const summary = dashboard?.summary;
+  const supportData = dashboard as SupportData | undefined;
+  const agentLeaderboard = (leaderboard as AgentLeaderboardItem[]) ?? [];
+
+  const summary = supportData?.summary;
 
   const totalTickets =
-    (dashboard?.byStatus?.reduce((sum, s) => sum + s._count, 0) ?? 0) || 1;
+    (supportData?.byStatus?.reduce((sum, s) => sum + s._count, 0) ?? 0) || 1;
 
-  const sortedByStatus = useMemo(() => {
-    if (!dashboard?.byStatus) return [];
-    const map = new Map(dashboard.byStatus.map((s) => [s.status, s]));
-    return STATUS_ORDER.map((status) => map.get(status)).filter(
-      (s): s is StatusItem => !!s
-    );
-  }, [dashboard?.byStatus]);
+  const sortedByStatus = supportData?.byStatus
+    ? STATUS_ORDER.map((status) => supportData.byStatus.find((s) => s.status === status)).filter(
+        (s): s is { status: string; _count: number } => !!s
+      )
+    : [];
 
-  const sortedByPriority = useMemo(() => {
-    if (!dashboard?.byPriority) return [];
-    const order = ["EMERGENCY", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
-    const map = new Map(dashboard.byPriority.map((p) => [p.priority, p]));
-    return order.map((p) => map.get(p)).filter((p): p is PriorityItem => !!p);
-  }, [dashboard?.byPriority]);
+  const sortedByPriority = supportData?.byPriority
+    ? ["EMERGENCY", "CRITICAL", "HIGH", "MEDIUM", "LOW"]
+        .map((p) => supportData.byPriority.find((item) => item.priority === p))
+        .filter((p): p is { priority: string; _count: number } => !!p)
+    : [];
 
   if (isLoading) {
     return (
@@ -150,6 +128,28 @@ function SupportDashboardPage() {
           description="Monitor tickets, agent performance, and SLA compliance"
         />
         <ChartSkeleton />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Support Center"
+          description="Monitor tickets, agent performance, and SLA compliance"
+        />
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <AlertCircle className="size-12 text-destructive mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Failed to load support data</h3>
+          <p className="text-sm text-muted-foreground mb-4 max-w-md">
+            {error instanceof Error ? error.message : "An unexpected error occurred while loading the dashboard."}
+          </p>
+          <Button onClick={() => refetch()} variant="outline">
+            <RefreshCw className="size-4 mr-2" />
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -164,7 +164,7 @@ function SupportDashboardPage() {
           actions={
             <Button
               asChild
-              className="gap-1.5 "
+              className="gap-1.5"
             >
               <Link to="/support/tickets">
                 View All Tickets
@@ -199,7 +199,6 @@ function SupportDashboardPage() {
             value={summary?.onlineAgents ?? 0}
             icon={Users}
             delta="neutral"
-
           />
         </div>
 
@@ -209,11 +208,11 @@ function SupportDashboardPage() {
           <SectionCard
             title="Tickets by Status"
             description="Current ticket distribution"
-            className=" "
+            className=""
           >
             <div className="space-y-4">
               {sortedByStatus.length === 0 ? (
-                <p className="text-sm  text-center py-6">
+                <p className="text-sm text-muted-foreground text-center py-6">
                   No ticket data available
                 </p>
               ) : (
@@ -222,7 +221,7 @@ function SupportDashboardPage() {
                   return (
                     <div key={item.status} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 ">
+                        <span className="flex items-center gap-2">
                           <span
                             className={cn(
                               "size-2 rounded-full",
@@ -232,7 +231,7 @@ function SupportDashboardPage() {
                           {item.status.replace(/_/g, " ")}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold ">
+                          <span className="font-semibold">
                             {item._count}
                           </span>
                           <span className="text-xs w-8 text-right">
@@ -240,7 +239,7 @@ function SupportDashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full ">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all",
@@ -260,11 +259,11 @@ function SupportDashboardPage() {
           <SectionCard
             title="Tickets by Priority"
             description="Open tickets by priority level"
-            className=" "
+            className=""
           >
             <div className="space-y-4">
               {sortedByPriority.length === 0 ? (
-                <p className="text-sm  text-center py-6">
+                <p className="text-sm text-muted-foreground text-center py-6">
                   No priority data available
                 </p>
               ) : (
@@ -273,7 +272,7 @@ function SupportDashboardPage() {
                   return (
                     <div key={item.priority} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 ">
+                        <span className="flex items-center gap-2">
                           <span
                             className={cn(
                               "size-2 rounded-full",
@@ -290,15 +289,15 @@ function SupportDashboardPage() {
                           </span>
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold ">
+                          <span className="font-semibold">
                             {item._count}
                           </span>
-                          <span className="text-xs  w-8 text-right">
+                          <span className="text-xs w-8 text-right">
                             {pct}%
                           </span>
                         </div>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full ">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all",
@@ -320,7 +319,7 @@ function SupportDashboardPage() {
           {/* Quick Actions */}
           <SectionCard
             title="Quick Actions"
-            className="  lg:col-span-1"
+            className="lg:col-span-1"
           >
             <div className="flex flex-col gap-2">
               <QuickActionLink
@@ -328,7 +327,7 @@ function SupportDashboardPage() {
                 search={{ status: "NEW" }}
                 icon={Ticket}
                 label="New Tickets"
-                count={dashboard?.byStatus?.find((s) => s.status === "NEW")?._count}
+                count={supportData?.byStatus?.find((s) => s.status === "NEW")?._count}
                 color="text-blue-400"
               />
               <QuickActionLink
@@ -345,7 +344,7 @@ function SupportDashboardPage() {
                 icon={Zap}
                 label="Escalated"
                 count={
-                  dashboard?.byStatus?.find((s) => s.status === "ESCALATED")
+                  supportData?.byStatus?.find((s) => s.status === "ESCALATED")
                     ?._count
                 }
                 color="text-red-400"
@@ -363,32 +362,32 @@ function SupportDashboardPage() {
           <SectionCard
             title="Agent Leaderboard"
             description="Top performers by resolved tickets"
-            className="  lg:col-span-2"
+            className="lg:col-span-2"
           >
             <div className="space-y-3">
               {isLeaderboardLoading ? (
-                <div className="py-6 text-center text-sm ">
+                <div className="py-6 text-center text-sm text-muted-foreground">
                   Loading leaderboard...
                 </div>
-              ) : !leaderboard || (leaderboard as AgentLeaderboardItem[]).length === 0 ? (
+              ) : agentLeaderboard.length === 0 ? (
                 <div className="flex flex-col items-center py-8 text-center">
-                  <Users className="size-10  mb-3" />
-                  <p className="text-sm ">No agent data yet</p>
-                  <p className="text-xs  mt-1">
+                  <Users className="size-10 text-muted-foreground mb-3" />
+                  <p className="text-sm text-muted-foreground">No agent data yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Agent performance metrics will appear here
                   </p>
                 </div>
               ) : (
-                (leaderboard as AgentLeaderboardItem[]).slice(0, 5).map((agent, i) => {
+                agentLeaderboard.slice(0, 5).map((agent, i) => {
                   const maxResolved = Math.max(
-                    ...(leaderboard as AgentLeaderboardItem[]).map((a) => a.resolved),
+                    ...agentLeaderboard.map((a) => a.resolved),
                     1
                   );
                   const progress = (agent.resolved / maxResolved) * 100;
                   return (
                     <div
                       key={agent.userId}
-                      className="flex items-center gap-4 rounded-lg border   p-3 transition-colors "
+                      className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
                     >
                       <span
                         className={cn(
@@ -399,7 +398,7 @@ function SupportDashboardPage() {
                             ? "bg-gray-400/20 text-gray-300"
                             : i === 2
                             ? "bg-orange-600/20 text-orange-400"
-                            : ""
+                            : "bg-muted text-muted-foreground"
                         )}
                       >
                         {i + 1}
@@ -407,20 +406,20 @@ function SupportDashboardPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-sm  truncate">
+                          <p className="font-medium text-sm truncate">
                             {agent.user.name}
                           </p>
                           <div className="flex items-center gap-3 text-right">
-                            <span className="text-sm font-semibold ">
+                            <span className="text-sm font-semibold">
                               {agent.resolved}
                             </span>
-                            <span className="text-xs ">
+                            <span className="text-xs text-muted-foreground">
                               resolved
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full ">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                             <div
                               className="h-full rounded-full bg-emerald-500 transition-all"
                               style={{ width: `${progress}%` }}
@@ -455,21 +454,18 @@ function SupportDashboardPage() {
             value={summary?.resolved ?? 0}
             icon={CheckCircle2}
             delta="up"
-            
           />
           <StatCard
             label="Escalated"
             value={summary?.escalated ?? 0}
             icon={ArrowUpRight}
             delta={summary && summary.escalated > 0 ? "up" : "neutral"}
-            
           />
           <StatCard
             label="Closed"
             value={summary?.closed ?? 0}
             icon={Shield}
             delta="neutral"
-            
           />
         </div>
       </div>
@@ -498,22 +494,22 @@ function QuickActionLink({
     <Button
       variant="outline"
       asChild
-      className="justify-between  bg-transparent  h-11"
+      className="justify-between bg-transparent h-11"
     >
       <Link to={to} search={search}>
         <span className="flex items-center gap-2.5">
           <Icon className={cn("size-4", color)} />
-          <span className="">{label}</span>
+          <span>{label}</span>
         </span>
         {count !== undefined && count > 0 && (
           <Badge
             variant="secondary"
-            className=" border-none"
+            className="border-none"
           >
             {count}
           </Badge>
         )}
-        <ChevronRight className="size-4  ml-auto" />
+        <ChevronRight className="size-4 ml-auto" />
       </Link>
     </Button>
   );

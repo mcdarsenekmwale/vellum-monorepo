@@ -1,112 +1,174 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { WebShell } from "@/components/WebShell";
-import { ArrowLeft, Lock, Activity, Eye, Share2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Lock, Eye, EyeOff, Users, Globe, Shield } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useI18n } from "@/components/providers/I18nProvider";
+import { useSettingsStore } from "@/components/providers/SettingsStore";
+import { RowSwitch } from "@/components/settings/RowSwitch";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/privacy")({
   head: () => ({
-    meta: [
-      { title: "Privacy — Vellum" },
-      { name: "description", content: "Manage your privacy and visibility on Vellum." },
-    ],
+    meta: [{ title: "Privacy — Vellum" }],
   }),
   component: PrivacyPage,
 });
 
-const privacyItems = [
-  {
-    key: "privateAccount",
-    icon: Lock,
-    label: "Private Account",
-    description: "Only approved followers can see your stories",
-    default: false,
-  },
-  {
-    key: "activityStatus",
-    icon: Activity,
-    label: "Activity Status",
-    description: "Show when you are active on Vellum",
-    default: true,
-  },
-  {
-    key: "readReceipts",
-    icon: Eye,
-    label: "Read Receipts",
-    description: "Let others know when you have read their messages",
-    default: true,
-  },
-  {
-    key: "storySharing",
-    icon: Share2,
-    label: "Story Sharing",
-    description: "Allow your stories to be shared by others",
-    default: true,
-  },
-];
+type Visibility = "public" | "followers" | "private";
 
 function PrivacyPage() {
-  const [toggles, setToggles] = useState<Record<string, boolean>>(
-    privacyItems.reduce(
-      (acc, item) => ({ ...acc, [item.key]: item.default }),
-      {} as Record<string, boolean>,
-    ),
-  );
+  const { t } = useI18n();
+  const { privacy, setPrivacy, isBackendLoading } = useSettingsStore();
 
-  const toggle = (key: string) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [visibility, setVisibilityState] = useState<Visibility>("public");
+
+  // Hydrate visibility from storage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("vellum.web.settings.v1");
+      const v = raw ? JSON.parse(raw) : {};
+      if (v.profileVisibility === "followers" || v.profileVisibility === "private") {
+        setVisibilityState(v.profileVisibility);
+      }
+    } catch {}
+  }, []);
+
+  const setVisibility = (v: Visibility) => {
+    setVisibilityState(v);
+    try {
+      const raw = localStorage.getItem("vellum.web.settings.v1");
+      const cur = raw ? JSON.parse(raw) : {};
+      localStorage.setItem(
+        "vellum.web.settings.v1",
+        JSON.stringify({ ...cur, profileVisibility: v }),
+      );
+    } catch {}
   };
+
+  const visibilityOptions: { value: Visibility; labelKey: string; icon: typeof Globe; desc: string }[] = [
+    { value: "public", labelKey: "privacyPublic", icon: Globe, desc: "Anyone can see your profile and articles." },
+    { value: "followers", labelKey: "privacyFollowers", icon: Users, desc: "Only people who follow you can see updates." },
+    { value: "private", labelKey: "privacyPrivate", icon: Lock, desc: "Only people you approve can see your content." },
+  ];
 
   return (
     <WebShell>
-      <div className="max-w-[680px] mx-auto">
+      <div className="max-w-[680px] mx-auto" data-testid="settings-privacy-page">
         <Link
           to="/settings"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          data-testid="privacy-back"
         >
           <ArrowLeft className="size-4" strokeWidth={1.8} />
-          Back to settings
+          {t("common.back")}
         </Link>
 
-        <h1 className="text-3xl font-display italic mb-2">Privacy</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Control who can see your activity and content on Vellum.
+        <h1 className="text-3xl font-display italic mb-2" data-testid="privacy-title">
+          {t("settings.privacyTitle")}
+        </h1>
+        <p className="text-sm text-muted-foreground mb-8" data-testid="privacy-description">
+          {t("settings.privacyDescription")}
         </p>
 
-        <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
-          {privacyItems.map((item) => {
-            const Icon = item.icon;
-            const value = toggles[item.key];
-            return (
-              <div
-                key={item.key}
-                className="w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors text-left"
-              >
-                <div className="size-10 rounded-full bg-muted grid place-items-center shrink-0">
-                  <Icon className="size-5" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.description}</p>
-                </div>
+        {/* Profile visibility */}
+        <section className="mb-6" data-testid="privacy-profile-visibility">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-2">
+            {t("settings.privacyProfileVisibility")}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {visibilityOptions.map((opt) => {
+              const selected = visibility === opt.value;
+              const Icon = opt.icon;
+              return (
                 <button
+                  key={opt.value}
                   type="button"
-                  role="switch"
-                  aria-checked={value}
-                  onClick={() => toggle(item.key)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    value ? "bg-accent" : "bg-muted-foreground/30"
-                  }`}
+                  onClick={() => setVisibility(opt.value)}
+                  data-testid={`privacy-visibility-${opt.value}`}
+                  data-selected={selected ? "true" : "false"}
+                  className={cn(
+                    "text-left rounded-2xl border p-4 transition-all",
+                    selected
+                      ? "border-accent bg-accent/5 ring-1 ring-accent"
+                      : "border-border hover:border-accent/50 hover:bg-muted/50",
+                  )}
                 >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform ${
-                      value ? "translate-x-5" : "translate-x-0.5"
-                    }`}
-                  />
+                  <div className="flex items-center gap-3 mb-2">
+                    <span
+                      className={cn(
+                        "size-10 grid place-items-center rounded-xl",
+                        selected ? "bg-accent/15 text-accent" : "bg-muted text-foreground",
+                      )}
+                    >
+                      <Icon className="size-5" strokeWidth={1.8} />
+                    </span>
+                    <span className="font-semibold text-foreground text-[15px]">
+                      {t(`settings.${opt.labelKey}`)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{opt.desc}</p>
                 </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Toggles */}
+        <section data-testid="privacy-toggles-section">
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+              <div className="flex items-center gap-4">
+                <span className="size-10 grid place-items-center rounded-xl bg-muted text-foreground shrink-0">
+                  <Shield className="size-5" strokeWidth={1.8} />
+                </span>
+                <div>
+                  <div className="text-sm font-semibold">{t("settings.privacyAllowComments")}</div>
+                </div>
               </div>
-            );
-          })}
-        </div>
+              <RowSwitch
+                checked={privacy.allowComments}
+                onChange={(v) => setPrivacy({ allowComments: v })}
+                dataTestId="privacy-allow-comments"
+              />
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+              <div className="flex items-center gap-4">
+                <span className="size-10 grid place-items-center rounded-xl bg-muted text-foreground shrink-0">
+                  <Eye className="size-5" strokeWidth={1.8} />
+                </span>
+                <div>
+                  <div className="text-sm font-semibold">{t("settings.privacyShowLikesCount")}</div>
+                </div>
+              </div>
+              <RowSwitch
+                checked={privacy.allowLikes}
+                onChange={(v) => setPrivacy({ allowLikes: v })}
+                dataTestId="privacy-show-likes-count"
+              />
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="flex items-center gap-4">
+                <span className="size-10 grid place-items-center rounded-xl bg-muted text-foreground shrink-0">
+                  <EyeOff className="size-5" strokeWidth={1.8} />
+                </span>
+                <div>
+                  <div className="text-sm font-semibold">{t("settings.privacyShowOnline")}</div>
+                </div>
+              </div>
+              <RowSwitch
+                checked={privacy.showOnlineStatus}
+                onChange={(v) => setPrivacy({ showOnlineStatus: v })}
+                dataTestId="privacy-show-online"
+              />
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground flex items-center justify-end gap-2">
+            {isBackendLoading && <span className="animate-pulse">Syncing with server…</span>}
+            {!isBackendLoading && <span>Changes are saved automatically.</span>}
+          </div>
+        </section>
       </div>
     </WebShell>
   );

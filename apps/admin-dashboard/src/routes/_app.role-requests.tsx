@@ -14,6 +14,9 @@ import {
   User,
   Loader2,
   Search,
+  Ban,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -57,6 +60,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { StatCard } from "@/components/dashboard/stat-card";
 
 export const Route = createFileRoute("/_app/role-requests")({
   head: () => ({
@@ -691,8 +695,131 @@ function RoleRequestsAdminPage() {
     },
   ];
 
+  const headerSection = (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 mb-6">
+      <StatCard
+        label="Total Requests"
+        value={rows.length}
+        icon={Users}
+        tone="primary"
+      />
+      <StatCard
+        label="Pending Review"
+        value={pendingCount}
+        icon={Clock}
+        tone="warning"
+        delta={pendingCount > 0 ? "Action required" : undefined}
+      />
+      <StatCard
+        label="Approved"
+        value={rows.filter((r) => r.status === "APPROVED").length}
+        icon={UserCheck}
+        tone="success"
+      />
+      <StatCard
+        label="Rejected"
+        value={rows.filter((r) => r.status === "REJECTED").length}
+        icon={Ban}
+        tone="destructive"
+      />
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+
+      <ListPage<RoleRequest>
+        title="Role & Permission Requests"
+        description="Review and act on requests for role and permission changes across the organization."
+        eyebrow="Access Control"
+        rows={processedRows}
+        columns={listPageColumns}
+        isLoading={isLoading}
+        error={error ?? null}
+        pageSize={20}
+        enableSelection={true}
+        enableSearch={false}
+        enablePagination={true}
+        selectedRows={selectedIds}
+        onSelectionChange={setSelectedIds}
+        onRowClick={openDetail}
+        bulkActions={finalBulkActions}
+        actions={headerActions}
+        renderHeader={headerSection}
+        filters={
+          <>
+            <div className="relative">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search requester or role&hellip;"
+                className="w-64 h-8 text-xs pl-9 focus-visible:ring-offset-0"
+              />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            </div>
+            {filtersBar}
+          </>
+        }
+        renderRowActions={(r) => {
+          const self = isSelf(r);
+          const actable = isActable(r);
+          const disabled = !actable || self;
+          const approveTooltip = self
+            ? "Self-review not allowed"
+            : !actable
+              ? `Already ${r.status.toLowerCase()}`
+              : "Approve request";
+          const rejectTooltip = self
+            ? "Self-review not allowed"
+            : !actable
+              ? `Already ${r.status.toLowerCase()}`
+              : "Reject request";
+
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-8 gap-1 px-2 md:px-2", !disabled && "hover:text-success")}
+                    disabled={disabled}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openApproveDialog(r);
+                    }}
+                  >
+                    <Check className="size-4" />
+                    <span className="hidden md:inline text-xs">Approve</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{approveTooltip}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-8 gap-1 px-2 md:px-2", !disabled && "hover:text-destructive")}
+                    disabled={disabled}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openRejectDialog(r);
+                    }}
+                  >
+                    <X className="size-4" />
+                    <span className="hidden md:inline text-xs">Reject</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{rejectTooltip}</TooltipContent>
+              </Tooltip>
+            </div>
+          );
+        }}
+      />
+
+      {/* List of Dialogs */}
       <Dialog open={!!approveTarget} onOpenChange={(o) => !o && setApproveTarget(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -796,8 +923,8 @@ function RoleRequestsAdminPage() {
                 className={cn(
                   "resize-none focus-visible:ring-offset-0",
                   !rejectValid &&
-                    rejectJustification.length > 0 &&
-                    "border-rose-500 focus-visible:ring-rose-500",
+                  rejectJustification.length > 0 &&
+                  "border-rose-500 focus-visible:ring-rose-500",
                 )}
               />
               {!rejectValid && rejectJustification.length > 0 && (
@@ -930,8 +1057,8 @@ function RoleRequestsAdminPage() {
                 className={cn(
                   "resize-none focus-visible:ring-offset-0",
                   !bulkRejectValid &&
-                    bulkRejectJustification.length > 0 &&
-                    "border-rose-500 focus-visible:ring-rose-500",
+                  bulkRejectJustification.length > 0 &&
+                  "border-rose-500 focus-visible:ring-rose-500",
                 )}
               />
               {!bulkRejectValid && bulkRejectJustification.length > 0 && (
@@ -1148,96 +1275,6 @@ function RoleRequestsAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ListPage<RoleRequest>
-        title="Role & Permission Requests"
-        description="Review and act on requests for role and permission changes across the organization."
-        eyebrow="Access Control"
-        rows={processedRows}
-        columns={listPageColumns}
-        isLoading={isLoading}
-        error={error ?? null}
-        pageSize={20}
-        enableSelection={true}
-        enableSearch={false}
-        enablePagination={true}
-        selectedRows={selectedIds}
-        onSelectionChange={setSelectedIds}
-        onRowClick={openDetail}
-        bulkActions={finalBulkActions}
-        actions={headerActions}
-        filters={
-          <>
-            <div className="relative">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search requester or role&hellip;"
-                className="w-64 h-8 text-xs pl-9 focus-visible:ring-offset-0"
-              />
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            </div>
-            {filtersBar}
-          </>
-        }
-        renderRowActions={(r) => {
-          const self = isSelf(r);
-          const actable = isActable(r);
-          const disabled = !actable || self;
-          const approveTooltip = self
-            ? "Self-review not allowed"
-            : !actable
-              ? `Already ${r.status.toLowerCase()}`
-              : "Approve request";
-          const rejectTooltip = self
-            ? "Self-review not allowed"
-            : !actable
-              ? `Already ${r.status.toLowerCase()}`
-              : "Reject request";
-
-          return (
-            <div className="flex items-center justify-end gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("h-8 gap-1 px-2 md:px-2", !disabled && "hover:text-success")}
-                    disabled={disabled}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openApproveDialog(r);
-                    }}
-                  >
-                    <Check className="size-4" />
-                    <span className="hidden md:inline text-xs">Approve</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{approveTooltip}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("h-8 gap-1 px-2 md:px-2", !disabled && "hover:text-destructive")}
-                    disabled={disabled}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openRejectDialog(r);
-                    }}
-                  >
-                    <X className="size-4" />
-                    <span className="hidden md:inline text-xs">Reject</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{rejectTooltip}</TooltipContent>
-              </Tooltip>
-            </div>
-          );
-        }}
-      />
     </div>
   );
 }

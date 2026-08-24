@@ -165,11 +165,13 @@ export class RoleRequestsService {
         include: { requester: { select: { id: true, name: true, handle: true } } },
       });
 
-      // §4a Notify requester "submitted"
-      await this.notifications.createNotification({
-        userId: requesterId,
-        kind: NotificationKind.ROLE_REQUEST_SUBMITTED,
-        body: `Your role request for ${requestedRoleKey} has been submitted and is pending review.`,
+        // §4a Notify requester "submitted"
+        await this.notifications.createNotification({
+          userId: requesterId,
+          kind: NotificationKind.ROLE_REQUEST_SUBMITTED as never,
+          title: 'Your role request has been submitted',
+          body: `Your role request for ${requestedRoleKey} has been submitted and is pending review.`,
+          
         metadata: { roleRequestId: request.id, requestedRoleKey, type },
       });
 
@@ -214,7 +216,8 @@ export class RoleRequestsService {
           this.notifications.createNotification({
             userId: id,
             actorId: requesterId,
-            kind: NotificationKind.ROLE_REQUEST_SUBMITTED,
+            kind: NotificationKind.ROLE_REQUEST_SUBMITTED as never,
+            title: 'New role request pending review',
             body: `A new role request for ${requestedRoleKey} is awaiting your review.`,
             metadata: { roleRequestId: request.id, requestedRoleKey, type },
           }),
@@ -345,7 +348,8 @@ export class RoleRequestsService {
       await this.notifications.createNotification({
         userId: request.requesterId,
         actorId: reviewerId,
-        kind: NotificationKind.ROLE_REQUEST_APPROVED,
+        kind: NotificationKind.ROLE_REQUEST_APPROVED as never,
+        title: 'Your role request has been approved',
         body: `Your role request for ${request.requestedRoleKey} has been approved.`,
         metadata: {
           roleRequestId: request.id,
@@ -400,7 +404,8 @@ export class RoleRequestsService {
       await this.notifications.createNotification({
         userId: request.requesterId,
         actorId: reviewerId,
-        kind: NotificationKind.ROLE_REQUEST_REJECTED,
+        kind: NotificationKind.ROLE_REQUEST_REJECTED as never,
+        title: 'Your role request has been rejected',
         body: `Your role request for ${request.requestedRoleKey} has been rejected.`,
         metadata: {
           roleRequestId: request.id,
@@ -508,7 +513,8 @@ export class RoleRequestsService {
 
           await this.notifications.createNotification({
             userId: req.requesterId,
-            kind: NotificationKind.ROLE_REQUEST_EXPIRED,
+            kind: NotificationKind.ROLE_REQUEST_EXPIRED as never,
+            title: 'Your temporary access expired',
             body: `Your temporary access to ${req.requestedRoleKey} has expired.`,
             metadata: {
               roleRequestId: req.id,

@@ -1,7 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, AtSign, ArrowLeft } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, User, AtSign, Phone, ChevronLeft } from 'lucide-react-native';
 import { useAuthState } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,7 +59,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             style={{ paddingVertical: 16 }}
           >
-            <ArrowLeft size={24} color="#000000" />
+            <ChevronLeft size={24} color="#000000" />
           </TouchableOpacity>
 
           {/* Instagram-style centered logo */}
@@ -338,6 +338,7 @@ export default function RegisterScreen() {
           <TouchableOpacity
             style={{
               flexDirection: 'row',
+              gap: 10,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: '#ffffff',
@@ -349,9 +350,10 @@ export default function RegisterScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 18, marginRight: 10 }}>
+            {/* <Text style={{ fontSize: 18, marginRight: 10 }}>
               {'\u260E'}
-            </Text>
+            </Text> */}
+            <Phone size={18} color="#000000" />
             <Text style={{ color: '#000000', fontSize: 15, fontWeight: '500' }}>
               Continue with Phone
             </Text>

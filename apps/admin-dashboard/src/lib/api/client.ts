@@ -1,7 +1,14 @@
 import { getRouterAuth } from "@/lib/auth/context";
 import { logError } from "@/lib/monitoring/error-monitor";
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+// Admin dashboard routes are written WITHOUT the /api prefix (e.g. /admin/users),
+// so the env var is expected to contain /api at the end. See .env.example.
+const DEV_FALLBACK = "http://localhost:3001/api";
+const PROD_FALLBACK = "https://cmrxaaqf14uh403f7xj4wceyp.ewr.prisma.build/api";
+const DEFAULT_FALLBACK = import.meta.env.DEV ? DEV_FALLBACK : PROD_FALLBACK;
+
+export const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || DEFAULT_FALLBACK;
 export const STUB_MODE = !API_BASE_URL;
 
 export class ApiError extends Error {

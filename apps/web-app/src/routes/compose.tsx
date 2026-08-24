@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { useCategories } from "@/hooks/useApi";
 import { requireAuth } from "@/lib/auth";
+import { useI18n } from "@/components/providers/I18nProvider";
 
 export const Route = createFileRoute("/compose")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/compose")({
 
 function ComposePage() {
   const nav = useNavigate();
+  const { t } = useI18n();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const [title, setTitle] = useState("");
   const [section, setSection] = useState("");
@@ -84,7 +86,7 @@ function ComposePage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4" />
-            Cancel
+            {t("common.cancel")}
           </button>
           <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Draft · {readMins} min read
@@ -95,7 +97,7 @@ function ComposePage() {
             className="inline-flex items-center gap-2 rounded-full bg-accent text-accent-foreground px-5 py-2 text-xs font-bold uppercase tracking-widest hover:opacity-90 disabled:opacity-50"
           >
             <Send className="size-3" />
-            {isPublishing ? "Publishing..." : "Publish"}
+            {isPublishing ? "Publishing..." : t("compose.publish")}
           </button>
         </div>
 
@@ -106,7 +108,7 @@ function ComposePage() {
             <div className="flex flex-col items-center gap-2">
               <ImagePlus className="size-7" strokeWidth={1.4} />
               <span className="text-xs font-bold uppercase tracking-widest">
-                Add cover image
+                {t("compose.addCover")}
               </span>
               <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
                 Recommended 1600 × 900 px
@@ -145,7 +147,7 @@ function ComposePage() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Your title"
+              placeholder={t("compose.titlePlaceholder")}
               className="w-full font-display italic text-4xl md:text-5xl leading-tight bg-transparent outline-none placeholder:text-muted-foreground/40"
             />
           </div>
@@ -154,14 +156,14 @@ function ComposePage() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Start writing your story…"
+            placeholder={t("compose.bodyPlaceholder")}
             rows={14}
             className="w-full bg-transparent outline-none resize-none text-base leading-relaxed placeholder:text-muted-foreground/50 border-t border-border pt-6"
           />
 
           {/* Footer bar */}
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground border-t border-border pt-4">
-            <span>{wordCount} words</span>
+            <span>{t("compose.wordCount", { count: wordCount })}</span>
             <button className="flex items-center gap-1 text-accent hover:opacity-80">
               <Sparkles className="size-3" />
               Suggest a title

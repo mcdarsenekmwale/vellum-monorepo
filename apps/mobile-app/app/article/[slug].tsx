@@ -34,6 +34,8 @@ import type { Comment } from '@vellum/api-client/types';
 import ShimmerImage from '../../components/ShimmerImage';
 import { Avatar } from '../../components/Avatar';
 import { ArticleActions } from '../../components/ArticleActions';
+import { useI18n } from 'context/I18nProvider';
+import { useTheme } from 'context/ThemeProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +53,8 @@ function formatRelativeTime(dateStr: string): string {
 export default function ArticlePage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const { theme: { colors } } = useTheme();
+  const { t } = useI18n();
   const { data: article, isLoading: articleLoading, error: articleError, refetch: refetchArticle } = useArticle(slug);
   const { toggleLike, toggleBookmark } = useSocialActions();
   const { user: currentUser } = useAuthState();
@@ -208,10 +212,10 @@ export default function ArticlePage() {
   if (articleLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f7f4ee" />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#000000" />
-          <Text style={{ marginTop: 12, color: '#666666' }}>Loading article...</Text>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={{ marginTop: 12, color: colors.textMuted }}>Loading article...</Text>
         </View>
       </SafeAreaView>
     );
@@ -223,7 +227,7 @@ export default function ArticlePage() {
         <Text style={styles.errorText}>{articleError ? 'Failed to load article' : 'Article not found'}</Text>
         {articleError && (
           <TouchableOpacity onPress={refetchArticle} style={{ marginTop: 16 }}>
-            <Text style={{ color: '#d4653a', fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>Retry</Text>
           </TouchableOpacity>
         )}
       </SafeAreaView>
@@ -232,7 +236,7 @@ export default function ArticlePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f7f4ee" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Sticky Header with Back Button */}
       <View style={styles.stickyHeader}>
@@ -241,7 +245,7 @@ export default function ArticlePage() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={22} color="#000000" strokeWidth={2} />
+          <ChevronLeft size={22} color={colors.primaryText} strokeWidth={2} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.headerAction}
@@ -251,8 +255,8 @@ export default function ArticlePage() {
           <Animated.View style={{ transform: [{ scale: bookmarkAnim }] }}>
             <Bookmark
               size={20}
-              color={saved ? '#d4653a' : '#000000'}
-              fill={saved ? '#d4653a' : 'none'}
+              color={saved ? colors.accent : colors.primaryText}
+              fill={saved ? colors.accent : 'none'}
               strokeWidth={1.8}
             />
           </Animated.View>
@@ -290,6 +294,8 @@ export default function ArticlePage() {
 
           {/* Author Row */}
           <View style={styles.authorRow}>
+            <TouchableOpacity style={{ flex: 1 , flexDirection: 'row', alignItems: 'center' , gap: 10, }}  
+            onPress={() => router.push(`/author/${article.author?.handle}`)}>
             <Avatar
               uri={article.author?.avatar}
               name={article.author?.name}
@@ -302,6 +308,7 @@ export default function ArticlePage() {
                 {article.author?.handle} · {formatRelativeTime(article.publishedAt || article.createdAt)}
               </Text>
             </View>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
               <Text style={styles.followButtonText}>FOLLOW</Text>
             </TouchableOpacity>
@@ -327,7 +334,7 @@ export default function ArticlePage() {
 
           {/* Action Bar */}
           <View style={styles.actionBar}>
-            <View style={{ flex: 1, gap: 12 , flexDirection: 'row'}}>
+            <View style={{ flex: 1, gap: 12, flexDirection: 'row' }}>
               <TouchableOpacity
                 style={styles.actionItem}
                 onPress={handleLike}
@@ -350,7 +357,7 @@ export default function ArticlePage() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ gap: 12 , flexDirection: 'row'}}>
+            <View style={{ gap: 12, flexDirection: 'row' }}>
               <TouchableOpacity
                 style={styles.actionItem}
                 onPress={handleShare}

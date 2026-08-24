@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ArrowLeft,
   Ban,
@@ -14,6 +14,15 @@ import {
   Search,
   Clock,
   Star,
+  Key,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  AlertCircle,
+  Loader2,
+  Pencil,
 } from "lucide-react";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -28,12 +37,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -51,6 +61,7 @@ import {
   useToggleUserStatus,
   useRbacRoles,
   useUserRbacRoles,
+  useDeleteUser,
   useAssignUserRbacRole,
   useRemoveUserRbacRole,
   usePermissionGroups,
@@ -58,6 +69,7 @@ import {
   useSetPermissionOverride,
   useRemovePermissionOverride,
   useUserRoleHistory,
+  useResetUserPassword,
   type Article,
   type AuditLogEntry,
   type TimeseriesPoint,
@@ -65,6 +77,8 @@ import {
   type PermissionGroup,
 } from "@/lib/api/hooks";
 import { toast } from "sonner";
+import { DeleteUserDialog } from "@/components/dashboard/users_action_components";
+import { useAuth } from "@/lib/auth/context";
 
 export const Route = createFileRoute("/_app/users/$userId")({
   head: ({ params }) => ({ meta: [{ title: `User ${params.userId} · Vellum Admin` }] }),
@@ -78,19 +92,101 @@ const LEGACY_ROLE_OPTIONS = ["ADMIN", "MODERATOR", "CREATOR", "USER", "GUEST"];
 
 function UserDetail() {
   const { userId } = Route.useParams();
-  const { data: user, isLoading, isError } = useUserById(userId);
+
+  // ─── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS ───
+  const { data: user, isLoading, isError, refetch } = useUserById(userId);
   const { data: articlesData } = useArticles({ pageSize: 100 });
   const { data: tsData } = useAnalyticsTimeseries(30);
   const { data: auditData } = useAuditLogs({ pageSize: 50 });
   const updateUserRole = useUpdateUserRole();
   const toggleUserStatus = useToggleUserStatus();
+  const deleteUser = useDeleteUser();
+  
+  const resetPassword = useResetUserPassword();
+  const { user: currentUser } = useAuth();
 
-  // RBAC data
+  // RBAC hooks - all called unconditionally
   const { data: allRoles = [] } = useRbacRoles({ includeInactive: true });
   const { data: userRoles = [] } = useUserRbacRoles(userId);
   const { data: permGroups = [] } = usePermissionGroups();
   const { data: effectivePerms } = useUserEffectivePermissions(userId);
   const { data: roleHistoryRaw = [] } = useUserRoleHistory(userId);
+  const assignRole = useAssignUserRbacRole();
+  const removeRole = useRemoveUserRbacRole();
+  const setOverride = useSetPermissionOverride();
+  const removeOverride = useRemovePermissionOverride();
+
+  // ─── STATE ───
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordMode, setPasswordMode] = useState<"custom" | "generate">("generate");
+  const [customPassword, setCustomPassword] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  // ─── CALLBACK HOOKS (must be called BEFORE any conditional early return) ───
+  const generateRandomPassword = useCallback(() => {
+    const length = 16;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  }, []);
+
+  const handleGeneratePassword = useCallback(() => {
+    const newPassword = generateRandomPassword();
+    setGeneratedPassword(newPassword);
+    setCustomPassword(newPassword);
+  }, [generateRandomPassword]);
+
+  const handleCopyPassword = useCallback(async () => {
+    const password = passwordMode === "generate" ? generatedPassword : customPassword;
+    if (password) {
+      await navigator.clipboard.writeText(password);
+      setCopied(true);
+      toast.success("Password copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [passwordMode, generatedPassword, customPassword]);
+
+  const handleResetPassword = useCallback(() => {
+    if (!user) return;
+    if (passwordMode === "custom" && !customPassword.trim()) {
+      toast.error("Please enter a custom password");
+      return;
+    }
+
+    const newPassword = passwordMode === "generate" ? generatedPassword : customPassword;
+    if (!newPassword || newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    setIsResetting(true);
+    resetPassword.mutate(
+      { id: user.id, password: newPassword },
+      {
+        onSuccess: () => {
+          toast.success("Password reset successfully");
+          setIsPasswordDialogOpen(false);
+          setCustomPassword("");
+          setGeneratedPassword("");
+          setCopied(false);
+          setIsResetting(false);
+        },
+        onError: (error: any) => {
+          toast.error("Failed to reset password: " + (error.message || "Unknown error"));
+          setIsResetting(false);
+        },
+      },
+    );
+  }, [user, passwordMode, customPassword, generatedPassword, resetPassword]);
+
+  // ─── TYPES ───
   type RoleHistoryEntry = {
     id: string;
     createdAt: string;
@@ -100,11 +196,8 @@ function UserDetail() {
     assignedBy?: string | null;
   };
   const roleHistory = roleHistoryRaw as RoleHistoryEntry[];
-  const assignRole = useAssignUserRbacRole();
-  const removeRole = useRemoveUserRbacRole();
-  const setOverride = useSetPermissionOverride();
-  const removeOverride = useRemovePermissionOverride();
 
+  // ─── EARLY RETURNS (after all hooks) ───
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -131,6 +224,7 @@ function UserDetail() {
     );
   }
 
+  // ─── DERIVED VALUES ───
   const userArticles: Article[] = (articlesData?.data ?? []).filter((a) => a.authorId === user.id);
   const userAudit: AuditLogEntry[] = (auditData?.data ?? []).filter((a) => a.userId === user.id);
   const spark = (tsData ?? []).map((p: TimeseriesPoint) => ({ date: p.date, value: p.users }));
@@ -143,37 +237,72 @@ function UserDetail() {
     (effectivePerms?.overrides ?? []).map((o) => [o.permission.id, o]),
   );
 
+  // ─── HANDLERS ───
+  // These close over `user` via closure and are only invoked once `user` is truthy
+  // (buttons that trigger them only render on the success path below).
   const handleAssignRole = (roleId: string) => {
     assignRole.mutate(
       { userId: user.id, roleId, isPrimary: userRoles.length === 0 },
       {
+        onSuccess: () => toast.success("Role assigned successfully"),
         onError: (e: any) => toast.error("Failed to assign role", { description: e?.message }),
       },
     );
   };
+
   const handleRemoveRole = (roleId: string) => {
     removeRole.mutate(
       { userId: user.id, roleId },
       {
+        onSuccess: () => toast.success("Role removed successfully"),
         onError: (e: any) => toast.error("Failed to remove role", { description: e?.message }),
       },
     );
   };
+
   const handleSetPrimary = (roleId: string) => {
-    assignRole.mutate({ userId: user.id, roleId, isPrimary: true });
+    assignRole.mutate(
+      { userId: user.id, roleId, isPrimary: true },
+      {
+        onSuccess: () => toast.success("Primary role updated"),
+        onError: (e: any) => toast.error("Failed to set primary role", { description: e?.message }),
+      },
+    );
   };
+
   const handleSetOverride = (permissionId: string, granted: boolean, reason?: string) => {
     setOverride.mutate(
       { userId: user.id, permissionId, granted, reason },
       {
+        onSuccess: () => toast.success(`Permission ${granted ? "granted" : "denied"} successfully`),
         onError: (e: any) => toast.error("Failed to set override", { description: e?.message }),
       },
     );
   };
+
   const handleRemoveOverride = (permissionId: string) => {
-    removeOverride.mutate({ userId: user.id, permissionId });
+    removeOverride.mutate(
+      { userId: user.id, permissionId },
+      {
+        onSuccess: () => toast.success("Override removed successfully"),
+        onError: (e: any) => toast.error("Failed to remove override", { description: e?.message }),
+      },
+    );
   };
 
+  const handleDelete = () => {
+    deleteUser.mutate(user.id, {
+      onSuccess: () => {
+        setIsDeleteOpen(false);
+        toast.success("User soft-deleted successfully");
+      },
+      onError: (error) => {
+        toast.error("Failed to delete user: " + (error.message || "Unknown error"));
+      },
+    });
+  };
+
+  // ─── RENDER ───
   return (
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2 gap-1.5">
@@ -212,7 +341,24 @@ function UserDetail() {
             </div>
           </div>
           <div className="hidden shrink-0 gap-2 sm:flex flex-wrap">
-            <Button variant="outline" size="sm" className="gap-1.5"><Mail className="size-4" /> Message</Button>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Mail className="size-4" /> Message
+            </Button>
+
+            {/* Reset Password Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setPasswordMode("generate");
+                handleGeneratePassword();
+                setIsPasswordDialogOpen(true);
+              }}
+            >
+              <Key className="size-4" /> Reset Password
+            </Button>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5">
@@ -235,6 +381,7 @@ function UserDetail() {
                 ))}
               </PopoverContent>
             </Popover>
+
             <Button
               variant="outline"
               size="sm"
@@ -244,7 +391,16 @@ function UserDetail() {
             >
               <Ban className="size-4" /> {user.isActive ? "Suspend" : "Reactivate"}
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-destructive"><Trash2 className="size-4" /> Delete</Button>
+
+            <Button
+              variant="outline"
+              onClick={() => { setIsDeleteOpen(true); }}
+              disabled={deleteUser.isPending}
+              size="sm"
+              className="gap-1.5 text-destructive"
+            >
+              <Trash2 className="size-4" /> Delete
+            </Button>
           </div>
         </div>
       </div>
@@ -477,6 +633,194 @@ function UserDetail() {
           </SectionCard>
         </TabsContent>
       </Tabs>
+
+      {/* ─── Reset Password Dialog ─── */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="size-5 text-primary" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Reset the password for <strong>{user.name}</strong> ({user.email}).
+              Choose to generate a secure password or set a custom one.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Mode Selection */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={passwordMode === "generate" ? "default" : "outline"}
+                onClick={() => {
+                  setPasswordMode("generate");
+                  handleGeneratePassword();
+                }}
+                className="gap-2"
+              >
+                <RefreshCw className="size-4" />
+                Generate
+              </Button>
+              <Button
+                variant={passwordMode === "custom" ? "default" : "outline"}
+                onClick={() => {
+                  setPasswordMode("custom");
+                  setCustomPassword("");
+                }}
+                className="gap-2"
+              >
+                <Pencil className="size-4" />
+                Custom
+              </Button>
+            </div>
+
+            {passwordMode === "generate" ? (
+              <div className="space-y-3">
+                <Label>Generated Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={generatedPassword}
+                    readOnly
+                    className="font-mono pr-24"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={handleCopyPassword}
+                    >
+                      {copied ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={handleGeneratePassword}
+                    >
+                      <RefreshCw className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Password is 16 characters long with mixed case, numbers, and special characters.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Label htmlFor="custom-password">Custom Password</Label>
+                <div className="relative">
+                  <Input
+                    id="custom-password"
+                    type={showPassword ? "text" : "password"}
+                    value={customPassword}
+                    onChange={(e) => setCustomPassword(e.target.value)}
+                    placeholder="Enter a strong password (min 8 characters)"
+                    className="font-mono pr-12"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <AlertCircle className="size-3.5" />
+                  Password must be at least 8 characters long.
+                </div>
+              </div>
+            )}
+
+            {/* Password Strength Indicator */}
+            {(passwordMode === "custom" && customPassword) && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Password Strength</span>
+                  <span className={cn(
+                    "font-medium",
+                    customPassword.length >= 12 ? "text-emerald-500" :
+                    customPassword.length >= 8 ? "text-amber-500" :
+                    "text-rose-500"
+                  )}>
+                    {customPassword.length >= 12 ? "Strong" :
+                     customPassword.length >= 8 ? "Medium" :
+                     "Weak"}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      customPassword.length >= 12 ? "bg-emerald-500 w-full" :
+                      customPassword.length >= 8 ? "bg-amber-500 w-2/3" :
+                      "bg-rose-500 w-1/3"
+                    )}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Weak</span>
+                  <span>Medium</span>
+                  <span>Strong</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsPasswordDialogOpen(false);
+                setCustomPassword("");
+                setGeneratedPassword("");
+                setCopied(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={isResetting || (passwordMode === "custom" && (!customPassword.trim() || customPassword.length < 8))}
+              className="gap-2"
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
+                  <Key className="size-4" />
+                  Reset Password
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteUserDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        selectedUser={user}
+        currentUser={currentUser}
+        handleDelete={handleDelete}
+        deleteUserPending={deleteUser.isPending}
+      />
     </div>
   );
 }
