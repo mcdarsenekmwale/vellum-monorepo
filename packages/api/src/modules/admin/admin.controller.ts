@@ -489,6 +489,38 @@ export class AdminController {
     return this.adminService.createWebhook(body.name, body.url, body.events, body.isActive);
   }
 
+  @Get('webhooks/:id/logs')
+    @UseGuards(JwtAuthGuard, AdminGuard)
+    @ApiOperation({ summary: 'Fetch execution logs for a webhook' })
+    @ApiResponse({ status: 200, description: 'Logs with pagination' })
+    async listWebhookLogs(
+      @Param('id') id: string,
+      @Query() query: { page?: number; limit?: number , 
+        eventType?: string , status?: string , from?: string , to?: string, statusCode?: number },
+    ) {
+      return this.adminService.listLogs( id, query);
+    }
+
+  @Get('webhooks/templates')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'List webhook templates (admin catalog)' })
+  @ApiResponse({ status: 200, description: 'Templates with categories + preseeded config' })
+  async listWebhookTemplates(@Query('category') category?: string) {
+    return this.adminService.listWebhookTemplates(category);
+  }
+
+  @Get('webhooks/stats/overview')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Global webhook KPIs + event breakdown (admin list view overview)' })
+  @ApiResponse({ status: 200, description: 'Overview stats (total executions, success/error counts, success rate, per-event breakdown)' })
+  async getWebhookStatsOverview(@Req() req: any) {
+    const userId = actorId(req);
+    const role = req.user?.role;
+    return this.adminService.getWebhookStatsOverview(userId, role);
+  }
+
+
+
   @Put('webhooks/:id')
   @ApiOperation({ summary: 'Update a webhook' })
   @ApiResponse({ status: 200, description: 'Webhook updated' })

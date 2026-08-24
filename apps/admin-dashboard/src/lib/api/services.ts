@@ -1934,7 +1934,7 @@ export async function getWebhooks(): Promise<WebhookConfig[]> {
 }
 
 export async function getWebhookById(id: string): Promise<WebhookConfig> {
-  return api(`/admin/webhooks/${id}`);
+  return api(`/admin/webhooks/${id}`); 
 }
 
 export async function createWebhook(data: {

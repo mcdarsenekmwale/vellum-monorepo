@@ -46,12 +46,13 @@ import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAiRouteImport } from './routes/_app.ai'
 import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
 import { Route as AppAccessControlRouteImport } from './routes/_app.access-control'
+import { Route as AppWebhooksIndexRouteImport } from './routes/_app.webhooks.index'
 import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
 import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index'
 import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
-import { Route as AppWebhooksIdRouteImport } from './routes/_app.webhooks_.$id'
+import { Route as AppWebhooksIdRouteImport } from './routes/_app.webhooks.$id'
 import { Route as AppUsersDeletedRouteImport } from './routes/_app.users.deleted'
 import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
 import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
@@ -258,6 +259,11 @@ const AppAccessControlRoute = AppAccessControlRouteImport.update({
   path: '/access-control',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWebhooksIndexRoute = AppWebhooksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppWebhooksRoute,
+} as any)
 const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -284,9 +290,9 @@ const AppArticlesIndexRoute = AppArticlesIndexRouteImport.update({
   getParentRoute: () => AppArticlesRoute,
 } as any)
 const AppWebhooksIdRoute = AppWebhooksIdRouteImport.update({
-  id: '/webhooks_/$id',
-  path: '/webhooks/$id',
-  getParentRoute: () => AppRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppWebhooksRoute,
 } as any)
 const AppUsersDeletedRoute = AppUsersDeletedRouteImport.update({
   id: '/deleted',
@@ -434,7 +440,7 @@ export interface FileRoutesByFullPath {
   '/tags': typeof AppTagsRoute
   '/users': typeof AppUsersRouteWithChildren
   '/videos': typeof AppVideosRoute
-  '/webhooks': typeof AppWebhooksRoute
+  '/webhooks': typeof AppWebhooksRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
@@ -454,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/moderation/': typeof AppModerationIndexRoute
   '/support/': typeof AppSupportIndexRoute
   '/users/': typeof AppUsersIndexRoute
+  '/webhooks/': typeof AppWebhooksIndexRoute
   '/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
   '/support/departments/$id': typeof AppSupportDepartmentsIdRoute
   '/support/teams/$id': typeof AppSupportTeamsIdRoute
@@ -495,7 +502,6 @@ export interface FileRoutesByTo {
   '/storage': typeof AppStorageRoute
   '/tags': typeof AppTagsRoute
   '/videos': typeof AppVideosRoute
-  '/webhooks': typeof AppWebhooksRoute
   '/auth/login': typeof AuthLoginRoute
   '/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/audit/$entryId': typeof AppAuditEntryIdRoute
@@ -514,6 +520,7 @@ export interface FileRoutesByTo {
   '/moderation': typeof AppModerationIndexRoute
   '/support': typeof AppSupportIndexRoute
   '/users': typeof AppUsersIndexRoute
+  '/webhooks': typeof AppWebhooksIndexRoute
   '/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
   '/support/departments/$id': typeof AppSupportDepartmentsIdRoute
   '/support/teams/$id': typeof AppSupportTeamsIdRoute
@@ -561,7 +568,7 @@ export interface FileRoutesById {
   '/_app/tags': typeof AppTagsRoute
   '/_app/users': typeof AppUsersRouteWithChildren
   '/_app/videos': typeof AppVideosRoute
-  '/_app/webhooks': typeof AppWebhooksRoute
+  '/_app/webhooks': typeof AppWebhooksRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/_app/articles/$articleId': typeof AppArticlesArticleIdRoute
   '/_app/audit/$entryId': typeof AppAuditEntryIdRoute
@@ -575,12 +582,13 @@ export interface FileRoutesById {
   '/_app/support/tickets': typeof AppSupportTicketsRouteWithChildren
   '/_app/users/$userId': typeof AppUsersUserIdRoute
   '/_app/users/deleted': typeof AppUsersDeletedRoute
-  '/_app/webhooks_/$id': typeof AppWebhooksIdRoute
+  '/_app/webhooks/$id': typeof AppWebhooksIdRoute
   '/_app/articles/': typeof AppArticlesIndexRoute
   '/_app/audit/': typeof AppAuditIndexRoute
   '/_app/moderation/': typeof AppModerationIndexRoute
   '/_app/support/': typeof AppSupportIndexRoute
   '/_app/users/': typeof AppUsersIndexRoute
+  '/_app/webhooks/': typeof AppWebhooksIndexRoute
   '/_app/support/analytics/$id': typeof AppSupportAnalyticsIdRoute
   '/_app/support/departments/$id': typeof AppSupportDepartmentsIdRoute
   '/_app/support/teams/$id': typeof AppSupportTeamsIdRoute
@@ -648,6 +656,7 @@ export interface FileRouteTypes {
     | '/moderation/'
     | '/support/'
     | '/users/'
+    | '/webhooks/'
     | '/support/analytics/$id'
     | '/support/departments/$id'
     | '/support/teams/$id'
@@ -689,7 +698,6 @@ export interface FileRouteTypes {
     | '/storage'
     | '/tags'
     | '/videos'
-    | '/webhooks'
     | '/auth/login'
     | '/articles/$articleId'
     | '/audit/$entryId'
@@ -708,6 +716,7 @@ export interface FileRouteTypes {
     | '/moderation'
     | '/support'
     | '/users'
+    | '/webhooks'
     | '/support/analytics/$id'
     | '/support/departments/$id'
     | '/support/teams/$id'
@@ -768,12 +777,13 @@ export interface FileRouteTypes {
     | '/_app/support/tickets'
     | '/_app/users/$userId'
     | '/_app/users/deleted'
-    | '/_app/webhooks_/$id'
+    | '/_app/webhooks/$id'
     | '/_app/articles/'
     | '/_app/audit/'
     | '/_app/moderation/'
     | '/_app/support/'
     | '/_app/users/'
+    | '/_app/webhooks/'
     | '/_app/support/analytics/$id'
     | '/_app/support/departments/$id'
     | '/_app/support/teams/$id'
@@ -1052,6 +1062,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccessControlRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/webhooks/': {
+      id: '/_app/webhooks/'
+      path: '/'
+      fullPath: '/webhooks/'
+      preLoaderRoute: typeof AppWebhooksIndexRouteImport
+      parentRoute: typeof AppWebhooksRoute
+    }
     '/_app/users/': {
       id: '/_app/users/'
       path: '/'
@@ -1087,12 +1104,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArticlesIndexRouteImport
       parentRoute: typeof AppArticlesRoute
     }
-    '/_app/webhooks_/$id': {
-      id: '/_app/webhooks_/$id'
-      path: '/webhooks/$id'
+    '/_app/webhooks/$id': {
+      id: '/_app/webhooks/$id'
+      path: '/$id'
       fullPath: '/webhooks/$id'
       preLoaderRoute: typeof AppWebhooksIdRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppWebhooksRoute
     }
     '/_app/users/deleted': {
       id: '/_app/users/deleted'
@@ -1313,6 +1330,20 @@ const AppUsersRouteWithChildren = AppUsersRoute._addFileChildren(
   AppUsersRouteChildren,
 )
 
+interface AppWebhooksRouteChildren {
+  AppWebhooksIdRoute: typeof AppWebhooksIdRoute
+  AppWebhooksIndexRoute: typeof AppWebhooksIndexRoute
+}
+
+const AppWebhooksRouteChildren: AppWebhooksRouteChildren = {
+  AppWebhooksIdRoute: AppWebhooksIdRoute,
+  AppWebhooksIndexRoute: AppWebhooksIndexRoute,
+}
+
+const AppWebhooksRouteWithChildren = AppWebhooksRoute._addFileChildren(
+  AppWebhooksRouteChildren,
+)
+
 interface AppSupportTicketsRouteChildren {
   AppSupportTicketsTicketIdRoute: typeof AppSupportTicketsTicketIdRoute
   AppSupportTicketsAccessRequestsRoute: typeof AppSupportTicketsAccessRequestsRoute
@@ -1364,14 +1395,13 @@ interface AppRouteChildren {
   AppTagsRoute: typeof AppTagsRoute
   AppUsersRoute: typeof AppUsersRouteWithChildren
   AppVideosRoute: typeof AppVideosRoute
-  AppWebhooksRoute: typeof AppWebhooksRoute
+  AppWebhooksRoute: typeof AppWebhooksRouteWithChildren
   AppSupportAgentsRoute: typeof AppSupportAgentsRoute
   AppSupportCannedResponsesRoute: typeof AppSupportCannedResponsesRoute
   AppSupportComparisonsRoute: typeof AppSupportComparisonsRoute
   AppSupportKbRoute: typeof AppSupportKbRoute
   AppSupportReportsRoute: typeof AppSupportReportsRoute
   AppSupportTicketsRoute: typeof AppSupportTicketsRouteWithChildren
-  AppWebhooksIdRoute: typeof AppWebhooksIdRoute
   AppSupportIndexRoute: typeof AppSupportIndexRoute
   AppSupportAnalyticsIdRoute: typeof AppSupportAnalyticsIdRoute
   AppSupportDepartmentsIdRoute: typeof AppSupportDepartmentsIdRoute
@@ -1414,14 +1444,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppTagsRoute: AppTagsRoute,
   AppUsersRoute: AppUsersRouteWithChildren,
   AppVideosRoute: AppVideosRoute,
-  AppWebhooksRoute: AppWebhooksRoute,
+  AppWebhooksRoute: AppWebhooksRouteWithChildren,
   AppSupportAgentsRoute: AppSupportAgentsRoute,
   AppSupportCannedResponsesRoute: AppSupportCannedResponsesRoute,
   AppSupportComparisonsRoute: AppSupportComparisonsRoute,
   AppSupportKbRoute: AppSupportKbRoute,
   AppSupportReportsRoute: AppSupportReportsRoute,
   AppSupportTicketsRoute: AppSupportTicketsRouteWithChildren,
-  AppWebhooksIdRoute: AppWebhooksIdRoute,
   AppSupportIndexRoute: AppSupportIndexRoute,
   AppSupportAnalyticsIdRoute: AppSupportAnalyticsIdRoute,
   AppSupportDepartmentsIdRoute: AppSupportDepartmentsIdRoute,

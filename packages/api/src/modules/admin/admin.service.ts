@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type SettingCategory } from './settings-definitions';
 
 /**
@@ -44,6 +45,7 @@ export class AdminService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private cache: CacheService,
+    private webhooksService: WebhooksService,
   ) { }
 
   /** Strip sensitive fields before returning a user to callers. */
@@ -1723,6 +1725,32 @@ export class AdminService {
         totalPages: Math.ceil(total / limit),
       };
     }
+
+  /**
+   * List available webhook templates (with optional category filter).
+   * Delegates to WebhooksService so the built-in seed logic runs and
+   * admin users see the same template catalog the /api/webhooks route
+   * exposes. Exposed on the admin subpath because the admin dashboard
+   * calls /admin/webhooks/templates.
+   */
+  async listWebhookTemplates(category?: string) {
+    return this.webhooksService.listTemplates(category);
+  }
+
+  /**
+   * Webhook stats overview — global KPIs for the webhook list view
+   * top KPI panel. Frontend calls /admin/webhooks/stats/overview
+   * (no id path param), so we call WebhooksService.getStats without
+   * a webhookId — this returns totals + event breakdown across all
+   * webhooks, plus a per-webhook breakdown for non-null FK rows.
+   *
+   * The caller (AdminController) already passed AdminGuard — the user
+   * is guaranteed to be an admin, but we still forward userId/role so
+   * the service's RBAC checks pass unmodified.
+   */
+  async getWebhookStatsOverview(userId: string, role: any) {
+    return this.webhooksService.getStats(userId, role);
+  }
 
   async listApiKeys() {
     return this.prisma.apiKey.findMany({

@@ -59,7 +59,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/webhooks_/$id")({
+export const Route = createFileRoute("/_app/webhooks/$id")({
   head: () => ({ meta: [{ title: "Webhook detail · Vellum Admin" }] }),
   component: WebhookDetailPage,
 });
