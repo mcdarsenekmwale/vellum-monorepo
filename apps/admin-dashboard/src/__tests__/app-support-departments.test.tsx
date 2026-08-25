@@ -396,7 +396,7 @@ describe("Leadership Management", () => {
 
   describe("LeadershipReportDialog", () => {
     it("should render with correct department count", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -409,7 +409,7 @@ describe("Leadership Management", () => {
     });
 
     it("should display head assignment count", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -422,7 +422,7 @@ describe("Leadership Management", () => {
     });
 
     it("should display department head name", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -434,7 +434,7 @@ describe("Leadership Management", () => {
     });
 
     it("should display team lead name", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -446,7 +446,7 @@ describe("Leadership Management", () => {
     });
 
     it("should show 'No lead' for teams without a lead", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -458,7 +458,7 @@ describe("Leadership Management", () => {
     });
 
     it("should show 'No head assigned' for departments without a head", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       const deptWithoutHead = { ...mockDepartment, head: null, headId: null };
       render(
         React.createElement(LeadershipReportDialog, {
@@ -471,7 +471,7 @@ describe("Leadership Management", () => {
     });
 
     it("should render nothing when open is false", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       const { container } = render(
         React.createElement(LeadershipReportDialog, {
           open: false,
@@ -485,7 +485,7 @@ describe("Leadership Management", () => {
 
   describe("TeamLeadManagementDialog", () => {
     it("should render with department name", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -503,7 +503,7 @@ describe("Leadership Management", () => {
     });
 
     it("should display teams list", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -521,7 +521,7 @@ describe("Leadership Management", () => {
     });
 
     it("should show existing lead name for team with lead", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -540,7 +540,7 @@ describe("Leadership Management", () => {
     });
 
     it("should show permission denied message when canManage is false", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -558,7 +558,7 @@ describe("Leadership Management", () => {
 
     it("should call onRemoveLead when remove lead button clicked", async () => {
       const onRemoveLead = vi.fn();
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -580,7 +580,7 @@ describe("Leadership Management", () => {
     });
 
     it("should render nothing when open is false", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       const { container } = render(
         React.createElement(TeamLeadManagementDialog, {
           department: mockDepartment as any,
@@ -599,7 +599,7 @@ describe("Leadership Management", () => {
 
   describe("AssignHeadDialog", () => {
     it("should render assign dialog for department without head", async () => {
-      const { AssignHeadDialog } = await import("./_app.support.departments.index");
+      const { AssignHeadDialog } = await import("../routes/_app.support.departments.index");
       const deptWithoutHead = { ...mockDepartment, head: null, headId: null };
       render(
         React.createElement(AssignHeadDialog, {
@@ -614,7 +614,7 @@ describe("Leadership Management", () => {
     });
 
     it("should render change dialog for department with existing head", async () => {
-      const { AssignHeadDialog } = await import("./_app.support.departments.index");
+      const { AssignHeadDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(AssignHeadDialog, {
           department: mockDepartment as any,
@@ -630,7 +630,7 @@ describe("Leadership Management", () => {
 
     it("should call onAssign when assign button clicked with selected agent", async () => {
       const onAssign = vi.fn();
-      const { AssignHeadDialog } = await import("./_app.support.departments.index");
+      const { AssignHeadDialog } = await import("../routes/_app.support.departments.index");
       const { container } = render(
         React.createElement(AssignHeadDialog, {
           department: mockDepartment as any,
@@ -652,7 +652,7 @@ describe("Leadership Management", () => {
 
     it("should call onRemove when remove head button clicked", async () => {
       const onRemove = vi.fn();
-      const { AssignHeadDialog } = await import("./_app.support.departments.index");
+      const { AssignHeadDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(AssignHeadDialog, {
           department: mockDepartment as any,
@@ -716,7 +716,7 @@ describe("Leadership Management", () => {
 
   describe("Edge cases", () => {
     it("should handle department with no teams", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       const deptWithNoTeams = { ...mockDepartment, teams: [], _count: { agents: 0, tickets: 0, teams: 0 } };
       render(
         React.createElement(LeadershipReportDialog, {
@@ -729,7 +729,7 @@ describe("Leadership Management", () => {
     });
 
     it("should handle empty departments array in report", async () => {
-      const { LeadershipReportDialog } = await import("./_app.support.departments.index");
+      const { LeadershipReportDialog } = await import("../routes/_app.support.departments.index");
       const { container } = render(
         React.createElement(LeadershipReportDialog, {
           open: true,
@@ -741,7 +741,7 @@ describe("Leadership Management", () => {
     });
 
     it("should handle null department in TeamLeadManagementDialog", async () => {
-      const { TeamLeadManagementDialog } = await import("./_app.support.departments.index");
+      const { TeamLeadManagementDialog } = await import("../routes/_app.support.departments.index");
       render(
         React.createElement(TeamLeadManagementDialog, {
           department: null,

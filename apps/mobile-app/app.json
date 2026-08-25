@@ -14,8 +14,7 @@
     "ios": {
       "bundleIdentifier": "com.storyverse.hub",
       "supportsTablet": false,
-      "buildNumber": "1.0.0",
-      "deploymentTarget": "15.1"
+      "buildNumber": "1.0.0"
     },
     "android": {
       "package": "com.storyverse.hub",

@@ -3,7 +3,23 @@ import * as redis from 'redis';
 import { ConfigService } from '@nestjs/config';
 
 const CACHE_KEY_PREFIX = 'cache:';
-const DEFAULT_REDIS_URL = 'redis://localhost:6379';
+const DEFAULT_REDIS_HOST = '127.0.0.1';
+const DEFAULT_REDIS_PORT = 6379;
+const DEFAULT_REDIS_URL = `redis://${DEFAULT_REDIS_HOST}:${DEFAULT_REDIS_PORT}`;
+
+function buildRedisUrl(configService: ConfigService): string {
+  const explicitUrl = configService.get<string>('REDIS_URL');
+  if (explicitUrl) return explicitUrl;
+  const host = configService.get<string>('REDIS_HOST', DEFAULT_REDIS_HOST);
+  const port = configService.get<number>('REDIS_PORT', DEFAULT_REDIS_PORT);
+  const password = configService.get<string>('REDIS_PASSWORD');
+  const user = configService.get<string>('REDIS_USER');
+  if (password || user) {
+    const auth = user ? `${user}:${password ?? ''}` : password;
+    return `redis://${auth}@${host}:${port}`;
+  }
+  return `redis://${host}:${port}`;
+}
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
@@ -12,16 +28,24 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private connectionPromise: Promise<void> | null = null;
   private redisUrl: string;
   private isProd: boolean;
+  private enabled: boolean;
 
   constructor(private configService: ConfigService) {
-    this.redisUrl = this.configService.get('REDIS_URL', DEFAULT_REDIS_URL);
+    const enabledRaw = this.configService.get<string>('REDIS_ENABLED', 'true');
+    this.enabled = enabledRaw !== 'false' && enabledRaw !== '0';
+    this.redisUrl = buildRedisUrl(this.configService);
     this.isProd = this.configService.get('NODE_ENV') === 'production';
     console.log(`[Cache] Environment: ${this.isProd ? 'production' : 'development'}`);
+    console.log(`[Cache] REDIS_ENABLED: ${this.enabled}`);
     const maskedUrl = this.redisUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@');
     console.log(`[Cache] Redis URL configured: ${maskedUrl}`);
   }
 
   async onModuleInit() {
+    if (!this.enabled) {
+      console.log('[Cache] REDIS_DISABLED by env (REDIS_ENABLED=false), cache skipped');
+      return;
+    }
     if (!this.redisUrl) {
       console.warn('[Cache] No REDIS_URL configured, cache disabled');
       return;
