@@ -240,7 +240,7 @@ export function TemplatesPickerDialog({
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {filtered.map((tpl) => {
+              {filtered?.map((tpl) => {
                 const isSelected = selected === tpl.id;
                 return (
                   <Card
@@ -290,12 +290,12 @@ export function TemplatesPickerDialog({
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {tpl.events.slice(0, 4).map((ev) => (
+                        {tpl?.events?.slice(0, 4).map((ev) => (
                           <Badge key={ev} variant="secondary" className="font-mono text-[10px]">
                             {ev}
                           </Badge>
                         ))}
-                        {tpl.events.length > 4 && (
+                        {tpl?.events?.length > 4 && (
                           <Badge variant="outline" className="text-[10px]">
                             +{tpl.events.length - 4}
                           </Badge>
@@ -311,7 +311,7 @@ export function TemplatesPickerDialog({
 
         <div className="flex items-center justify-between pt-4 mt-2 border-t">
           <div className="text-xs text-muted-foreground">
-            {filtered.length} template{filtered.length === 1 ? "" : "s"}
+            {filtered?.length || 0} template{filtered?.length ? (filtered.length === 1 ? "" : "s") : ""}
             {selected ? ` · ${selected ? "Selected" : ""}` : ""}
           </div>
           <div className="flex gap-2">

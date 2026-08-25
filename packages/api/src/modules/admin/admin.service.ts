@@ -1752,6 +1752,15 @@ export class AdminService {
     return this.webhooksService.getStats(userId, role);
   }
 
+  // ─── Web Webhook ───────────────────────────────────────────────────────────────────
+  async getWebhook(id: string) {
+    const webhook = await this.prisma.webhook.findUnique(
+      { where: { id } 
+    });
+    if (!webhook) throw new NotFoundException('Webhook not found');
+    return webhook;
+  }
+
   async listApiKeys() {
     return this.prisma.apiKey.findMany({
       orderBy: { createdAt: 'desc' },

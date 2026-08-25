@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
+import { AxiosError, RawAxiosRequestHeaders } from 'axios';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { TeamsIntegrationService } from './teams-integration.service';
 import {
   Webhook,
   WebhookFormat,
   WebhookLogType,
-  WebhookType,
 } from '@prisma/client';
 import * as crypto from 'crypto';
 
@@ -125,6 +126,7 @@ export class WebhookExecutorService {
     private prisma: PrismaService,
     private signatureService: WebhookSignatureService,
     private teamsService: TeamsIntegrationService,
+    private httpService: HttpService,
   ) {
     // Teams throttles at 4 req/s — keep a conservative global limit
     this.outgoingRateLimiter = new WebhookRateLimiter(4, 1000);
@@ -190,64 +192,112 @@ export class WebhookExecutorService {
 
     let lastError: Error | null = null;
     let lastStatusCode: number | undefined;
+    let lastResponseData: any = undefined;
+    let lastResponseHeaders: Record<string, string> | undefined = undefined;
     let attempt = 0;
     const started = Date.now();
 
     while (attempt < maxAttempts) {
       attempt++;
       try {
-        const res = await this.fetchWithTimeout(url, {
-          method: 'POST',
-          headers,
-          body,
-        }, options.isTest ? 15000 : 30000);
+        const timeoutMs = options.isTest ? 15_000 : 30_000;
+        const axiosRes = await this.httpService.axiosRef.post(url, body, {
+          headers: headers as RawAxiosRequestHeaders,
+          timeout: timeoutMs,
+          // Axios default parses JSON, but we also accept text/raw — capture
+          // the raw response text separately via transformResponse to avoid
+          // losing non-JSON payloads on error branches.
+          responseType: 'text',
+          transformResponse: [(data) => data],
+          maxRedirects: 3,
+          validateStatus: () => true, // never throw — we branch by status ourselves (consistent on 4xx/5xx)
+        });
 
-        const durationMs = Date.now() - started;
-        const text = await res.text();
-        let parsedResponse: any = text;
-        try { parsedResponse = text ? JSON.parse(text) : null; } catch { /* keep as text */ }
+        const status = axiosRes.status;
+        const rawText = typeof axiosRes.data === 'string' ? axiosRes.data : '';
+        let parsedResponse: any = rawText;
+        try {
+          parsedResponse = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          /* keep as text */
+        }
+        const responseHeaders = this.recordToObject(axiosRes.headers as any);
 
-        // 2xx success
-        if (res.status >= 200 && res.status < 300) {
+        if (status >= 200 && status < 300) {
+          const durationMs = Date.now() - started;
           this.logger.debug(
-            `Webhook ${webhook.id} (${webhook.name}) -> ${res.status} on attempt ${attempt}`,
+            `Webhook ${webhook.id} (${webhook.name}) -> ${status} on attempt ${attempt}`,
           );
           await this.persistLog({
             webhookId: webhook.id,
-            type: res.status >= 500 ? WebhookLogType.ERROR : WebhookLogType.RESPONSE,
+            type: WebhookLogType.RESPONSE,
             event,
-            statusCode: res.status,
+            statusCode: status,
             payload: rawPayload,
-            response: parsedResponse,
-            headers: this.extractResponseHeaders(res.headers),
+            response: {
+              status,
+              data: parsedResponse,
+              headers: responseHeaders,
+              contentType: axiosRes.headers?.['content-type'] ?? undefined,
+            },
+            headers: responseHeaders,
             durationMs,
             attempt,
-            errorMessage: res.status >= 400 ? `HTTP ${res.status}` : undefined,
           });
           await this.touchWebhook(webhook.id, true);
           return {
             success: true,
-            statusCode: res.status,
+            statusCode: status,
             body: parsedResponse,
+            headers: responseHeaders,
             durationMs,
             attempt,
             totalAttempts: maxAttempts,
           };
         }
 
-        lastStatusCode = res.status;
-        lastError = new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+        // Non-2xx — capture as failed attempt for retry loop
+        lastStatusCode = status;
+        lastResponseData = parsedResponse;
+        lastResponseHeaders = responseHeaders;
+        lastError = new Error(
+          `HTTP ${status}: ${(rawText || '').slice(0, 200) || 'no body'}`,
+        );
         this.logger.warn(
-          `Webhook ${webhook.id} attempt ${attempt} failed: HTTP ${res.status}`,
+          `Webhook ${webhook.id} attempt ${attempt} failed: HTTP ${status}`,
         );
       } catch (err: any) {
-        lastError = err;
+        if (err instanceof AxiosError) {
+          lastStatusCode =
+            typeof err.response?.status === 'number'
+              ? err.response.status
+              : typeof err.status === 'number'
+              ? err.status
+              : undefined;
+          if (err.response) {
+            const rawText = typeof err.response.data === 'string'
+              ? err.response.data
+              : JSON.stringify(err.response.data ?? '');
+            try {
+              lastResponseData = rawText ? JSON.parse(rawText) : null;
+            } catch {
+              lastResponseData = rawText;
+            }
+            lastResponseHeaders = this.recordToObject(err.response.headers as any);
+          }
+          const codeHint = err.code ? ` [${err.code}]` : '';
+          lastError = new Error(
+            `${err.message || 'Axios request failed'}${codeHint}` +
+              (err.cause ? ` cause=${String(err.cause).slice(0, 120)}` : ''),
+          );
+        } else {
+          lastError = err instanceof Error ? err : new Error(String(err?.message ?? err ?? 'Unknown error'));
+        }
         this.logger.warn(
-          `Webhook ${webhook.id} attempt ${attempt} error: ${err.message}`,
+          `Webhook ${webhook.id} attempt ${attempt} error: ${lastError.message}`,
         );
       }
 
-      // Retry wait (skip on last attempt)
       if (attempt < maxAttempts && !options.isTest) {
         await this.sleep(backoff * attempt);
       }
@@ -260,6 +310,14 @@ export class WebhookExecutorService {
       event,
       statusCode: lastStatusCode,
       payload: rawPayload,
+      response: lastResponseData !== undefined || lastResponseHeaders
+        ? {
+            status: lastStatusCode ?? null,
+            data: lastResponseData ?? null,
+            headers: lastResponseHeaders ?? null,
+          }
+        : undefined,
+      headers: lastResponseHeaders,
       durationMs,
       attempt,
       errorMessage: lastError?.message || 'Unknown error',
@@ -269,6 +327,8 @@ export class WebhookExecutorService {
     return {
       success: false,
       statusCode: lastStatusCode,
+      body: lastResponseData,
+      headers: lastResponseHeaders,
       errorMessage: lastError?.message,
       durationMs,
       attempt,
@@ -397,24 +457,24 @@ export class WebhookExecutorService {
     return out;
   }
 
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit,
-    timeoutMs: number,
-  ): Promise<Response> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, { ...init, signal: controller.signal });
-      return res;
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        throw new Error(`Request timed out after ${timeoutMs}ms`);
-      }
-      throw err;
-    } finally {
-      clearTimeout(timer);
+  /**
+   * Convert axios response headers object (AxiosHeaders / plain object) to a
+   * simple Record<string,string>. Axios headers are iterable via
+   * Object.entries() in v1.x — we normalise them to strings so the value
+   * can be stored directly into the WebhookLog.headers JSON column without
+   * circular reference or prototype weirdness.
+   */
+  private recordToObject(
+    headers: Record<string, unknown> | undefined | null,
+  ): Record<string, string> | undefined {
+    if (!headers || typeof headers !== 'object') return undefined;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(headers)) {
+      if (v === undefined || v === null) continue;
+      if (Array.isArray(v)) out[k] = v.map(x => String(x)).join(', ');
+      else out[k] = String(v);
     }
+    return Object.keys(out).length ? out : undefined;
   }
 
   private async persistLog(args: {
@@ -507,17 +567,5 @@ export class WebhookExecutorService {
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  private extractResponseHeaders(headers: Headers): Record<string, string> | undefined {
-    try {
-      const out: Record<string, string> = {};
-      headers.forEach((value, key) => {
-        out[key] = value;
-      });
-      return Object.keys(out).length ? out : undefined;
-    } catch {
-      return undefined;
-    }
   }
 }

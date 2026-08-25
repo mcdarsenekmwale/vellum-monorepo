@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
@@ -8,6 +8,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { SupportAdminGuard } from '../auth/support-admin.guard';
+import { WebhookTestRequest, WebhookTestService } from './webhook-test.service';
 
 
 // Role validation is handled by AdminService.resolveRole() / resolveRoleOrThrow
@@ -46,6 +47,7 @@ function actorId(req: { user?: { sub?: string | null; id?: string | null } }): s
 export class AdminController {
   constructor(
     private adminService: AdminService,
+    private webhookTestService: WebhookTestService,
   ) { }
 
   @Post('seed')
@@ -490,16 +492,18 @@ export class AdminController {
   }
 
   @Get('webhooks/:id/logs')
-    @UseGuards(JwtAuthGuard, AdminGuard)
-    @ApiOperation({ summary: 'Fetch execution logs for a webhook' })
-    @ApiResponse({ status: 200, description: 'Logs with pagination' })
-    async listWebhookLogs(
-      @Param('id') id: string,
-      @Query() query: { page?: number; limit?: number , 
-        eventType?: string , status?: string , from?: string , to?: string, statusCode?: number },
-    ) {
-      return this.adminService.listLogs( id, query);
-    }
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Fetch execution logs for a webhook' })
+  @ApiResponse({ status: 200, description: 'Logs with pagination' })
+  async listWebhookLogs(
+    @Param('id') id: string,
+    @Query() query: {
+      page?: number; limit?: number,
+      eventType?: string, status?: string, from?: string, to?: string, statusCode?: number
+    },
+  ) {
+    return this.adminService.listLogs(id, query);
+  }
 
   @Get('webhooks/templates')
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -519,7 +523,47 @@ export class AdminController {
     return this.adminService.getWebhookStatsOverview(userId, role);
   }
 
+  // ─── Webhook testing service───────────────────────────────────────────────────────────────────
+  @Post('webhooks/:id/test')
+  @ApiOperation({ summary: 'Test a webhook' })
+  @ApiResponse({ status: 200, description: 'Webhook test result' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async testWebhook(
+    @Param('id') id: string,
+    @Body() body: WebhookTestRequest['body'],
 
+  ) {
+    // Log the test request
+    const result = await this.webhookTestService.testWebhook(id, body);
+
+    // Return the result with appropriate status
+    if (result.success) {
+      return {
+        ...result,
+        message: 'Webhook test completed successfully',
+      };
+    } else {
+      throw new HttpException(
+        {
+          message: 'Webhook test failed',
+          error: result.errorMessage,
+          details: result,
+        },
+        result.statusCode || 500,
+      );
+    }
+  }
+
+  // ─── Web Webhook ───────────────────────────────────────────────────────────────────
+
+  //Get Webhook by ID
+  @Get('webhooks/:id')
+  @ApiOperation({ summary: 'Get a single webhook by id' })
+  @ApiResponse({ status: 200, description: 'Webhook retrieved' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getWebhook(@Param('id') id: string) {
+    return this.adminService.getWebhook(id);
+  }
 
   @Put('webhooks/:id')
   @ApiOperation({ summary: 'Update a webhook' })
