@@ -368,7 +368,7 @@ function WebhookDetailPage() {
                   </div>
                 ) : (
                   <ul className="divide-y">
-                    {logs.slice(0, 8).map((l) => {
+                    {logs?.slice(0, 8).map((l) => {
                       const ok =
                         l.statusCode && l.statusCode >= 200 && l.statusCode < 300 && !l.error;
                       return (
@@ -419,10 +419,10 @@ function WebhookDetailPage() {
                             )}
                           </div>
                           <div className="text-[11px] tabular-nums text-muted-foreground text-right">
-                            {format(new Date(l.createdAt), "HH:mm:ss")}
+                            {format(new Date(l?.createdAt ?? new Date()), "HH:mm:ss")}
                           </div>
                           <div className="text-[10px] text-muted-foreground text-right hidden sm:block">
-                            {format(new Date(l.createdAt), "MMM d")}
+                            {format(new Date(l?.createdAt ?? new Date()), "MMM d")}
                           </div>
                         </li>
                       );

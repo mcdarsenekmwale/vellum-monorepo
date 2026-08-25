@@ -393,10 +393,12 @@ export interface WebhookTemplate {
 export interface TestResult {
   status: TestStatus;
   statusCode?: number;
+  success?: boolean;
   responseTime?: number;
   responseBody?: string;
   responseHeaders?: Record<string, string>;
   errorMessage?: string;
+  message?: string;
   timestamp: string;
   logs?: LogEntry[];
 }

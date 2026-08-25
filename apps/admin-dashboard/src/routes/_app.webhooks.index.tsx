@@ -56,6 +56,7 @@ import {
   useDeleteWebhook,
   useRotateWebhookSecret,
   type WebhookConfig,
+ 
 } from "@/lib/api/hooks";
 import { WebhookCard } from "@/components/webhooks/WebhookCard";
 import { WebhookFormDialog } from "@/components/webhooks/WebhookFormDialog";
@@ -600,9 +601,9 @@ function WebhooksPage() {
         onOpenChange={(next) => {
           setIsTestOpen(next);
           if (!next) setTestWebhook(null);
-        }}
-        webhook={testWebhook!}
-        onTest={async (data) => runTest(data)}
+        } }
+        webhook={testWebhook!} 
+        onTest={runTest}        
       />
 
       <Dialog open={isSecretOpen} onOpenChange={setIsSecretOpen}>

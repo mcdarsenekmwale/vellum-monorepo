@@ -306,21 +306,22 @@ export function WebhookTestDialog({ open, onOpenChange, webhook, onTest }: Webho
         setLogs(result.logs);
       }
 
+
       const statusCode = result.statusCode ?? (result.status === "success" ? 200 : 500);
-      setTestStatus(result.status === "success" ? "success" : "error");
+      setTestStatus((result.success || result.status === "success") ? "success" : "error");
       setTestResult({
         ...result,
         statusCode,
       });
 
-      if (result.status === "success") {
+      if (result.success || result.status === "success") {
         toast.success(
-          `Test completed — status ${statusCode}${
+           ` ${result?.message ? result.message+" " : `Test completed — status ${statusCode}`}${
             result.responseTime ? ` in ${result.responseTime}ms` : ""
           }`,
         );
       } else {
-        toast.error(result.errorMessage || `Test failed — status ${statusCode}`);
+        toast.error((result?.message ? result.message+" " : "") + (result?.errorMessage ? result.errorMessage+" " : `Test failed — status ${statusCode}`));
       }
     } catch (error: any) {
       const errMsg = error?.message || "Failed to send test request";

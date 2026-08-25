@@ -523,6 +523,16 @@ export class AdminController {
     return this.adminService.getWebhookStatsOverview(userId, role);
   }
 
+  @Get('webhooks/:id/stats')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: 'Per-webhook KPIs + event breakdown (admin detail view)' })
+  @ApiResponse({ status: 200, description: 'Stats scoped to a single webhook (total executions, success/error counts, success rate, per-event breakdown)' })
+  async getWebhookStatsById(@Param('id') id: string, @Req() req: any) {
+    const userId = actorId(req);
+    const role = req.user?.role;
+    return this.adminService.getWebhookStatsById(userId, role, id);
+  }
+
   // ─── Webhook testing service───────────────────────────────────────────────────────────────────
   @Post('webhooks/:id/test')
   @ApiOperation({ summary: 'Test a webhook' })

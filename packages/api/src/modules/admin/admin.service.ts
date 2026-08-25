@@ -1752,6 +1752,16 @@ export class AdminService {
     return this.webhooksService.getStats(userId, role);
   }
 
+  /**
+   * Per-webhook stats — KPIs + event breakdown for a single webhook.
+   * Frontend calls /admin/webhooks/:id/stats (with id path param),
+   * so we forward the webhookId to WebhooksService.getStats which
+   * scopes the aggregation to that one webhook's logs.
+   */
+  async getWebhookStatsById(userId: string, role: any, webhookId: string) {
+    return this.webhooksService.getStats(userId, role, webhookId);
+  }
+
   // ─── Web Webhook ───────────────────────────────────────────────────────────────────
   async getWebhook(id: string) {
     const webhook = await this.prisma.webhook.findUnique(
