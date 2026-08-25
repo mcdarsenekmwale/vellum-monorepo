@@ -16,7 +16,7 @@ import { test, assertClean } from "./helpers";
 const WEB_ORIGIN = process.env.WEB_ORIGIN || "http://localhost:3000";
 const API_ORIGIN = process.env.API_ORIGIN || "http://localhost:3001";
 
-const TEST_USER_EMAIL = "admin@vellum.com";
+const TEST_USER_EMAIL = "admin@vellbase.com";
 const TEST_USER_PASSWORD = "password123";
 
 // ─── Helper: Wait for the React shell to render body content ──────────────

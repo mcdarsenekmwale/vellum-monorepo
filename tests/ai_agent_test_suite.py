@@ -12,7 +12,7 @@ from playwright.sync_api import sync_playwright, Page, expect, TimeoutError as P
 
 ADMIN_URL = "http://localhost:3003"
 API_URL = "http://localhost:3001/api"
-ADMIN_EMAIL = "admin@vellum.com"
+ADMIN_EMAIL = "admin@vellbase.com"
 ADMIN_PASSWORD = "password123"
 
 @dataclass

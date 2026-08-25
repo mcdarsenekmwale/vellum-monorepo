@@ -1,6 +1,6 @@
 # Prisma Relation Handling Guide
 
-This document describes how foreign-key relations are updated in the Vellum API, with a focus on support org entities (departments, teams, agents, tickets).
+This document describes how foreign-key relations are updated in the Vellbase API, with a focus on support org entities (departments, teams, agents, tickets).
 
 ## Problem
 

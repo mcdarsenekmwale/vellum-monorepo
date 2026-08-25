@@ -1,5 +1,5 @@
 {
-  "name": "@vellum/shared-i18n",
+  "name": "@vellbase/shared-i18n",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

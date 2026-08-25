@@ -18,7 +18,7 @@ def req(method, path, token=None, body=None):
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read().decode() or "null")
 
-_, login = req("POST", "/auth/login", body={"email":"admin@vellum.com","password":"password123"})
+_, login = req("POST", "/auth/login", body={"email":"admin@vellbase.com","password":"password123"})
 t = login["accessToken"]
 
 s, agents = req("GET", "/support/agents?limit=1", token=t)

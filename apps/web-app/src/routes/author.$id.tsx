@@ -28,7 +28,7 @@ function timeAgo(dateString?: string): string {
 
 export const Route = createFileRoute("/author/$id")({
   head: () => ({
-    meta: [{ title: "Author — Vellum" }],
+    meta: [{ title: "Author — Vellbase" }],
   }),
   component: AuthorPage,
 });

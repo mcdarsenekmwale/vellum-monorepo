@@ -57,7 +57,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/videos")({
-  head: () => ({ meta: [{ title: "Videos · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Videos · Vellbase Admin" }] }),
   component: VideosPage,
 });
 

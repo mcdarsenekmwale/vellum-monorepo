@@ -74,7 +74,7 @@ function ChangesBlock({ changes }: { changes: unknown }) {
 }
 
 export const Route = createFileRoute("/_app/audit/$entryId")({
-  head: () => ({ meta: [{ title: "Audit Log · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Audit Log · Vellbase Admin" }] }),
   component: AuditLogDetailPage,
 });
 

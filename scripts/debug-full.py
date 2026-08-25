@@ -3,7 +3,7 @@ import json
 import time
 from playwright.sync_api import sync_playwright
 
-DASHBOARD_URL = "https://vellum-admin-dashboard-eta-kappa.vercel.app"
+DASHBOARD_URL = "https://vellbase-admin-dashboard-eta-kappa.vercel.app"
 OUTPUT_DIR = "/tmp/dashboard-debug"
 
 def log(msg):
@@ -49,7 +49,7 @@ def main():
             password_input = page.locator('input[type="password"]')
             signin_btn = page.locator('button', has_text="Sign in")
 
-            email_input.fill("admin@vellum.com")
+            email_input.fill("admin@vellbase.com")
             password_input.fill("password123")
 
             log("Clicking Sign in...")

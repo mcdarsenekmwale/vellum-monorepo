@@ -39,7 +39,7 @@ describe('UsersService — Security', () => {
         id: 'u1',
         handle: 'admin',
         name: 'Admin',
-        email: 'admin@vellum.com',
+        email: 'admin@vellbase.com',
         role: 'ADMIN',
         createdAt: new Date(0),
       });

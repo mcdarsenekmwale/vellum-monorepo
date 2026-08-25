@@ -1,4 +1,4 @@
-import { createApiClient } from '@vellum/api-client';
+import { createApiClient } from '@vellbase/api-client';
 import { apiBaseUrl } from '../config/env';
 
 const storage = {
@@ -41,4 +41,4 @@ export type {
   SubscriptionPlan,
   SubscriptionStatus,
   RestorePurchasesResult,
-} from '@vellum/api-client/types';
+} from '@vellbase/api-client/types';

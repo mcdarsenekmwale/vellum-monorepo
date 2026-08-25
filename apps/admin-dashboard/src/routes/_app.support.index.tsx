@@ -25,7 +25,7 @@ import { useSupportDashboard, useAgentLeaderboard } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/support/")({
-  head: () => ({ meta: [{ title: "Support Dashboard · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Dashboard · Vellbase Admin" }] }),
   component: SupportDashboardPage,
 });
 

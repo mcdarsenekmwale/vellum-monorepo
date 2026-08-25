@@ -122,7 +122,7 @@ function ArticleDetail() {
   const handleShare = async () => {
     const url = window.location.href;
     const shareData = {
-      title: article?.title || "Vellum",
+      title: article?.title || "Vellbase",
       text: article?.excerpt || "",
       url,
     };

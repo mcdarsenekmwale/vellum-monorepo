@@ -69,7 +69,7 @@ import { useAuth } from "@/lib/auth/context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/support/canned-responses")({
-  head: () => ({ meta: [{ title: "Canned Responses · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Canned Responses · Vellbase Admin" }] }),
   component: CannedResponsesPage,
 });
 

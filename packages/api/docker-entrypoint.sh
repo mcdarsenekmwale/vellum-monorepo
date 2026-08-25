@@ -2,7 +2,7 @@
 set -e
 
 echo "============================================================"
-echo "  Vellum API — Production Startup"
+echo "  Vellbase API — Production Startup"
 echo "============================================================"
 echo ""
 

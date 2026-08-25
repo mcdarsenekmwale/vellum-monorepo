@@ -3,7 +3,7 @@ import json
 import time
 from playwright.sync_api import sync_playwright
 
-DASHBOARD_URL = "https://vellum-admin-dashboard-eta-kappa.vercel.app"
+DASHBOARD_URL = "https://vellbase-admin-dashboard-eta-kappa.vercel.app"
 OUTPUT_DIR = "/tmp/dashboard-debug"
 
 def log(msg):
@@ -33,7 +33,7 @@ def main():
         page.goto(DASHBOARD_URL + "/auth/login", wait_until="domcontentloaded", timeout=30000)
         page.wait_for_load_state("networkidle", timeout=15000)
 
-        page.locator('input[type="email"]').fill("admin@vellum.com")
+        page.locator('input[type="email"]').fill("admin@vellbase.com")
         page.locator('input[type="password"]').fill("password123")
         page.locator('button', has_text="Sign in").click()
         page.wait_for_load_state("networkidle", timeout=15000)

@@ -31,11 +31,11 @@ export function AppSidebar() {
       <SidebarHeader className="border-b">
         <Link to="/dashboard" className="flex items-center gap-2.5 px-2 py-1.5">
           <div className="grid size-8 shrink-0 place-items-center rounded-lg overflow-hidden border border-border">
-            <img src="/favicon.svg" alt="Vellum" className="size-5" />
+            <img src="/favicon.svg" alt="Vellbase" className="size-5" />
           </div>
           {!collapsed && (
             <div className="min-w-0 leading-tight">
-              <div className="truncate font-display italic text-xl tracking-tight">Vellum</div>
+              <div className="truncate font-display italic text-xl tracking-tight">Vellbase</div>
               <div className="truncate text-[11px] text-muted-foreground">
                 Admin Console
               </div>

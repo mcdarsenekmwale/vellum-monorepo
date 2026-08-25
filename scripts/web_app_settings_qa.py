@@ -147,10 +147,10 @@ CATEGORIES: list[tuple[str, str]] = [
 
 SETTINGS_VIEWPORTS: list[tuple[int, int]] = [(390, 844), (1280, 800), (1920, 1080)]
 
-V1_KEY = "vellum.web.settings.v1"
-THEME_RAW_KEY = "vellum.web.theme"
-LOCALE_RAW_KEY = "vellum.web.locale"
-SOUND_RAW_KEY = "vellum.web.sound"
+V1_KEY = "vellbase.web.settings.v1"
+THEME_RAW_KEY = "vellbase.web.theme"
+LOCALE_RAW_KEY = "vellbase.web.locale"
+SOUND_RAW_KEY = "vellbase.web.sound"
 
 
 # ---------------- Check / reporting infrastructure ----------------
@@ -183,7 +183,7 @@ class CatStats:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--origin", default=os.environ.get("WEB_ORIGIN", "http://localhost:3003"))
-    ap.add_argument("--email", default=os.environ.get("WEB_LOGIN_EMAIL", "qa+settings@vellum.app"))
+    ap.add_argument("--email", default=os.environ.get("WEB_LOGIN_EMAIL", "qa+settings@vellbase.app"))
     ap.add_argument("--password", default=os.environ.get("WEB_LOGIN_PASSWORD", "QaSettings123!"))
     ap.add_argument("--headed", action="store_true")
     args = ap.parse_args()
@@ -302,7 +302,7 @@ def main() -> int:
             "id": "qa-sub-0",
             "userId": "qa-user-001",
             "planId": "pro-monthly",
-            "planName": "Vellum Pro",
+            "planName": "Vellbase Pro",
             "status": "active",
             "amountCents": 499,
             "currency": "USD",
@@ -374,7 +374,7 @@ def main() -> int:
                 return ok([
                     {
                         "id": "pro-monthly",
-                        "name": "Vellum Pro",
+                        "name": "Vellbase Pro",
                         "description": "Everything you need to read and write beautifully.",
                         "amountCents": 499,
                         "currency": "USD",
@@ -390,7 +390,7 @@ def main() -> int:
                     },
                     {
                         "id": "pro-yearly",
-                        "name": "Vellum Pro Annual",
+                        "name": "Vellbase Pro Annual",
                         "description": "Two months free, billed yearly.",
                         "amountCents": 4790,
                         "currency": "USD",
@@ -452,9 +452,9 @@ def main() -> int:
                     const origGet = LS.getItem;
                     // Only force the 3 auth keys (these survive apiClient.clearTokens())
                     const forcedValues = {{
-                        'vellum_access_token': 'qa-fake-token',
-                        'vellum_refresh_token': 'qa-fake-refresh',
-                        'vellum_user': JSON.stringify({seed_json}),
+                        'vellbase_access_token': 'qa-fake-token',
+                        'vellbase_refresh_token': 'qa-fake-refresh',
+                        'vellbase_user': JSON.stringify({seed_json}),
                     }};
                     const forcedKeys = Object.keys(forcedValues);
                     LS.getItem = function(k) {{
@@ -470,14 +470,14 @@ def main() -> int:
                         return origRemove.call(this, String(k));
                     }};
                     // Auth + default app settings seed (app settings allowed to change via LS.setItem below)
-                    localStorage.setItem('vellum_access_token', 'qa-fake-token');
-                    localStorage.setItem('vellum_refresh_token', 'qa-fake-refresh');
-                    localStorage.setItem('vellum_user', JSON.stringify({seed_json}));
+                    localStorage.setItem('vellbase_access_token', 'qa-fake-token');
+                    localStorage.setItem('vellbase_refresh_token', 'qa-fake-refresh');
+                    localStorage.setItem('vellbase_user', JSON.stringify({seed_json}));
                     // Settings: bypass patched setItem via origSet reference to write initial values.
-                    origSet.call(localStorage, 'vellum.web.settings.v1', JSON.stringify({{appearance:'system',locale:'en',soundEnabled:true}}));
-                    origSet.call(localStorage, 'vellum.web.theme', 'system');
-                    origSet.call(localStorage, 'vellum.web.locale', 'en');
-                    origSet.call(localStorage, 'vellum.web.sound', 'on');
+                    origSet.call(localStorage, 'vellbase.web.settings.v1', JSON.stringify({{appearance:'system',locale:'en',soundEnabled:true}}));
+                    origSet.call(localStorage, 'vellbase.web.theme', 'system');
+                    origSet.call(localStorage, 'vellbase.web.locale', 'en');
+                    origSet.call(localStorage, 'vellbase.web.sound', 'on');
                 }} catch (_) {{}}
             }}"""
         )
@@ -485,13 +485,13 @@ def main() -> int:
         try:
             page.evaluate(
                 f"""() => {{
-                    localStorage.setItem('vellum_access_token', 'qa-fake-token');
-                    localStorage.setItem('vellum_refresh_token', 'qa-fake-refresh');
-                    localStorage.setItem('vellum_user', JSON.stringify({seed_json}));
+                    localStorage.setItem('vellbase_access_token', 'qa-fake-token');
+                    localStorage.setItem('vellbase_refresh_token', 'qa-fake-refresh');
+                    localStorage.setItem('vellbase_user', JSON.stringify({seed_json}));
                     // app-settings fallback (patched setItem above forbids overwrites for auth keys only)
                     try {{
-                        const cur = JSON.parse(localStorage.getItem('vellum.web.settings.v1') || '{{}}');
-                        localStorage.setItem('vellum.web.settings.v1', JSON.stringify(Object.assign({{appearance:'system',locale:'en',soundEnabled:true}}, cur)));
+                        const cur = JSON.parse(localStorage.getItem('vellbase.web.settings.v1') || '{{}}');
+                        localStorage.setItem('vellbase.web.settings.v1', JSON.stringify(Object.assign({{appearance:'system',locale:'en',soundEnabled:true}}, cur)));
                     }} catch(_) {{}}
                 }}"""
             )
@@ -654,7 +654,7 @@ def main() -> int:
         check("v1.appearance=light", v1.get("appearance"), "light", str(v1),
               "APPEARANCE_APPLY_LIGHT", severity="HIGH")
         check("theme-raw=light",
-              page.evaluate("() => localStorage.getItem('vellum.web.theme')"),
+              page.evaluate("() => localStorage.getItem('vellbase.web.theme')"),
               "light", "", "APPEARANCE_APPLY_LIGHT", severity="HIGH")
         shot(page, "03_light_mode")
         finish_cat("APPEARANCE_APPLY_LIGHT", pre_c, pre_i)
@@ -674,7 +674,7 @@ def main() -> int:
         v1 = read_v1(page)
         check("v1.appearance=dark", v1.get("appearance"), "dark", str(v1), "APPEARANCE_APPLY_DARK", severity="HIGH")
         check("theme-raw=dark",
-              page.evaluate("() => localStorage.getItem('vellum.web.theme')"),
+              page.evaluate("() => localStorage.getItem('vellbase.web.theme')"),
               "dark", "", "APPEARANCE_APPLY_DARK", severity="HIGH")
         shot(page, "04_dark_mode")
         finish_cat("APPEARANCE_APPLY_DARK", pre_c, pre_i)
@@ -748,7 +748,7 @@ def main() -> int:
         # Reset locale back to EN to keep DOM stable
         write_v1(page, {"locale": "en"})
         page.evaluate(
-            """() => { localStorage.setItem('vellum.web.locale', 'en'); location.reload(); }"""
+            """() => { localStorage.setItem('vellbase.web.locale', 'en'); location.reload(); }"""
         )
         page.wait_for_selector("[data-testid='settings-page']", timeout=60_000, state="attached")
         # Click sound row directly on switch
@@ -761,7 +761,7 @@ def main() -> int:
         check("v1.soundEnabled=false", v1.get("soundEnabled"), False, str(v1),
               "SOUND_TOGGLE", severity="HIGH")
         check("sound-raw-key",
-              page.evaluate("() => localStorage.getItem('vellum.web.sound')"),
+              page.evaluate("() => localStorage.getItem('vellbase.web.sound')"),
               "off", "", "SOUND_TOGGLE", severity="MEDIUM")
         # Turn back on
         page.locator("[data-testid='sound-toggle']").click(timeout=3000)
@@ -939,8 +939,8 @@ def main() -> int:
         write_v1(page, {"locale": "fr", "soundEnabled": False})
         page.evaluate(
             """() => {
-                localStorage.setItem('vellum.web.locale', 'fr');
-                localStorage.setItem('vellum.web.sound', 'off');
+                localStorage.setItem('vellbase.web.locale', 'fr');
+                localStorage.setItem('vellbase.web.sound', 'off');
                 location.reload();
             }"""
         )
@@ -975,7 +975,7 @@ def main() -> int:
         # Compare storage values
         v1_old = read_v1(page)
         v1_new = new_tab.evaluate(
-            """() => { try { return JSON.parse(localStorage.getItem('vellum.web.settings.v1') || '{}'); } catch(e){ return {}; }}"""
+            """() => { try { return JSON.parse(localStorage.getItem('vellbase.web.settings.v1') || '{}'); } catch(e){ return {}; }}"""
         )
         check("ntab-v1-appearance", v1_new.get("appearance"), v1_old.get("appearance"),
               f"old={v1_old} new={v1_new}", "PERSIST_NEW_TAB_SETTINGS", severity="HIGH")
@@ -1009,8 +1009,8 @@ def main() -> int:
         write_v1(page, {"locale": "fr", "appearance": "light"})
         page.evaluate(
             """() => {
-                localStorage.setItem('vellum.web.locale', 'fr');
-                localStorage.setItem('vellum.web.theme', 'light');
+                localStorage.setItem('vellbase.web.locale', 'fr');
+                localStorage.setItem('vellbase.web.theme', 'light');
                 document.documentElement.classList.remove('dark');
                 location.href = '/settings';
             }"""

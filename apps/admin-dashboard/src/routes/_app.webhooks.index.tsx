@@ -68,7 +68,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/webhooks/")({
-  head: () => ({ meta: [{ title: "Webhooks · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Webhooks · Vellbase Admin" }] }),
   component: WebhooksPage,
 });
 

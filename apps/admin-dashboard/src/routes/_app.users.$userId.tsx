@@ -81,7 +81,7 @@ import { DeleteUserDialog } from "@/components/dashboard/users_action_components
 import { useAuth } from "@/lib/auth/context";
 
 export const Route = createFileRoute("/_app/users/$userId")({
-  head: ({ params }) => ({ meta: [{ title: `User ${params.userId} · Vellum Admin` }] }),
+  head: ({ params }) => ({ meta: [{ title: `User ${params.userId} · Vellbase Admin` }] }),
   component: UserDetail,
   notFoundComponent: () => (
     <div className="p-10 text-center text-sm text-muted-foreground">User not found.</div>

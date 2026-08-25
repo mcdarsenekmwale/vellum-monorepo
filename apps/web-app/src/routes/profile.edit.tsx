@@ -10,10 +10,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profile/edit")({
   head: () => ({
     meta: [
-      { title: "Edit profile — Vellum" },
+      { title: "Edit profile — Vellbase" },
       {
         name: "description",
-        content: "Update your name, handle, bio and avatar on Vellum.",
+        content: "Update your name, handle, bio and avatar on Vellbase.",
       },
     ],
   }),

@@ -7,7 +7,7 @@ test.describe("web-app navigation", () => {
   test("home page loads without errors", async ({ page, collector }) => {
     await page.goto(`${WEB_ORIGIN}/`, { waitUntil: "commit" });
     await page.waitForLoadState("load");
-    await expect(page).toHaveTitle(/Vellum/);
+    await expect(page).toHaveTitle(/Vellbase/);
     assertClean(collector);
   });
 
@@ -35,7 +35,7 @@ test.describe("web-app navigation", () => {
     await page.goto(`${WEB_ORIGIN}/login`, { waitUntil: "commit" });
     await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     
-    await page.locator('input[type="email"]').first().fill("admin@vellum.com");
+    await page.locator('input[type="email"]').first().fill("admin@vellbase.com");
     await page.locator('input[type="password"]').first().fill("password123");
     await page.locator('button[type="submit"]').click();
     

@@ -99,7 +99,7 @@ import {
 } from "@/lib/support/support-agent.logic";
 
 export const Route = createFileRoute("/_app/support/departments/$id")({
-  head: () => ({ meta: [{ title: "Department · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Department · Vellbase Admin" }] }),
   component: DepartmentDetailPage,
   notFoundComponent: () => (
     <div className="p-10 text-center text-sm text-muted-foreground">

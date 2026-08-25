@@ -6,7 +6,7 @@ type ViewedState = {
   viewedArticles: Record<string, number>;
 };
 
-const STORAGE_KEY = 'vellum:viewed:v1';
+const STORAGE_KEY = 'vellbase:viewed:v1';
 
 const defaultState: ViewedState = {
   viewedStories: {},

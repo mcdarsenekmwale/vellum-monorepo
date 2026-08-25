@@ -1,4 +1,4 @@
-// ─── @vellum/shared-i18n ───
+// ─── @vellbase/shared-i18n ───
 // Shared i18n package consumed by both web-app and mobile-app.
 //
 // Exports:

@@ -68,7 +68,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_app/support/comparisons")({
-  head: () => ({ meta: [{ title: "Department Comparisons · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Department Comparisons · Vellbase Admin" }] }),
   component: SupportComparisonsPage,
 });
 

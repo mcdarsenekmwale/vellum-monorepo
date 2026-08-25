@@ -91,7 +91,7 @@ import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/request-access")({
   head: () => ({
-    meta: [{ title: "Request Access · Vellum" }],
+    meta: [{ title: "Request Access · Vellbase" }],
   }),
   component: RoleRequestPage,
 });

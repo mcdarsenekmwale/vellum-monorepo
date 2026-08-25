@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiClient } from "@vellum/api-client";
-import type { Comment as ApiComment, User } from "@vellum/api-client";
+import { ApiClient } from "@vellbase/api-client";
+import type { Comment as ApiComment, User } from "@vellbase/api-client";
 
 export interface Storage {
   getItem: (key: string) => Promise<string | null>;
@@ -40,7 +40,7 @@ type SocialContextValue = SocialState & {
 };
 
 const SocialContext = createContext<SocialContextValue | null>(null);
-const STORAGE_KEY = "vellum:social:v2";
+const STORAGE_KEY = "vellbase:social:v2";
 
 export interface SocialProviderProps {
   apiClient: ApiClient;

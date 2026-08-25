@@ -215,7 +215,7 @@ export class WebhookExecutorService {
 
         const status = axiosRes.status;
         const rawText = typeof axiosRes.data === 'string' ? axiosRes.data : '';
-        let parsedResponse: any = rawText;
+        let parsedResponse: any = rawText || null;
         try {
           parsedResponse = rawText ? JSON.parse(rawText) : null;
         } catch {
@@ -236,7 +236,8 @@ export class WebhookExecutorService {
             payload: rawPayload,
             response: {
               status,
-              data: parsedResponse,
+              data: parsedResponse || axiosRes?.data?.message || axiosRes?.statusText,
+              timestamp: rawText ? null : undefined,
               headers: responseHeaders,
               contentType: axiosRes.headers?.['content-type'] ?? undefined,
             },

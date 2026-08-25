@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/support/kb")({
-  head: () => ({ meta: [{ title: "Knowledge Base · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Knowledge Base · Vellbase Admin" }] }),
   component: KnowledgeBasePage,
 });
 

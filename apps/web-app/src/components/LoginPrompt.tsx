@@ -37,7 +37,7 @@ export function LoginPrompt({ isOpen, onClose, action = "perform this action" }:
 
           <h3 className="text-xl font-semibold mb-2">Sign in required</h3>
           <p className="text-muted-foreground text-sm mb-6">
-            You need to sign in to {action}. Join Vellum to unlock all features.
+            You need to sign in to {action}. Join Vellbase to unlock all features.
           </p>
 
           <div className="space-y-3">

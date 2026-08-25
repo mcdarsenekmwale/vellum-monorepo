@@ -22,7 +22,7 @@ function timeAgo(dateString?: string): string {
 
 export const Route = createFileRoute("/category/$name")({
   head: () => ({
-    meta: [{ title: "Category — Vellum" }],
+    meta: [{ title: "Category — Vellbase" }],
   }),
   component: CategoryPage,
 });
@@ -114,7 +114,7 @@ function CategoryPage() {
                   {hero.title}
                 </h2>
                 <p className="text-sm text-muted-foreground line-clamp-3">
-                  {hero.excerpt ?? "Read on Vellum."}
+                  {hero.excerpt ?? "Read on Vellbase."}
                 </p>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2">
                   <Avatar

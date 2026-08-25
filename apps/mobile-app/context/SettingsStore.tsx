@@ -22,10 +22,10 @@ export interface ClientSettings {
   locale: LocaleTag;
 }
 
-const APPEARANCE_KEY = 'vellum.settings.appearance';
-const SOUND_KEY = 'vellum.settings.sound';
-const LOCALE_KEY = 'vellum.settings.locale';
-const JSON_KEY = 'vellum.settings.v1';
+const APPEARANCE_KEY = 'vellbase.settings.appearance';
+const SOUND_KEY = 'vellbase.settings.sound';
+const LOCALE_KEY = 'vellbase.settings.locale';
+const JSON_KEY = 'vellbase.settings.v1';
 
 export const DEFAULT_SETTINGS: Readonly<ClientSettings> = {
   appearance: 'system',

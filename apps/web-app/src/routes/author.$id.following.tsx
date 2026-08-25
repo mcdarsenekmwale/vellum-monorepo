@@ -10,7 +10,7 @@ import type { User } from "@/lib/api";
 
 export const Route = createFileRoute("/author/$id/following")({
   head: () => ({
-    meta: [{ title: "Following — Vellum" }],
+    meta: [{ title: "Following — Vellbase" }],
   }),
   component: FollowingPage,
 });

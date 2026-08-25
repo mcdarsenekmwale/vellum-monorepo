@@ -68,8 +68,8 @@ def main():
                     ss_name = route.strip("/").replace("/", "_") or "root"
                     page.screenshot(path=f"{OUTPUT_DIR}/{ss_name}.png", full_page=True)
                     log(f"{route:45s} → {title[:80]:80s}  OK")
-                    if "Vellum" not in title and "not found" not in body.lower():
-                        warnings.append(f"{route} title missing Vellum brand: {title}")
+                    if "Vellbase" not in title and "not found" not in body.lower():
+                        warnings.append(f"{route} title missing Vellbase brand: {title}")
                     if "Error:" in body and "chunk" in body:
                         failures.append(f"{route}: chunk error visible in body")
                 except Exception as e:

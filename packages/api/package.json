@@ -1,7 +1,7 @@
 {
-  "name": "@vellum/api",
+  "name": "@vellbase/api",
   "version": "1.0.0",
-  "description": "Vellum Backend API",
+  "description": "Vellbase Backend API",
   "main": "dist/src/main.js",
   "scripts": {
     "build": "prisma generate && nest build && node scripts/copy-swagger-ui.js",
@@ -28,9 +28,9 @@
   "keywords": [
     "nestjs",
     "api",
-    "vellum"
+    "vellbase"
   ],
-  "author": "Vellum Team",
+  "author": "Vellbase Team",
   "license": "MIT",
   "dependencies": {
     "@nestjs/axios": "^4.0.1",

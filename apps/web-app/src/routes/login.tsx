@@ -64,7 +64,7 @@ function LoginPage() {
             to="/"
             className="absolute top-10 left-10 xl:left-16 text-white font-display italic text-3xl tracking-tight hover:opacity-80 transition-opacity"
           >
-            Vellum.
+            Vellbase.
           </Link>
 
           <blockquote className="max-w-md">
@@ -101,7 +101,7 @@ function LoginPage() {
           to="/"
           className="lg:hidden absolute top-8 left-8 text-foreground font-display italic text-2xl tracking-tight"
         >
-          Vellum.
+          Vellbase.
         </Link>
 
         <div className="w-full max-w-[420px]">
@@ -237,7 +237,7 @@ function LoginPage() {
 
           {/* Register link */}
           <p className="text-center text-muted-foreground text-sm mt-10">
-            New to Vellum?{" "}
+            New to Vellbase?{" "}
             <Link
               to="/register"
               search={router.state.location.search}

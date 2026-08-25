@@ -16,7 +16,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "@tanstack/react-query", "@vellum/api-client", "@vellum/auth", "@vellum/social-store", "@vellum/react-hooks", "@vellum/utils"],
+    include: ["react", "react-dom", "@tanstack/react-query", "@vellbase/api-client", "@vellbase/auth", "@vellbase/social-store", "@vellbase/react-hooks", "@vellbase/utils"],
   },
   server: {
     port: 3000,

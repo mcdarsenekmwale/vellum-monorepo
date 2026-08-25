@@ -191,7 +191,7 @@ export const EN_DICT: NamespaceDict = {
     // ── Help Center (settings.help*) ──
     helpBackToSettings: "Back to settings",
     helpTitle: "Help Center",
-    helpSubtitle: "Answers to common questions about using Vellum, or reach out to our team directly.",
+    helpSubtitle: "Answers to common questions about using Vellbase, or reach out to our team directly.",
     helpTabKnowledgeBase: "Knowledge Base",
     helpTabContactSupport: "Contact Support",
     helpTabMyTickets: "My Tickets",
@@ -238,7 +238,7 @@ export const EN_DICT: NamespaceDict = {
     newTicket: "New ticket",
     ticketsSignInToView: "Sign in to view your tickets",
     ticketsSignInDescription: "Once signed in, you'll see all your past and open support conversations here.",
-    ticketsSignIn: "Sign in to Vellum",
+    ticketsSignIn: "Sign in to Vellbase",
     ticketsAssignedTo: "Assigned to {{name}}",
     ticketsReplyPlaceholder: "Write a reply…",
     ticketsClosedNotice: "This ticket is {{status}}. If you need further help, please open a new one.",
@@ -271,12 +271,12 @@ export const EN_DICT: NamespaceDict = {
 
     // ── Contact Form (settings.contact*) ──
     contactIntroTitle: "Fill in the details below",
-    contactIntroDesc: "Reach out to the support Vellum support team.",
-    contactReachTeam: "Reach the Vellum support team",
+    contactIntroDesc: "Reach out to the support Vellbase support team.",
+    contactReachTeam: "Reach the Vellbase support team",
     contactReachDescription: "Can't find what you're looking for in the knowledge base? Submit a ticket and a real human will get back to you — typically within 24 hours on business days.",
     contactSignInRequired: "You need to be signed in",
     contactSignInDescription: "Please sign in to submit a support ticket so we can follow up with you.",
-    contactSignIn: "Sign in to Vellum",
+    contactSignIn: "Sign in to Vellbase",
     contactSuccess: "Ticket submitted successfully!",
     contactSuccessMessage: "Thanks! Your ticket {{ticketNumber}} has been submitted. We'll reply within 24 hours.",
     contactErrorRequired: "Subject and message are required.",

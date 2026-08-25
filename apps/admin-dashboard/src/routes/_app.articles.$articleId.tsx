@@ -52,7 +52,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/articles/$articleId")({
-  head: () => ({ meta: [{ title: "Article · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Article · Vellbase Admin" }] }),
   component: ArticleDetailPage,
 });
 
@@ -144,7 +144,7 @@ function ArticleDetailPage() {
 
   const shareOnTwitter = () => {
     const url = `${window.location.origin}/articles/${article.id}`;
-    const text = `Check out "${article.title}" on Vellum`;
+    const text = `Check out "${article.title}" on Vellbase`;
     window.open(
       `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
       "_blank",

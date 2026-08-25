@@ -60,7 +60,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/webhooks/$id")({
-  head: () => ({ meta: [{ title: "Webhook detail · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Webhook detail · Vellbase Admin" }] }),
   component: WebhookDetailPage,
 });
 

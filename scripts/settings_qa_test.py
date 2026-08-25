@@ -122,8 +122,8 @@ SETTINGS_VIEWPORTS: list[tuple[int, int]] = [
     (1920, 1080),
 ]
 
-STORAGE_LOCALE_KEY = "vellum.settings.locale"
-STORAGE_SOUND_KEY = "vellum.settings.sound"
+STORAGE_LOCALE_KEY = "vellbase.settings.locale"
+STORAGE_SOUND_KEY = "vellbase.settings.sound"
 
 # Translation reference mirrors I18nProvider.tsx EN/FR dicts (ns.key → value)
 EN_DICT: dict[str, str] = {
@@ -647,8 +647,8 @@ def read_sound_storage(page) -> tuple[str, bool]:
     """Returns (raw_sound_key, v1.soundEnabled_bool)."""
     raw = page.evaluate(
         r"""() => {
-            const r = localStorage.getItem('vellum.settings.sound');
-            const j = localStorage.getItem('vellum.settings.v1');
+            const r = localStorage.getItem('vellbase.settings.sound');
+            const j = localStorage.getItem('vellbase.settings.v1');
             let v1se = null;
             try { v1se = j ? JSON.parse(j).soundEnabled : null; } catch {}
             return {r, v1se};
@@ -661,8 +661,8 @@ def read_locale_storage(page) -> tuple[str, str]:
     """Returns (raw_locale_key, v1.locale)."""
     raw = page.evaluate(
         r"""() => {
-            const r = localStorage.getItem('vellum.settings.locale');
-            const j = localStorage.getItem('vellum.settings.v1');
+            const r = localStorage.getItem('vellbase.settings.locale');
+            const j = localStorage.getItem('vellbase.settings.v1');
             let v1l = null;
             try { v1l = j ? JSON.parse(j).locale : null; } catch {}
             return {r, v1l};
@@ -855,7 +855,7 @@ def toggle_notif_switch(page, key: str) -> bool:
 def _fetch_json(page, method: str, path: str, body: Optional[dict] = None) -> tuple[int, Any]:
     res = page.evaluate(
         r"""({m, p, b}) => {
-            const tok = localStorage.getItem('vellum_access_token') || '';
+            const tok = localStorage.getItem('vellbase_access_token') || '';
             const hdrs = { Authorization: 'Bearer ' + tok };
             if (b !== null && b !== undefined) hdrs['Content-Type'] = 'application/json';
             return fetch(p, {
@@ -1186,13 +1186,13 @@ def main() -> int:
         # then reload so SettingsStore re-hydrates cleanly before the remaining categories.
         page.evaluate(
             r"""() => {
-                const j = localStorage.getItem('vellum.settings.v1');
+                const j = localStorage.getItem('vellbase.settings.v1');
                 const o = j ? JSON.parse(j) : {};
                 o.soundEnabled = true; o.locale = 'en'; o.appearance = 'light';
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.sound', 'on');
-                localStorage.setItem('vellum.settings.locale', 'en');
-                localStorage.setItem('vellum.settings.appearance', 'light');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.sound', 'on');
+                localStorage.setItem('vellbase.settings.locale', 'en');
+                localStorage.setItem('vellbase.settings.appearance', 'light');
             }"""
         )
         # Force a hard reload so SettingsStore reads storage back on mount (no stale React state).
@@ -1209,7 +1209,7 @@ def main() -> int:
         raw_1, v1_1 = read_sound_storage(page)
         check("click sound switch → sound raw=off", raw_1 == "off", "off", raw_1,
               "CATEGORY_SOUND_TOGGLE", mode_label, severity="HIGH",
-              repro=["Sound row CustomSwitch → raw storage 'vellum.settings.sound'"])
+              repro=["Sound row CustomSwitch → raw storage 'vellbase.settings.sound'"])
         check("click sound switch → v1.soundEnabled=false", v1_1 is False, False, v1_1,
               "CATEGORY_SOUND_TOGGLE", mode_label, severity="HIGH")
         # Toggle back
@@ -1387,10 +1387,10 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'dark', locale: 'fr', soundEnabled: false };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.appearance', 'dark');
-                localStorage.setItem('vellum.settings.locale', 'fr');
-                localStorage.setItem('vellum.settings.sound', 'off');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.appearance', 'dark');
+                localStorage.setItem('vellbase.settings.locale', 'fr');
+                localStorage.setItem('vellbase.settings.sound', 'off');
             }"""
         )
         goto_settings(page)
@@ -1411,10 +1411,10 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'light', locale: 'en', soundEnabled: true };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.appearance', 'light');
-                localStorage.setItem('vellum.settings.locale', 'en');
-                localStorage.setItem('vellum.settings.sound', 'on');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.appearance', 'light');
+                localStorage.setItem('vellbase.settings.locale', 'en');
+                localStorage.setItem('vellbase.settings.sound', 'on');
             }"""
         )
         goto_settings(page)
@@ -1427,10 +1427,10 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'dark', locale: 'fr', soundEnabled: false };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.appearance', 'dark');
-                localStorage.setItem('vellum.settings.locale', 'fr');
-                localStorage.setItem('vellum.settings.sound', 'off');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.appearance', 'dark');
+                localStorage.setItem('vellbase.settings.locale', 'fr');
+                localStorage.setItem('vellbase.settings.sound', 'off');
             }"""
         )
         snap = page.evaluate(
@@ -1476,10 +1476,10 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'light', locale: 'en', soundEnabled: true };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.appearance', 'light');
-                localStorage.setItem('vellum.settings.locale', 'en');
-                localStorage.setItem('vellum.settings.sound', 'on');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.appearance', 'light');
+                localStorage.setItem('vellbase.settings.locale', 'en');
+                localStorage.setItem('vellbase.settings.sound', 'on');
             }"""
         )
         cat_results.append(mk_cat(CATEGORIES[16], checks_log[pre_count:], issues[pre_issues_n:],
@@ -1534,10 +1534,10 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'light', locale: 'fr', soundEnabled: true };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.appearance', 'light');
-                localStorage.setItem('vellum.settings.locale', 'fr');
-                localStorage.setItem('vellum.settings.sound', 'on');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.appearance', 'light');
+                localStorage.setItem('vellbase.settings.locale', 'fr');
+                localStorage.setItem('vellbase.settings.sound', 'on');
             }"""
         )
         goto_settings(page)
@@ -1570,8 +1570,8 @@ def main() -> int:
         page.evaluate(
             r"""() => {
                 const o = { appearance: 'light', locale: 'en', soundEnabled: true };
-                localStorage.setItem('vellum.settings.v1', JSON.stringify(o));
-                localStorage.setItem('vellum.settings.locale', 'en');
+                localStorage.setItem('vellbase.settings.v1', JSON.stringify(o));
+                localStorage.setItem('vellbase.settings.locale', 'en');
             }"""
         )
         cat_results.append(mk_cat(CATEGORIES[19], checks_log[pre_count:], issues[pre_issues_n:],

@@ -59,7 +59,7 @@ import {
 import { canVisit } from "@/lib/auth/rbac";
 
 export const Route = createFileRoute("/_app/users/")({
-  head: () => ({ meta: [{ title: "Users · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Users · Vellbase Admin" }] }),
   component: UsersList,
 });
 
@@ -453,7 +453,7 @@ function UsersList() {
 
   const openEmailDialog = (user: User) => {
     setSelectedUser(user);
-    setEmailSubject(`Message from Vellum Admin`);
+    setEmailSubject(`Message from Vellbase Admin`);
     setEmailBody(`Hello ${user.name},\n\n`);
     setIsEmailDialogOpen(true);
   };
@@ -568,7 +568,7 @@ function UsersList() {
       {/* Main List */}
       <ListPage
         title="User Management"
-        description="Everyone with a Vellum account across web and mobile."
+        description="Everyone with a Vellbase account across web and mobile."
         eyebrow="People"
         rows={filteredRows}
         searchKeys={["name", "email", "handle", "role"]}

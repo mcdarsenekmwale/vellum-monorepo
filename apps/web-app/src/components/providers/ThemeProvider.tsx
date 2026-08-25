@@ -11,8 +11,8 @@ import {
 export type ThemeMode = "light" | "dark" | "system";
 type Resolved = "light" | "dark";
 
-export const STORAGE_V1 = "vellum.web.settings.v1";
-export const STORAGE_THEME_RAW = "vellum.web.theme";
+export const STORAGE_V1 = "vellbase.web.settings.v1";
+export const STORAGE_THEME_RAW = "vellbase.web.theme";
 
 type V1Shape = {
   appearance?: ThemeMode;

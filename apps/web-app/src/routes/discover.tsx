@@ -24,8 +24,8 @@ function formatRelativeTime(dateStr: string | undefined): string {
 export const Route = createFileRoute("/discover")({
   head: () => ({
     meta: [
-      { title: "Discover — Vellum" },
-      { name: "description", content: "Search stories, browse categories, and find new voices to follow on Vellum." },
+      { title: "Discover — Vellbase" },
+      { name: "description", content: "Search stories, browse categories, and find new voices to follow on Vellbase." },
     ],
   }),
   component: DiscoverPage,

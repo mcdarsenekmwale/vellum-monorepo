@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_app/support/reports")({
-  head: () => ({ meta: [{ title: "Support Reports · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Reports · Vellbase Admin" }] }),
   component: SupportReportsPage,
 });
 

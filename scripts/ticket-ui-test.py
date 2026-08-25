@@ -9,7 +9,7 @@ from playwright.async_api import async_playwright
 API_BASE = "http://localhost:3001"
 WEB_URL = "http://localhost:3003"
 MOBILE_URL = "http://localhost:8082"
-EMAIL = "ticket-test@vellum.dev"
+EMAIL = "ticket-test@vellbase.dev"
 PASSWORD = "Test12345!"
 
 def api_login():
@@ -65,9 +65,9 @@ async def main():
 
             # Inject tokens
             await mobile_page.evaluate(f"""() => {{
-                localStorage.setItem('vellum_access_token', '{token}');
-                localStorage.setItem('vellum_refresh_token', '{auth.get("refreshToken", "")}');
-                localStorage.setItem('vellum_user', '{json.dumps(user)}');
+                localStorage.setItem('vellbase_access_token', '{token}');
+                localStorage.setItem('vellbase_refresh_token', '{auth.get("refreshToken", "")}');
+                localStorage.setItem('vellbase_user', '{json.dumps(user)}');
             }}""")
 
             # Navigate to help-tickets
@@ -129,9 +129,9 @@ async def main():
                     body: JSON.stringify({{email: '{EMAIL}', password: '{PASSWORD}'}})
                 }});
                 const data = await resp.json();
-                localStorage.setItem('vellum_access_token', data.accessToken);
-                localStorage.setItem('vellum_refresh_token', data.refreshToken);
-                localStorage.setItem('vellum_user', JSON.stringify(data.user));
+                localStorage.setItem('vellbase_access_token', data.accessToken);
+                localStorage.setItem('vellbase_refresh_token', data.refreshToken);
+                localStorage.setItem('vellbase_user', JSON.stringify(data.user));
                 return {{ok: resp.ok, token: data.accessToken?.substring(0, 20)}};
             }}""")
             print(f"  [WEB] Login via fetch: {login_result}")

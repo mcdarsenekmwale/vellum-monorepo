@@ -1,5 +1,5 @@
 {
-  "name": "@vellum/react-hooks",
+  "name": "@vellbase/react-hooks",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -15,8 +15,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@vellum/api-client": "^1.0.0",
-    "@vellum/auth": "^1.0.0"
+    "@vellbase/api-client": "^1.0.0",
+    "@vellbase/auth": "^1.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.17",

@@ -121,7 +121,7 @@ import {
 } from "@/lib/support/support-agent.logic";
 
 export const Route = createFileRoute("/_app/support/agents")({
-  head: () => ({ meta: [{ title: "Support Agents · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Agents · Vellbase Admin" }] }),
   component: SupportAgentsPage,
 });
 

@@ -34,7 +34,7 @@ import {
 import { useAuth } from "@/lib/auth/context";
 
 export const Route = createFileRoute("/_app/tags")({
-  head: () => ({ meta: [{ title: "Tags · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Tags · Vellbase Admin" }] }),
   component: TagsPage,
 });
 

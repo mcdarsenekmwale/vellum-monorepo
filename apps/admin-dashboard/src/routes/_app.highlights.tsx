@@ -62,7 +62,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/highlights")({
-  head: () => ({ meta: [{ title: "Highlights · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Highlights · Vellbase Admin" }] }),
   component: HighlightsPage,
 });
 

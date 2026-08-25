@@ -3,7 +3,7 @@ import json
 import time
 from playwright.sync_api import sync_playwright
 
-DASHBOARD_URL = "https://vellum-admin-dashboard-eta-kappa.vercel.app"
+DASHBOARD_URL = "https://vellbase-admin-dashboard-eta-kappa.vercel.app"
 OUTPUT_DIR = "/tmp/dashboard-debug"
 
 def log(msg):
@@ -75,7 +75,7 @@ def main():
         password_input = page.locator('input[type="password"]')
         signin_btn = page.locator('button', has_text="Sign in")
 
-        email_input.fill("admin@vellum.com")
+        email_input.fill("admin@vellbase.com")
         password_input.fill("password123")
 
         before_req_count = len(all_requests)
@@ -133,7 +133,7 @@ def main():
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: 'admin@vellum.com', password: 'password123' })
+                        body: JSON.stringify({ email: 'admin@vellbase.com', password: 'password123' })
                     });
                     const text = await res.text();
                     return { status: res.status, url: url, body: text.substring(0, 300) };

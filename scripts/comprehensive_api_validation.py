@@ -34,7 +34,7 @@ from typing import Any
 
 RESPONSE_TIME_THRESHOLD_MS = int(os.environ.get("RESPONSE_TIME_THRESHOLD_MS", "1000"))
 BASE = os.environ.get("API_BASE_URL", "http://localhost:3001/api").rstrip("/")
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellum.com")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellbase.com")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "password123")
 
 
@@ -516,7 +516,7 @@ def suite_rbac_and_misc(ctx: dict):
     record("Follows: is-following invalid user → 200 (not following) or 4xx", "GET", "/follows/nope/is-following", (200, 400, 401, 404), token=t)
     record("Notifications: unread count", "GET", "/notifications/unread-count", (200, 401, 404), token=t)
     record("Search: global query (may need auth)", "GET", "/search", (200, 400, 401, 404), token=t,
-           params={"q": "vellum", "limit": 5},
+           params={"q": "vellbase", "limit": 5},
            note="400 OK if missing required q param or backend requires different name")
     record("Webhooks: GET logs (admin scope)", "GET", "/webhooks/logs", (200, 401, 403), token=t,
            note="403/401 OK if insufficient perms")

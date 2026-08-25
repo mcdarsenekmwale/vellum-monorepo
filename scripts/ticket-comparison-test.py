@@ -22,7 +22,7 @@ from playwright.async_api import async_playwright
 WEB_APP_URL = "http://localhost:3003"
 MOBILE_APP_URL = "http://localhost:8082"
 API_BASE = "http://localhost:3001"
-TEST_EMAIL = "ticket-test@vellum.dev"
+TEST_EMAIL = "ticket-test@vellbase.dev"
 TEST_PASSWORD = "Test12345!"
 TIMEOUT = 15000
 

@@ -14,7 +14,7 @@ import { useI18n } from '../context/I18nProvider';
 import { sounds } from '../services/SoundService';
 import { CustomHeader, ThemedBackButton } from './_layout';
 
-const APP_NAME = 'Vellum';
+const APP_NAME = 'Vellbase';
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '42';
 
@@ -23,10 +23,10 @@ const LINKS: {
   labelKey: string;
   Icon: React.ComponentType<any>;
 }[] = [
-  { url: 'https://vellum.example.com/terms', labelKey: 'settings.aboutTerms', Icon: FileText },
-  { url: 'https://vellum.example.com/privacy', labelKey: 'settings.aboutPrivacy', Icon: Shield },
-  { url: 'https://vellum.example.com/licenses', labelKey: 'settings.aboutLicenses', Icon: Award },
-  { url: 'https://vellum.example.com', labelKey: 'settings.aboutWebsite', Icon: Globe },
+  { url: 'https://vellbase.example.com/terms', labelKey: 'settings.aboutTerms', Icon: FileText },
+  { url: 'https://vellbase.example.com/privacy', labelKey: 'settings.aboutPrivacy', Icon: Shield },
+  { url: 'https://vellbase.example.com/licenses', labelKey: 'settings.aboutLicenses', Icon: Award },
+  { url: 'https://vellbase.example.com', labelKey: 'settings.aboutWebsite', Icon: Globe },
 ];
 
 async function openUrl(url: string): Promise<void> {
@@ -51,7 +51,7 @@ export default function SettingsAboutScreen() {
             <Text style={[styles.appLogoText, { color: colors.accent }]}>V</Text>
           </View>
           <Text style={[styles.appName, { color: colors.textPrimary }]}>
-            {t('Vellum')}
+            {t('Vellbase')}
           </Text>
         </View>
 
@@ -95,7 +95,7 @@ export default function SettingsAboutScreen() {
         </View>
 
         <Text style={[styles.footer, { color: colors.textMuted }]}>
-          © 2025 Vellum Labs. All rights reserved.
+          © 2025 Vellbase Labs. All rights reserved.
         </Text>
       </ScrollView>
     </SafeAreaView>

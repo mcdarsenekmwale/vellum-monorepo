@@ -153,8 +153,8 @@ describe("SupportService.listTickets enhancements (TDD RED)", () => {
   beforeEach(async () => {
     prisma = new MockPrisma();
     prisma.users = [
-      { id: "u-alice", name: "Alice Johnson", email: "alice@vellum.app", handle: "alice", avatar: null },
-      { id: "u-bob", name: "Bob Smith", email: "bob@vellum.app", handle: "bobby", avatar: null },
+      { id: "u-alice", name: "Alice Johnson", email: "alice@vellbase.app", handle: "alice", avatar: null },
+      { id: "u-bob", name: "Bob Smith", email: "bob@vellbase.app", handle: "bobby", avatar: null },
     ];
     prisma.tickets = [
       makeTicket("1", { createdAt: day(1), updatedAt: day(2), priority: "LOW", userId: "u-alice", categoryId: "cat-account", status: "NEW" }),
@@ -238,7 +238,7 @@ describe("SupportService.listTickets enhancements (TDD RED)", () => {
     });
 
     it("finds by customer email substring", async () => {
-      const res = await service.listTickets({ search: "alice@vellum" });
+      const res = await service.listTickets({ search: "alice@vellbase" });
       expect(res.data.length).toBeGreaterThanOrEqual(1);
       expect(res.data.every((t: any) => t.userId === "u-alice")).toBe(true);
     });

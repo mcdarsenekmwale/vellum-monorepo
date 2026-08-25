@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useHighlights, useAuthState, useSocialActions } from '../../hooks/useApi';
 import { apiClient } from '../../lib/api';
-import type { Comment } from '@vellum/api-client/types';
+import type { Comment } from '@vellbase/api-client/types';
 import HighlightPager from './HighlightPager';
 import HighlightComments, { type HighlightCommentsRef } from './HighlightComments';
 import HighlightFooter from './HighlightFooter';

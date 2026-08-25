@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
 FRONT = "http://localhost:19006/login?regression"
 BACKEND_HEALTH = "http://localhost:3001/health"
-SCREENSHOT_DIR = "/tmp/vellum_regression"
+SCREENSHOT_DIR = "/tmp/vellbase_regression"
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
 step = 0
@@ -487,14 +487,14 @@ def main():
                     state = page.evaluate(
                         """() => {
                             try {
-                                const raw = window.localStorage.getItem('vellum.settings.v1');
+                                const raw = window.localStorage.getItem('vellbase.settings.v1');
                                 if (raw) return JSON.parse(raw);
                             } catch {}
                             // Also check AsyncStorage-prefixed keys on web
                             try {
                                 for (let i = 0; i < localStorage.length; i++) {
                                     const k = localStorage.key(i);
-                                    if (k && (k.includes('settings') || k.includes('vellum'))) {
+                                    if (k && (k.includes('settings') || k.includes('vellbase'))) {
                                         try {
                                             const v = JSON.parse(localStorage.getItem(k));
                                             if (v && (v.theme || v.language)) return v;
@@ -615,7 +615,7 @@ def main():
                 switched_labels = any(tok in body for tok in ["langue", "apparence", "paramètres", "son", "abonnement", "centre d'aide", "à propos", "déconnexion"])
                 stored_lang = None
                 try:
-                    stored = page.evaluate("() => { try { const raw = window.localStorage.getItem('vellum.settings.v1'); if (raw) return JSON.parse(raw); } catch {} return null; }")
+                    stored = page.evaluate("() => { try { const raw = window.localStorage.getItem('vellbase.settings.v1'); if (raw) return JSON.parse(raw); } catch {} return null; }")
                     if stored and isinstance(stored, dict):
                         stored_lang = stored.get("language")
                 except Exception:
@@ -719,9 +719,9 @@ def main():
                             const removed = [];
                             for (const k of keysToRemove) {
                                 try {
-                                    if (/vellum|access|refresh|auth|token|user/i.test(k)
-                                        || /vellum\.settings\.v/i.test(k) === false
-                                        ? k.includes('token') || k.includes('access') || k.includes('refresh') || k.includes('vellum_user')
+                                    if (/vellbase|access|refresh|auth|token|user/i.test(k)
+                                        || /vellbase\.settings\.v/i.test(k) === false
+                                        ? k.includes('token') || k.includes('access') || k.includes('refresh') || k.includes('vellbase_user')
                                         : false) {
                                         localStorage.removeItem(k);
                                         removed.push(k);

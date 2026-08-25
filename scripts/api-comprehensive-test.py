@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 API_BASE = os.environ.get("API_BASE", "https://ef9y4l5cks304qewa8wv4kyo.sin.prisma.build/api")
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellum.com")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellbase.com")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "password123")
 
 results = []

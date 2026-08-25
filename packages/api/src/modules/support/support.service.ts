@@ -1226,7 +1226,7 @@ export class SupportService {
       }
       await this.audit(authorId, 'CREATE_TICKET_MESSAGE', 'SupportTicket', {
         resourceId: ticketId,
-        details: { messageId: message.id, isInternal: false, authorRole: message.author.email?.includes('@vellum') ? 'staff' : 'user' },
+        details: { messageId: message.id, isInternal: false, authorRole: message.author.email?.includes('@vellbase') ? 'staff' : 'user' },
       });
     }
 
@@ -2229,11 +2229,11 @@ export class SupportService {
         data: [
           {
             slug: 'getting-started',
-            title: 'Getting Started with Vellum',
-            description: 'Learn the basics of Vellum — set up your profile, publish your first story, and connect with readers.',
+            title: 'Getting Started with Vellbase',
+            description: 'Learn the basics of Vellbase — set up your profile, publish your first story, and connect with readers.',
             content: [
-              '## Welcome to Vellum!',
-              'Vellum is a home for thoughtful writing and story discovery. This guide walks you through getting set up and making the most of the platform.',
+              '## Welcome to Vellbase!',
+              'Vellbase is a home for thoughtful writing and story discovery. This guide walks you through getting set up and making the most of the platform.',
               '## 1. Create Your Profile',
               'Start by uploading a profile photo, adding a short bio, and setting a memorable handle. Your handle is how other users find and mention you.',
               '## 2. Publish Your First Story',
@@ -2268,7 +2268,7 @@ export class SupportService {
           {
             slug: 'publishing-a-story',
             title: 'Publishing a story',
-            description: 'Write, format, schedule, and publish stories on Vellum. Learn about drafts, cover images, and SEO.',
+            description: 'Write, format, schedule, and publish stories on Vellbase. Learn about drafts, cover images, and SEO.',
             content: [
               '## The Editor',
               'Our editor supports Markdown shortcuts. Type # for headings, ** for bold, and * for italic. You can also use the formatting toolbar.',
@@ -2353,7 +2353,7 @@ export class SupportService {
           {
             slug: 'ai-writing-assistant',
             title: 'AI Writing Assistant',
-            description: 'Use Vellum AI to brainstorm, rewrite, proofread, and generate cover ideas for your stories.',
+            description: 'Use Vellbase AI to brainstorm, rewrite, proofread, and generate cover ideas for your stories.',
             content: [
               '## What It Can Do',
               'Our AI assistant can help with brainstorming, drafting, rewriting for tone, proofreading, and summarizing.',
@@ -2369,7 +2369,7 @@ export class SupportService {
           {
             slug: 'api-introduction',
             title: 'API Introduction',
-            description: 'Get started with the Vellum developer API — authentication, rate limits, and example requests.',
+            description: 'Get started with the Vellbase developer API — authentication, rate limits, and example requests.',
             content: [
               '## Authentication',
               'Create an API key in **Settings → Developer → API keys**. Keep it secret! Include it in requests as `Authorization: Bearer <key>`.',
@@ -2390,7 +2390,7 @@ export class SupportService {
               '## Supported Events',
               'We currently support: `story.published`, `comment.created`, `like.created`, `follow.created`, and `bookmark.created`.',
               '## Verifying Signatures',
-              'Each webhook request includes an `X-Vellum-Signature` header. Verify it using HMAC-SHA256 with your signing secret.',
+              'Each webhook request includes an `X-Vellbase-Signature` header. Verify it using HMAC-SHA256 with your signing secret.',
               '## Retries',
               'We retry failed deliveries up to 5 times with exponential backoff. Endpoints must respond with a 2xx status within 5 seconds.',
             ],
@@ -2404,7 +2404,7 @@ export class SupportService {
             description: 'Subscription plans, payment methods, refunds, and cancelling your membership.',
             content: [
               '## Plans',
-              'We offer Free, Plus, and Premium plans. Compare features on our pricing page at vellum.app/pricing.',
+              'We offer Free, Plus, and Premium plans. Compare features on our pricing page at vellbase.app/pricing.',
               '## Payment Methods',
               'We accept major credit cards (Visa, Mastercard, Amex), Apple Pay, and Google Pay. Annual billing saves 20%.',
               '## Refunds',
@@ -2419,7 +2419,7 @@ export class SupportService {
           {
             slug: 'deleting-your-account',
             title: 'Deleting your account',
-            description: 'How to permanently delete your Vellum account and what happens to your data.',
+            description: 'How to permanently delete your Vellbase account and what happens to your data.',
             content: [
               '## Before You Delete',
               'Consider downloading your data first in **Settings → Privacy → Export data**. This includes your stories, comments, and messages.',
@@ -2439,10 +2439,10 @@ export class SupportService {
     if (existing > 0) return { message: 'Support data already seeded', kbSeeded: kbExisting === 0 ? 12 : 0 };
 
     const general = await this.prisma.supportDepartment.create({
-      data: { key: 'general', name: 'General Support', email: 'support@vellum.app' },
+      data: { key: 'general', name: 'General Support', email: 'support@vellbase.app' },
     });
     const technical = await this.prisma.supportDepartment.create({
-      data: { key: 'technical', name: 'Technical Support', email: 'tech@vellum.app' },
+      data: { key: 'technical', name: 'Technical Support', email: 'tech@vellbase.app' },
     });
 
     await this.prisma.supportTeam.create({
@@ -2477,7 +2477,7 @@ export class SupportService {
 
     await this.prisma.cannedResponse.createMany({
       data: [
-        { title: 'Greeting', body: 'Thank you for contacting Vellum Support. My name is {agent_name}, and I\'ll be happy to assist you today.', shortcut: '/greet', category: 'general' },
+        { title: 'Greeting', body: 'Thank you for contacting Vellbase Support. My name is {agent_name}, and I\'ll be happy to assist you today.', shortcut: '/greet', category: 'general' },
         { title: 'Request More Info', body: 'Could you please provide more details about the issue you are experiencing? Include steps to reproduce, any error messages, and screenshots if applicable.', shortcut: '/moreinfo', category: 'general' },
         { title: 'Acknowledged', body: 'Thank you for providing those details. I\'m looking into this now and will get back to you shortly with an update.', shortcut: '/ack', category: 'general' },
         { title: 'Issue Resolved', body: 'I am glad we were able to resolve your issue. If you have any other questions or need further assistance, please don\'t hesitate to reach out. Have a great day!', shortcut: '/resolved', category: 'closing' },

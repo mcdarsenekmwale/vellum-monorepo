@@ -1,11 +1,11 @@
-# Vellum Monorepo
+# Vellbase Monorepo
 
 A premium content platform with web, mobile, and backend applications.
 
 ## Architecture
 
 ```
-vellum-monorepo/
+vellbase-monorepo/
 ├── apps/
 │   ├── web-app/          # Vite + React + TanStack Router (Web)
 │   └── mobile-app/       # Expo + React Native (iOS, Android, Web)
@@ -149,10 +149,10 @@ External System → POST /api/webhooks/content (x-api-key header)
 curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "publisher@vellum.app",
+    "email": "publisher@vellbase.app",
     "password": "SecurePass123!",
-    "handle": "vellumpublisher",
-    "name": "Vellum Publisher"
+    "handle": "vellbasepublisher",
+    "name": "Vellbase Publisher"
   }'
 
 # 2. Create an API key with content:create scope

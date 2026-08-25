@@ -76,7 +76,7 @@ export default function LoginScreen() {
 
   const handleForgotPassword = async () => {
     if (!EMAIL_RE.test(forgotEmail.trim())) {
-      Alert.alert('Enter your email', 'Please enter the email address linked to your Vellum account.');
+      Alert.alert('Enter your email', 'Please enter the email address linked to your Vellbase account.');
       return;
     }
     setForgotBusy(true);
@@ -118,7 +118,7 @@ export default function LoginScreen() {
                 letterSpacing: -1,
               }}
             >
-              Vellum.
+              Vellbase.
             </Text>
             <Text
               style={{
@@ -372,7 +372,7 @@ export default function LoginScreen() {
               borderTopColor: '#e5e5e5',
             }}
           >
-            <Text style={{ color: '#666666', fontSize: 14 }}>New to Vellum? </Text>
+            <Text style={{ color: '#666666', fontSize: 14 }}>New to Vellbase? </Text>
             <Link href="/register" asChild>
               <TouchableOpacity>
                 <Text style={{ color: '#d97706', fontSize: 14, fontWeight: '600' }}>

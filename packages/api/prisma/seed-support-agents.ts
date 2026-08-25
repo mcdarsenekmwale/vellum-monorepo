@@ -83,7 +83,7 @@ export async function seedSupportAgents(client: PrismaClient) {
     update: {
       name: 'General Support',
       description: 'General customer support department handling onboarding, account questions, and first-line triage.',
-      email: 'support@vellum.com',
+      email: 'support@vellbase.com',
       firstResponseSlaMinutes: 60,
       resolutionSlaMinutes: 2880,
       slaAdherenceTargetPct: 95,
@@ -98,7 +98,7 @@ export async function seedSupportAgents(client: PrismaClient) {
       key: 'general-support',
       name: 'General Support',
       description: 'General customer support department handling onboarding, account questions, and first-line triage.',
-      email: 'support@vellum.com',
+      email: 'support@vellbase.com',
       isActive: true,
       firstResponseSlaMinutes: 60,
       resolutionSlaMinutes: 2880,
@@ -117,7 +117,7 @@ export async function seedSupportAgents(client: PrismaClient) {
     update: {
       name: 'Technical Support',
       description: 'Technical issues, bugs, platform stability, and API integration problems.',
-      email: 'tech-support@vellum.com',
+      email: 'tech-support@vellbase.com',
       firstResponseSlaMinutes: 30,
       resolutionSlaMinutes: 1440,
       slaAdherenceTargetPct: 97,
@@ -132,7 +132,7 @@ export async function seedSupportAgents(client: PrismaClient) {
       key: 'technical-support',
       name: 'Technical Support',
       description: 'Technical issues, bugs, platform stability, and API integration problems.',
-      email: 'tech-support@vellum.com',
+      email: 'tech-support@vellbase.com',
       isActive: true,
       firstResponseSlaMinutes: 30,
       resolutionSlaMinutes: 1440,
@@ -151,7 +151,7 @@ export async function seedSupportAgents(client: PrismaClient) {
     update: {
       name: 'Billing Support',
       description: 'Billing, payments, subscription management, and refunds.',
-      email: 'billing@vellum.com',
+      email: 'billing@vellbase.com',
       firstResponseSlaMinutes: 90,
       resolutionSlaMinutes: 1920,
       slaAdherenceTargetPct: 94,
@@ -166,7 +166,7 @@ export async function seedSupportAgents(client: PrismaClient) {
       key: 'billing-support',
       name: 'Billing Support',
       description: 'Billing, payments, subscription management, and refunds.',
-      email: 'billing@vellum.com',
+      email: 'billing@vellbase.com',
       isActive: true,
       firstResponseSlaMinutes: 90,
       resolutionSlaMinutes: 1920,
@@ -435,58 +435,58 @@ export async function seedSupportAgents(client: PrismaClient) {
 
   // 4 Support Agents (role: MODERATOR — closest to CUSTOMER_SUPPORT in the Role enum)
   const sarahChen = await prisma.user.upsert({
-    where: { email: 'sarah.chen@vellum.com' },
+    where: { email: 'sarah.chen@vellbase.com' },
     update: { name: 'Sarah Chen', role: 'MODERATOR', bio: 'Senior technical support engineer', passwordHash, emailVerified: now },
-    create: { email: 'sarah.chen@vellum.com', passwordHash, handle: 'sarah.chen', name: 'Sarah Chen', role: 'MODERATOR', emailVerified: now, bio: 'Senior technical support engineer' },
+    create: { email: 'sarah.chen@vellbase.com', passwordHash, handle: 'sarah.chen', name: 'Sarah Chen', role: 'MODERATOR', emailVerified: now, bio: 'Senior technical support engineer' },
   });
   const mikeJohnson = await prisma.user.upsert({
-    where: { email: 'mike.johnson@vellum.com' },
+    where: { email: 'mike.johnson@vellbase.com' },
     update: { name: 'Mike Johnson', role: 'MODERATOR', bio: 'Customer support specialist', passwordHash, emailVerified: now },
-    create: { email: 'mike.johnson@vellum.com', passwordHash, handle: 'mike.johnson', name: 'Mike Johnson', role: 'MODERATOR', emailVerified: now, bio: 'Customer support specialist' },
+    create: { email: 'mike.johnson@vellbase.com', passwordHash, handle: 'mike.johnson', name: 'Mike Johnson', role: 'MODERATOR', emailVerified: now, bio: 'Customer support specialist' },
   });
   const emmaWatson = await prisma.user.upsert({
-    where: { email: 'emma.watson@vellum.com' },
+    where: { email: 'emma.watson@vellbase.com' },
     update: { name: 'Emma Watson', role: 'MODERATOR', bio: 'Billing support representative', passwordHash, emailVerified: now },
-    create: { email: 'emma.watson@vellum.com', passwordHash, handle: 'emma.watson', name: 'Emma Watson', role: 'MODERATOR', emailVerified: now, bio: 'Billing support representative' },
+    create: { email: 'emma.watson@vellbase.com', passwordHash, handle: 'emma.watson', name: 'Emma Watson', role: 'MODERATOR', emailVerified: now, bio: 'Billing support representative' },
   });
   const jamesRodriguez = await prisma.user.upsert({
-    where: { email: 'james.rodriguez@vellum.com' },
+    where: { email: 'james.rodriguez@vellbase.com' },
     update: { name: 'James Rodriguez', role: 'MODERATOR', bio: 'Technical support engineer', passwordHash, emailVerified: now },
-    create: { email: 'james.rodriguez@vellum.com', passwordHash, handle: 'james.rodriguez', name: 'James Rodriguez', role: 'MODERATOR', emailVerified: now, bio: 'Technical support engineer' },
+    create: { email: 'james.rodriguez@vellbase.com', passwordHash, handle: 'james.rodriguez', name: 'James Rodriguez', role: 'MODERATOR', emailVerified: now, bio: 'Technical support engineer' },
   });
 
   // 2 Support Admins (role: SUPPORT_ADMIN — closest to SENIOR_SUPPORT in the Role enum)
   const priyaPatel = await prisma.user.upsert({
-    where: { email: 'priya.patel@vellum.com' },
+    where: { email: 'priya.patel@vellbase.com' },
     update: { name: 'Priya Patel', role: 'SUPPORT_ADMIN', bio: 'Support team lead and administrator', passwordHash, emailVerified: now },
-    create: { email: 'priya.patel@vellum.com', passwordHash, handle: 'priya.patel', name: 'Priya Patel', role: 'SUPPORT_ADMIN', emailVerified: now, bio: 'Support team lead and administrator' },
+    create: { email: 'priya.patel@vellbase.com', passwordHash, handle: 'priya.patel', name: 'Priya Patel', role: 'SUPPORT_ADMIN', emailVerified: now, bio: 'Support team lead and administrator' },
   });
   const davidKim = await prisma.user.upsert({
-    where: { email: 'david.kim@vellum.com' },
+    where: { email: 'david.kim@vellbase.com' },
     update: { name: 'David Kim', role: 'SUPPORT_ADMIN', bio: 'Senior support administrator and head of technical support.', passwordHash, emailVerified: now },
-    create: { email: 'david.kim@vellum.com', passwordHash, handle: 'david.kim', name: 'David Kim', role: 'SUPPORT_ADMIN', emailVerified: now, bio: 'Senior support administrator and head of technical support.' },
+    create: { email: 'david.kim@vellbase.com', passwordHash, handle: 'david.kim', name: 'David Kim', role: 'SUPPORT_ADMIN', emailVerified: now, bio: 'Senior support administrator and head of technical support.' },
   });
 
   // 4 Additional Support Agents (10 total) — mix of MODERATOR agents for the 6 teams
   const linaGarcia = await prisma.user.upsert({
-    where: { email: 'lina.garcia@vellum.com' },
+    where: { email: 'lina.garcia@vellbase.com' },
     update: { name: 'Lina Garcia', role: 'MODERATOR', bio: 'Customer success manager focusing on enterprise renewals.', passwordHash, emailVerified: now },
-    create: { email: 'lina.garcia@vellum.com', passwordHash, handle: 'lina.garcia', name: 'Lina Garcia', role: 'MODERATOR', emailVerified: now, bio: 'Customer success manager focusing on enterprise renewals.' },
+    create: { email: 'lina.garcia@vellbase.com', passwordHash, handle: 'lina.garcia', name: 'Lina Garcia', role: 'MODERATOR', emailVerified: now, bio: 'Customer success manager focusing on enterprise renewals.' },
   });
   const rajPatel = await prisma.user.upsert({
-    where: { email: 'raj.patel@vellum.com' },
+    where: { email: 'raj.patel@vellbase.com' },
     update: { name: 'Raj Patel', role: 'MODERATOR', bio: 'Developer advocate specializing in SDK and webhook integrations.', passwordHash, emailVerified: now },
-    create: { email: 'raj.patel@vellum.com', passwordHash, handle: 'raj.patel', name: 'Raj Patel', role: 'MODERATOR', emailVerified: now, bio: 'Developer advocate specializing in SDK and webhook integrations.' },
+    create: { email: 'raj.patel@vellbase.com', passwordHash, handle: 'raj.patel', name: 'Raj Patel', role: 'MODERATOR', emailVerified: now, bio: 'Developer advocate specializing in SDK and webhook integrations.' },
   });
   const sophieDubois = await prisma.user.upsert({
-    where: { email: 'sophie.dubois@vellum.com' },
+    where: { email: 'sophie.dubois@vellbase.com' },
     update: { name: 'Sophie Dubois', role: 'MODERATOR', bio: 'Subscription lifecycle and refund coordinator, handling EU region.', passwordHash, emailVerified: now },
-    create: { email: 'sophie.dubois@vellum.com', passwordHash, handle: 'sophie.dubois', name: 'Sophie Dubois', role: 'MODERATOR', emailVerified: now, bio: 'Subscription lifecycle and refund coordinator, handling EU region.' },
+    create: { email: 'sophie.dubois@vellbase.com', passwordHash, handle: 'sophie.dubois', name: 'Sophie Dubois', role: 'MODERATOR', emailVerified: now, bio: 'Subscription lifecycle and refund coordinator, handling EU region.' },
   });
   const tomNguyen = await prisma.user.upsert({
-    where: { email: 'tom.nguyen@vellum.com' },
+    where: { email: 'tom.nguyen@vellbase.com' },
     update: { name: 'Tom Nguyen', role: 'MODERATOR', bio: 'Tier 1 general support specialist covering weekends and APAC hours.', passwordHash, emailVerified: now },
-    create: { email: 'tom.nguyen@vellum.com', passwordHash, handle: 'tom.nguyen', name: 'Tom Nguyen', role: 'MODERATOR', emailVerified: now, bio: 'Tier 1 general support specialist covering weekends and APAC hours.' },
+    create: { email: 'tom.nguyen@vellbase.com', passwordHash, handle: 'tom.nguyen', name: 'Tom Nguyen', role: 'MODERATOR', emailVerified: now, bio: 'Tier 1 general support specialist covering weekends and APAC hours.' },
   });
 
   // ─── 6. User Settings ────────────────────────────────────────────────────────

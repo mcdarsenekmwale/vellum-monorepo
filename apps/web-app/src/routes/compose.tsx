@@ -11,8 +11,8 @@ import { useI18n } from "@/components/providers/I18nProvider";
 export const Route = createFileRoute("/compose")({
   head: () => ({
     meta: [
-      { title: "New story — Vellum" },
-      { name: "description", content: "Draft and publish a new story on Vellum." },
+      { title: "New story — Vellbase" },
+      { name: "description", content: "Draft and publish a new story on Vellbase." },
       { name: "robots", content: "noindex" },
     ],
   }),

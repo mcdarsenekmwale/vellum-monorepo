@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_app/advertisements")({
-  head: () => ({ meta: [{ title: "Advertisements · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Advertisements · Vellbase Admin" }] }),
   component: AdvertisementsPage,
 });
 

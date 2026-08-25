@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/users/deleted")({
-  head: () => ({ meta: [{ title: "Deleted Users · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Deleted Users · Vellbase Admin" }] }),
   component: DeletedUsersList,
 });
 

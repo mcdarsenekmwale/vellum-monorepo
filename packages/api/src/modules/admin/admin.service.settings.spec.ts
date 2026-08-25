@@ -159,11 +159,11 @@ describe('AdminService — settings', () => {
     it('passes the category when provided', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockResolvedValue({});
 
-      await service.updateSystemSetting('workspace.name', 'Vellum', 'general');
+      await service.updateSystemSetting('workspace.name', 'Vellbase', 'general');
 
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          update: expect.objectContaining({ value: 'Vellum', category: 'general' }),
+          update: expect.objectContaining({ value: 'Vellbase', category: 'general' }),
         }),
       );
     });
@@ -243,12 +243,12 @@ describe('AdminService — settings', () => {
     it('delegates to prisma.findUnique with the key', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockResolvedValue({
         key: 'workspace.name',
-        value: 'Vellum',
+        value: 'Vellbase',
       });
 
       const result = await service.getSettingByKey('workspace.name');
 
-      expect(result?.value).toBe('Vellum');
+      expect(result?.value).toBe('Vellbase');
       expect(prisma.systemSetting.findUnique).toHaveBeenCalledWith({ where: { key: 'workspace.name' } });
     });
   });

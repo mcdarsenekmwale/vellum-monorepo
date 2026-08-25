@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { createApiClient, ApiClient, Storage } from '@vellum/api-client';
+import { createApiClient, ApiClient, Storage } from '@vellbase/api-client';
 import { apiBaseUrl } from '../config/env';
 import { router } from 'expo-router';
 
@@ -83,9 +83,9 @@ const secureTokens: Storage = {
 };
 
 // Composite storage: tokens from SecureStore, everything else from AsyncStorage.
-// The api-client stores under 3 well-known keys: vellum_access_token,
-// vellum_refresh_token, vellum_user. We route the first two through SecureStore.
-const TOKEN_KEYS = new Set(['vellum_access_token', 'vellum_refresh_token']);
+// The api-client stores under 3 well-known keys: vellbase_access_token,
+// vellbase_refresh_token, vellbase_user. We route the first two through SecureStore.
+const TOKEN_KEYS = new Set(['vellbase_access_token', 'vellbase_refresh_token']);
 
 const storage: Storage = {
   getItem: async (key: string) => {
@@ -135,4 +135,4 @@ export type {
   Media,
   PaginatedResponse,
   AuthResponse,
-} from '@vellum/api-client/types';
+} from '@vellbase/api-client/types';

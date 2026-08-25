@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Keyboard, Platform 
 import { Avatar } from '../Avatar';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { X, Heart } from 'lucide-react-native';
-import type { Comment } from '@vellum/api-client/types';
+import type { Comment } from '@vellbase/api-client/types';
 
 interface HighlightCommentsProps {
   highlightId: string | null;
@@ -138,6 +138,7 @@ const HighlightComments = memo(forwardRef<HighlightCommentsRef, HighlightComment
         contentContainerStyle={styles.commentsList}
         renderItem={renderCommentItem}
         ListEmptyComponent={ListEmptyComponent}
+        // @ts-expect-error: react-native-reanimated Destructor type incompatibility across native libs (pre-existing)
         focusHook={React.useEffect}
       />
 

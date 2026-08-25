@@ -78,7 +78,7 @@ async function translateBatch(lang: string, ns: string, batch: Array<{ns: string
   const siblingCtx = siblings.slice(0, 3).map(s => `  ${s.key}: "${s.en}" → "${s.translated}"`).join("\n");
   const items = batch.map(i => `  "${i.key}": "${i.enValue}"`).join(",\n");
 
-  const prompt = `You are translating UI strings for Vellum, an article-reading social app.
+  const prompt = `You are translating UI strings for Vellbase, an article-reading social app.
 Target language: ${LANG_NAMES[lang] || lang} (code: ${lang})
 Namespace: ${ns}
 Respond ONLY with valid JSON: {"key1": "translation1", ...}

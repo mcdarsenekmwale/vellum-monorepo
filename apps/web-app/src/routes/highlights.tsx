@@ -10,11 +10,11 @@ import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 export const Route = createFileRoute("/highlights")({
   head: () => ({
     meta: [
-      { title: "Highlights — Vellum" },
+      { title: "Highlights — Vellbase" },
       {
         name: "description",
         content:
-          "Short-form visual stories from writers and publications on Vellum.",
+          "Short-form visual stories from writers and publications on Vellbase.",
       },
     ],
   }),

@@ -42,7 +42,7 @@ export const SETTINGS_DEFINITIONS: SettingDefaultValue[] = [
   // ---------------------------------------------------------------------------
   {
     key: 'workspace.name',
-    value: 'Vellum',
+    value: 'Vellbase',
     category: 'general',
     description: 'The display name of your workspace',
     type: 'text',
@@ -404,7 +404,7 @@ export const SETTINGS_DEFINITIONS: SettingDefaultValue[] = [
   },
   {
     key: 'email.from_address',
-    value: 'noreply@vellum.com',
+    value: 'noreply@vellbase.com',
     category: 'email',
     description: 'Default from email address',
     type: 'email',
@@ -412,7 +412,7 @@ export const SETTINGS_DEFINITIONS: SettingDefaultValue[] = [
   },
   {
     key: 'email.from_name',
-    value: 'Vellum',
+    value: 'Vellbase',
     category: 'email',
     description: 'Default from display name',
     type: 'text',

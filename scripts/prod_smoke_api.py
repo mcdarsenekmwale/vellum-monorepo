@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 BASE = os.environ.get("API_BASE", "http://localhost:3001")
 API = f"{BASE}/api"
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellum.com")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@vellbase.com")
 ADMIN_PW = os.environ.get("ADMIN_PW", "password123")
 
 results: list[dict] = []
@@ -106,9 +106,9 @@ def main() -> int:
     try:
         admin = login(ADMIN_EMAIL, ADMIN_PW)
     except AssertionError as e:
-        record("POST /auth/login admin@vellum.com", False, "0", str(e))
+        record("POST /auth/login admin@vellbase.com", False, "0", str(e))
         return finalize()
-    record("POST /auth/login admin@vellum.com → tokens + user", True, "200",
+    record("POST /auth/login admin@vellbase.com → tokens + user", True, "200",
            note=f"roles: {admin.user.get('roles') if isinstance(admin.user, dict) else '?'}")
 
     # 3. Me endpoint
@@ -128,7 +128,7 @@ def main() -> int:
     st, created, _ = req("POST", "/support/departments", token=admin.access, body={
         "name": f"QA Dept {uniq}",
         "key": f"qa_{uniq}",
-        "email": f"qa-dept-{uniq}@vellum.test",
+        "email": f"qa-dept-{uniq}@vellbase.test",
         "description": "Smoke test dept",
     })
     created_ok = st == 201 and isinstance(created, dict) and "id" in created
@@ -139,7 +139,7 @@ def main() -> int:
 
     # 5b. create duplicate → 409
     st, dpl, _ = req("POST", "/support/departments", token=admin.access, body={
-        "name": f"QA Dept {uniq}", "key": f"qa_{uniq}", "email": f"qa-dept-{uniq}@vellum.test",
+        "name": f"QA Dept {uniq}", "key": f"qa_{uniq}", "email": f"qa-dept-{uniq}@vellbase.test",
     })
     record("POST /support/departments duplicate key → 409", st in (409, 400), str(st))
 

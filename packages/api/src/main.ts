@@ -74,9 +74,9 @@ async function bootstrap() {
     .map((o) => o.trim())
     .filter(Boolean);
   const requiredOrigins = [
-    'https://vellum-monorepo-webapp.vercel.app',
-    'https://vellum-admin-dashboard-eta.vercel.app',
-    'https://vellum-admin-dashboard-eta-kappa.vercel.app',
+    'https://vellbase-monorepo-webapp.vercel.app',
+    'https://vellbase-admin-dashboard-eta.vercel.app',
+    'https://vellbase-admin-dashboard-eta-kappa.vercel.app',
   ];
   const corsOrigins = [...new Set([...envCorsOrigins, ...requiredOrigins])];
 
@@ -92,8 +92,8 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Vellum API')
-    .setDescription('Vellum Backend API Documentation')
+    .setTitle('Vellbase API')
+    .setDescription('Vellbase Backend API Documentation')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
@@ -119,7 +119,7 @@ async function bootstrap() {
   const routeCount = (server as any)._events?.request?.router?.stack?.length || 0;
   
   logger.log(`\n============================================================`);
-  logger.log(`  Vellum API — ${nodeEnv.toUpperCase()} MODE`);
+  logger.log(`  Vellbase API — ${nodeEnv.toUpperCase()} MODE`);
   logger.log(`  Server: http://localhost:${port}`);
   logger.log(`  API Docs: http://localhost:${port}/api/docs`);
   logger.log(`  Health: http://localhost:${port}/api/health`);

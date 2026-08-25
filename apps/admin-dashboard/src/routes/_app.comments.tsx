@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/comments")({
-  head: () => ({ meta: [{ title: "Comments · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Comments · Vellbase Admin" }] }),
   component: CommentsPage,
 });
 

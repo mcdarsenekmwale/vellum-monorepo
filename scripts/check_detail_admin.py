@@ -19,7 +19,7 @@ def req(method, path, token=None, body=None):
             body = e.read().decode(errors="ignore")[:300]
         return e.code, body
 
-_, login = req("POST", "/auth/login", body={"email":"admin@vellum.com","password":"password123"})
+_, login = req("POST", "/auth/login", body={"email":"admin@vellbase.com","password":"password123"})
 t = login["accessToken"]
 
 # Find Jane Doe user via admin list (since browser clicked on that)

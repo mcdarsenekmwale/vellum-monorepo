@@ -70,7 +70,7 @@ import { avatarUrl } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/support/tickets/deleted")({
-  head: () => ({ meta: [{ title: "Deleted Tickets · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Deleted Tickets · Vellbase Admin" }] }),
   component: DeletedTicketsPage,
 });
 

@@ -400,11 +400,11 @@ describe("SupportService — Agent Management (TDD RED tests)", () => {
 
     // — Seed users —
     prisma.users = [
-      { id: "u-sarah", name: "Sarah Chen", email: "sarah.chen@vellum.com", handle: "sarahc", avatar: null, role: "MODERATOR" },
-      { id: "u-mike", name: "Mike Johnson", email: "mike.johnson@vellum.com", handle: "mikej", avatar: null, role: "MODERATOR" },
-      { id: "u-emma", name: "Emma Watson", email: "emma.watson@vellum.com", handle: "emmaw", avatar: null, role: "MODERATOR" },
-      { id: "u-james", name: "James Rodriguez", email: "james.rodriguez@vellum.com", handle: "jamesr", avatar: null, role: "MODERATOR" },
-      { id: "u-priya", name: "Priya Patel", email: "priya.patel@vellum.com", handle: "priyap", avatar: null, role: "SUPPORT_ADMIN" },
+      { id: "u-sarah", name: "Sarah Chen", email: "sarah.chen@vellbase.com", handle: "sarahc", avatar: null, role: "MODERATOR" },
+      { id: "u-mike", name: "Mike Johnson", email: "mike.johnson@vellbase.com", handle: "mikej", avatar: null, role: "MODERATOR" },
+      { id: "u-emma", name: "Emma Watson", email: "emma.watson@vellbase.com", handle: "emmaw", avatar: null, role: "MODERATOR" },
+      { id: "u-james", name: "James Rodriguez", email: "james.rodriguez@vellbase.com", handle: "jamesr", avatar: null, role: "MODERATOR" },
+      { id: "u-priya", name: "Priya Patel", email: "priya.patel@vellbase.com", handle: "priyap", avatar: null, role: "SUPPORT_ADMIN" },
       { id: "u-alex", name: "Alex Morgan", email: "alex.morgan@example.com", handle: "alexm", avatar: null, role: "USER" },
       { id: "u-jordan", name: "Jordan Taylor", email: "jordan.taylor@example.com", handle: "jordant", avatar: null, role: "USER" },
     ];
@@ -503,8 +503,8 @@ describe("SupportService — Agent Management (TDD RED tests)", () => {
       expect(result.data[0].user.name).toBe("Sarah Chen");
     });
 
-    it("searches by user email (vellum.com returns 4 agents)", async () => {
-      const result = await service.listAgents({ search: "vellum.com", page: 1, limit: 10 });
+    it("searches by user email (vellbase.com returns 4 agents)", async () => {
+      const result = await service.listAgents({ search: "vellbase.com", page: 1, limit: 10 });
       expect(result.total).toBe(4);
     });
 

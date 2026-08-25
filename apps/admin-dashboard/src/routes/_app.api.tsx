@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/api")({
-  head: () => ({ meta: [{ title: "API · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "API · Vellbase Admin" }] }),
   component: ApiPage,
 });
 
@@ -152,7 +152,7 @@ function ApiPage() {
                 <DialogHeader>
                   <DialogTitle>API Documentation</DialogTitle>
                   <DialogDescription>
-                    Learn how to use the Vellum API to integrate with your applications.
+                    Learn how to use the Vellbase API to integrate with your applications.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -160,14 +160,14 @@ function ApiPage() {
                     <Label>Base URL</Label>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 rounded bg-muted px-3 py-2 font-mono text-xs">
-                        https://api.vellum.example.com/v1
+                        https://api.vellbase.example.com/v1
                       </code>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="size-8"
                         onClick={() => {
-                          navigator.clipboard.writeText("https://api.vellum.example.com/v1");
+                          navigator.clipboard.writeText("https://api.vellbase.example.com/v1");
                         }}
                       >
                         <Copy className="size-4" />

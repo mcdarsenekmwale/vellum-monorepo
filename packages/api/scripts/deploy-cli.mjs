@@ -59,7 +59,7 @@ async function main() {
   const result = await compute.deploy({
     strategy,
     projectId,
-    appName: "@vellum/api",
+    appName: "@vellbase/api",
     region,
     envVars: {
       NODE_ENV: "production",

@@ -84,7 +84,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/posts")({
-  head: () => ({ meta: [{ title: "Posts · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Posts · Vellbase Admin" }] }),
   component: PostsPage,
 });
 

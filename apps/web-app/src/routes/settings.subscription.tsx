@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/settings/subscription")({
   head: () => ({
-    meta: [{ title: "Subscription — Vellum" }],
+    meta: [{ title: "Subscription — Vellbase" }],
   }),
   component: SubscriptionPage,
 });
@@ -73,7 +73,7 @@ function statusTone(s?: string) {
 const DEFAULT_PLANS: SubscriptionPlan[] = [
   {
     id: "pro-monthly",
-    name: "Vellum Pro",
+    name: "Vellbase Pro",
     description: "Everything you need to read and write beautifully.",
     amountCents: 499,
     currency: "USD",
@@ -89,7 +89,7 @@ const DEFAULT_PLANS: SubscriptionPlan[] = [
   },
   {
     id: "pro-yearly",
-    name: "Vellum Pro Annual",
+    name: "Vellbase Pro Annual",
     description: "Two months free, billed yearly.",
     amountCents: 4790,
     currency: "USD",
@@ -240,7 +240,7 @@ function SubscriptionPage() {
             <p className="text-sm text-muted-foreground mt-1">
               {hasActiveSub
                 ? "Manage your current plan."
-                : "Upgrade Vellum for an even better experience."}
+                : "Upgrade Vellbase for an even better experience."}
             </p>
           </div>
         </header>
@@ -345,7 +345,7 @@ function SubscriptionPage() {
                 <div className="flex items-center gap-3 mb-2">
                   <Sparkles className="size-5 text-accent" />
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-accent">
-                    Vellum Free
+                    Vellbase Free
                   </h2>
                 </div>
                 <p className="text-2xl font-semibold mb-4" data-testid="subscription-empty-headline">

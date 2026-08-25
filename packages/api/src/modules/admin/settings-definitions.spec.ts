@@ -233,7 +233,7 @@ describe('settings-definitions', () => {
       });
 
       it('accepts strings within bounds', () => {
-        const result = validateSettingValue('workspace.name', 'Vellum');
+        const result = validateSettingValue('workspace.name', 'Vellbase');
         expect(result.valid).toBe(true);
       });
     });

@@ -163,7 +163,7 @@ export class WebhooksService {
     const secret =
       this.configService.get('API_KEY_SECRET') ||
       this.configService.get('JWT_SECRET') ||
-      'vellum-dev-secret-change-me';
+      'vellbase-dev-secret-change-me';
     return crypto.createHmac('sha256', secret).update(rawKey).digest('hex');
   }
 
@@ -765,7 +765,7 @@ export class WebhooksService {
         user: 'john.doe@example.com',
         message:
           'Sample description: The office printer in Room 404 is showing an error code. Please investigate.',
-        url: 'https://vellum-admin.example.com/tickets',
+        url: 'https://vellbase-admin.example.com/tickets',
       };
     }
     if (e.includes('alert')) {
@@ -800,7 +800,7 @@ export class WebhooksService {
         author: 'Jane Smith',
         excerpt: 'A short sample excerpt for a published article.',
         publishedAt: new Date().toISOString(),
-        url: 'https://vellum.example.com/article/slug',
+        url: 'https://vellbase.example.com/article/slug',
       };
     }
     if (e.includes('user') && e.includes('creat')) {

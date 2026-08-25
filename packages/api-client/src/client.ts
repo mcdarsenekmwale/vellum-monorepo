@@ -42,9 +42,9 @@ export interface Storage {
 }
 
 // Token storage keys
-const TOKEN_KEY = 'vellum_access_token';
-const REFRESH_TOKEN_KEY = 'vellum_refresh_token';
-const USER_KEY = 'vellum_user';
+const TOKEN_KEY = 'vellbase_access_token';
+const REFRESH_TOKEN_KEY = 'vellbase_refresh_token';
+const USER_KEY = 'vellbase_user';
 
 // API Client Configuration
 export interface ApiClientConfig {

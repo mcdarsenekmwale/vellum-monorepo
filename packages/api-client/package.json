@@ -1,5 +1,5 @@
 {
-  "name": "@vellum/api-client",
+  "name": "@vellbase/api-client",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

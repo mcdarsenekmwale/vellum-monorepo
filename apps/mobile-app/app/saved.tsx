@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { Bookmark } from 'lucide-react-native';
 import { apiClient } from '../lib/api';
 import { useState, useEffect } from 'react';
-import type { Article } from '@vellum/api-client/types';
+import type { Article } from '@vellbase/api-client/types';
 import { useTheme } from 'context/ThemeProvider';
 import { useI18n } from '../context/I18nProvider';
 

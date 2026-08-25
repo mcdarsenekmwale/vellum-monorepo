@@ -30,7 +30,7 @@ def wait_until(fn, tries=8, sleep=2):
     return False
 
 # 1) Login page already visited. Fill creds & submit
-print(">> Step 1: Login admin@vellum.com / password123")
+print(">> Step 1: Login admin@vellbase.com / password123")
 time.sleep(1.5)
 raw, els = elements()
 if "Sign in" not in raw and "Email" not in raw and "Dashboard" in raw:
@@ -40,7 +40,7 @@ else:
     email_ref = find_ref(els, "Email") or find_ref(els, "email")
     if email_ref:
         sh(f"agent-browser click ref@{email_ref}")
-        sh("agent-browser type admin@vellum.com")
+        sh("agent-browser type admin@vellbase.com")
         time.sleep(0.5)
     else:
         print("No email field found. Raw snippet:")
@@ -63,7 +63,7 @@ else:
 # 2) Wait for dashboard
 def on_dashboard():
     raw, _ = elements()
-    return ("Dashboard" in raw or "Vellum Admin" in raw) and "Sign in" not in raw
+    return ("Dashboard" in raw or "Vellbase Admin" in raw) and "Sign in" not in raw
 
 ok = wait_until(on_dashboard, tries=10, sleep=2)
 print("Dashboard reached?", ok)

@@ -711,7 +711,7 @@ export class RbacService {
       if (roleId) {
         await this.assignRoleToUser(user.id, roleId, { isPrimary: true });
       }
-      if (user.email === 'admin@vellum.com') {
+      if (user.email === 'admin@vellbase.com') {
         const superAdminId = roleMap.get('super_admin');
         if (superAdminId) await this.assignRoleToUser(user.id, superAdminId, { isPrimary: true });
       }

@@ -24,7 +24,7 @@ import { useSettingsStore } from "@/components/providers/SettingsStore";
 export const Route = createFileRoute("/settings/")({
   component: SettingsIndexPage,
   head: () => ({
-    meta: [{ title: "Settings — Vellum" }],
+    meta: [{ title: "Settings — Vellbase" }],
   }),
 });
 
@@ -179,7 +179,7 @@ function SettingsIndexPage() {
         </section>
 
         <p className="text-center text-xs text-muted-foreground">
-          © 2026 Vellum ·{" "}
+          © 2026 Vellbase ·{" "}
           <Link to="/settings/privacy" className="hover:underline">
             Privacy
           </Link>{" "}

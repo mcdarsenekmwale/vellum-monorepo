@@ -33,7 +33,7 @@ import time
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeoutError
 
-DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "https://vellum-admin-dashboard-eta-kappa.vercel.app")
+DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "https://vellbase-admin-dashboard-eta-kappa.vercel.app")
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/tmp/support-org-e2e")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -154,7 +154,7 @@ def main():
         page.wait_for_load_state("networkidle", timeout=20000)
         assert_visible(page, 'input[type="email"]', "Email input")
         assert_visible(page, 'input[type="password"]', "Password input")
-        page.locator('input[type="email"]').fill("admin@vellum.com")
+        page.locator('input[type="email"]').fill("admin@vellbase.com")
         page.locator('input[type="password"]').fill("password123")
         # Prefer submit button; fall back to Sign in / Log in
         submit = page.locator('button[type="submit"]')
@@ -229,7 +229,7 @@ def main():
                     pass
             # Activate by default; email/description optional
             try:
-                page.locator('input[name="email"]').fill(f"qa-{TEST_SUFFIX}@vellum.app")
+                page.locator('input[name="email"]').fill(f"qa-{TEST_SUFFIX}@vellbase.app")
             except Exception:
                 pass
             try:
@@ -661,7 +661,7 @@ def main():
         # ──────────────────────────────────────────────────────────────
         support_admin_ok = role_journey(
             page,
-            "admin@vellum.com",
+            "admin@vellbase.com",
             "password123",
             "SUPPORT_ADMIN",
             expect_pages=[
@@ -680,8 +680,8 @@ def main():
         role_ok = True
         # Team Manager / Agent login attempts may not have fixed credentials — use role journey as light smoke
         for creds in [
-            ("agent@vellum.com", "password123", "SUPPORT_AGENT", [("/support/tickets", "Tickets"), ("/support", "Support Dashboard")], [("/support/departments", "Departments")]),
-            ("manager@vellum.com", "password123", "TEAM_MANAGER", [("/support/teams", "Teams"), ("/support", "Support Dashboard")], [("/roles/create", "Create role")]),
+            ("agent@vellbase.com", "password123", "SUPPORT_AGENT", [("/support/tickets", "Tickets"), ("/support", "Support Dashboard")], [("/support/departments", "Departments")]),
+            ("manager@vellbase.com", "password123", "TEAM_MANAGER", [("/support/teams", "Teams"), ("/support", "Support Dashboard")], [("/roles/create", "Create role")]),
         ]:
             email, pw, role, expect_pages, deny_pages = creds
             try:

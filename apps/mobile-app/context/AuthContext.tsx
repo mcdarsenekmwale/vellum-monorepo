@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { apiClient } from '../lib/api';
-import type { User } from '@vellum/api-client/types';
+import type { User } from '@vellbase/api-client/types';
 
 interface AuthContextType {
   user: User | null;

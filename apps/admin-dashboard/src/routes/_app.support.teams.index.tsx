@@ -96,7 +96,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/support/teams/")({
-  head: () => ({ meta: [{ title: "Support Teams · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Teams · Vellbase Admin" }] }),
   component: TeamsPage,
 });
 

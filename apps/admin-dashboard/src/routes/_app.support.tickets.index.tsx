@@ -121,7 +121,7 @@ import { useCurrentUser } from "@/lib/api/hooks";
 import { canVisit } from "@/lib/auth/rbac";
 
 export const Route = createFileRoute("/_app/support/tickets/")({
-  head: () => ({ meta: [{ title: "Support Tickets · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Tickets · Vellbase Admin" }] }),
   component: TicketsPage,
   validateSearch: (search: Record<string, unknown>) => ({
     status: (search.status as string) || undefined,

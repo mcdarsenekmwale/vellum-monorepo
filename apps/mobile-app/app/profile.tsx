@@ -12,7 +12,7 @@ import { Pencil } from 'lucide-react-native';
 import { useAuthState } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { useState, useEffect, useCallback } from 'react';
-import type { Article } from '@vellum/api-client/types';
+import type { Article } from '@vellbase/api-client/types';
 import { Avatar } from '../components/Avatar';
 import { useTheme } from 'context/ThemeProvider';
 import { useI18n } from '../context/I18nProvider';

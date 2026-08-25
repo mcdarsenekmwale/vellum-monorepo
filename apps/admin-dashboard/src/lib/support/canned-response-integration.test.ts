@@ -34,10 +34,10 @@ const mockTicket: VariableContext = {
   userEmail: "john.doe@example.com",
   userHandle: "john_doe",
   agentName: "Jane Smith",
-  agentEmail: "jane.smith@vellum.com",
+  agentEmail: "jane.smith@vellbase.com",
   departmentName: "Engineering",
   teamName: "Frontend",
-  ticketUrl: "https://admin.vellum.com/support/tickets/ticket-uuid-123",
+  ticketUrl: "https://admin.vellbase.com/support/tickets/ticket-uuid-123",
 };
 
 const mockCannedResponse: SimulatedCannedResponse = {
@@ -237,7 +237,7 @@ describe("Canned Response Integration Tests", () => {
         body: "View [ticket]({{ticket_url}}) for {{user_name}}",
       };
       const { newReply } = simulateInsertCannedResponse(cr, "", 0, 0, mockTicket);
-      expect(newReply).toBe("View [ticket](https://admin.vellum.com/support/tickets/ticket-uuid-123) for John Doe");
+      expect(newReply).toBe("View [ticket](https://admin.vellbase.com/support/tickets/ticket-uuid-123) for John Doe");
     });
 
     it("preserves blockquotes in canned response", () => {

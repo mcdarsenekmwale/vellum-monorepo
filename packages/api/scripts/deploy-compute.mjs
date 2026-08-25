@@ -47,7 +47,7 @@ async function main() {
   console.log("→ Deploying to Prisma Compute...");
   console.log(`  Project: ${projectId}`);
   console.log(`  App ID: ${appId}`);
-  console.log(`  Service: @vellum/api`);
+  console.log(`  Service: @vellbase/api`);
   console.log(`  Region: ${region}`);
   console.log("");
 
@@ -66,7 +66,7 @@ async function main() {
     strategy,
     projectId,
     appId,
-    appName: "@vellum/api",
+    appName: "@vellbase/api",
     region,
     envVars,
     portMapping: { http: 3000 },

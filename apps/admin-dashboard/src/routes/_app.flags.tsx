@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/flags")({
-  head: () => ({ meta: [{ title: "Feature Flags · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Feature Flags · Vellbase Admin" }] }),
   component: FlagsPage,
 });
 

@@ -5,7 +5,7 @@ import { useJobs, type BackgroundJob } from "@/lib/api/hooks";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_app/jobs")({
-  head: () => ({ meta: [{ title: "Background Jobs · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Background Jobs · Vellbase Admin" }] }),
   component: JobsPage,
 });
 

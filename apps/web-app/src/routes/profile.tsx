@@ -4,8 +4,8 @@ import { requireAuth } from "@/lib/auth";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile — Vellum" },
-      { name: "description", content: "Your reading activity, likes and drafts on Vellum." },
+      { title: "Your profile — Vellbase" },
+      { name: "description", content: "Your reading activity, likes and drafts on Vellbase." },
     ],
   }),
   beforeLoad: async ({ location }) => {

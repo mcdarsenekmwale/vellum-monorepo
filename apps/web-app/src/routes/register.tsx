@@ -76,7 +76,7 @@ function RegisterPage() {
             to="/"
             className="absolute top-10 left-10 xl:left-16 text-white font-display italic text-3xl tracking-tight hover:opacity-80 transition-opacity"
           >
-            Vellum.
+            Vellbase.
           </Link>
 
           <blockquote className="max-w-md">
@@ -113,7 +113,7 @@ function RegisterPage() {
           to="/"
           className="lg:hidden absolute top-8 left-8 text-foreground font-display italic text-2xl tracking-tight"
         >
-          Vellum.
+          Vellbase.
         </Link>
 
         <div className="w-full max-w-[420px]">

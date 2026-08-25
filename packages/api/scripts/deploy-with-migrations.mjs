@@ -69,7 +69,7 @@ async function main() {
     strategy,
     projectId,
     appId,
-    appName: "@vellum/api",
+    appName: "@vellbase/api",
     region: "us-east-1",
     envVars: {
       NODE_ENV: "production",

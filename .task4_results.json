@@ -1,0 +1,8 @@
+{
+  "api_tsc": 1,
+  "api_build": -1,
+  "admin_build": 1,
+  "web_build": 1,
+  "mobile_tchk": 2,
+  "health": "SKIPPED(missing env or build failed)"
+}

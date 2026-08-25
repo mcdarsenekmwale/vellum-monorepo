@@ -342,12 +342,13 @@ export interface WebhookConfig {
 }
 
 export interface WebhookLog {
+  timestamp?: string;
   id: string;
   webhookId: string;
   event: string;
   payload: unknown;
   statusCode: number | null;
-  response: string | null;
+  response: any | null;
   error: string | null;
   durationMs?: number | null;
   attempt?: number;
@@ -713,8 +714,8 @@ export async function uploadAvatar(id: string, file: File): Promise<User> {
 
   const base = API_BASE_URL.replace(/\/+$/, "");
   const url = `${base}/api/admin/users/${id}/avatar`;
-  const token = localStorage.getItem("vellum.admin.session.v1")
-    ? JSON.parse(localStorage.getItem("vellum.admin.session.v1")!).token
+  const token = localStorage.getItem("vellbase.admin.session.v1")
+    ? JSON.parse(localStorage.getItem("vellbase.admin.session.v1")!).token
     : null;
 
   const res = await fetch(url, {

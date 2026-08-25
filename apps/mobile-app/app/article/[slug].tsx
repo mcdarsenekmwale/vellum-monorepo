@@ -30,7 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useArticle, useSocialActions, useAuthState } from '../../hooks/useApi';
 import { apiClient } from '../../lib/api';
-import type { Comment } from '@vellum/api-client/types';
+import type { Comment } from '@vellbase/api-client/types';
 import ShimmerImage from '../../components/ShimmerImage';
 import { Avatar } from '../../components/Avatar';
 import { ArticleActions } from '../../components/ArticleActions';

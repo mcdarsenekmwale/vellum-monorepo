@@ -1,6 +1,6 @@
-# Vellum Code Wiki
+# Vellbase Code Wiki
 
-> Comprehensive technical documentation for the Vellum content platform monorepo.
+> Comprehensive technical documentation for the Vellbase content platform monorepo.
 
 ---
 
@@ -8,7 +8,7 @@
 
 1. [Project Overview](#1-project-overview)
 2. [Architecture & System Design](#2-architecture--system-design)
-3. [Backend API (`@vellum/api`)](#3-backend-api-vellumapi)
+3. [Backend API (`@vellbase/api`)](#3-backend-api-vellbaseapi)
 4. [Database Model](#4-database-model)
 5. [Shared Packages](#5-shared-packages)
 6. [Admin Dashboard](#6-admin-dashboard)
@@ -26,7 +26,7 @@
 
 ## 1. Project Overview
 
-**Vellum** is a full-stack content publishing platform supporting articles, short-form video highlights, social interactions (likes, comments, follows, bookmarks), stories, and a comprehensive admin dashboard. The project follows a **monorepo** structure using npm workspaces.
+**Vellbase** is a full-stack content publishing platform supporting articles, short-form video highlights, social interactions (likes, comments, follows, bookmarks), stories, and a comprehensive admin dashboard. The project follows a **monorepo** structure using npm workspaces.
 
 ### 1.1 Tech Stack
 
@@ -47,7 +47,7 @@
 ### 1.2 Monorepo Structure
 
 ```
-vellum-monorepo/
+vellbase-monorepo/
 ├── packages/                    # Shared libraries
 │   ├── api/                     # NestJS backend API
 │   ├── api-client/              # Shared TypeScript API client
@@ -80,7 +80,7 @@ vellum-monorepo/
 │         │                │                      │               │
 │         └────────────────┼──────────────────────┘               │
 │                          │                                      │
-│                    @vellum/api-client                           │
+│                    @vellbase/api-client                           │
 │                    (fetch-based, JWT auth)                      │
 └──────────────────────────┼──────────────────────────────────────┘
                            │ HTTPS / REST
@@ -156,7 +156,7 @@ Route Handler
 
 ---
 
-## 3. Backend API (`@vellum/api`)
+## 3. Backend API (`@vellbase/api`)
 
 Located at [packages/api/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api/).
 
@@ -781,7 +781,7 @@ All endpoints are prefixed with `/api`.
 
 ## 5. Shared Packages
 
-### 5.1 `@vellum/api-client`
+### 5.1 `@vellbase/api-client`
 
 **Location**: [packages/api-client/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/api-client/)
 
@@ -799,25 +799,25 @@ Cross-platform TypeScript API client (browser, React Native, Node.js).
 
 **Endpoint coverage**: Auth, Users, Articles, Highlights, Categories, Comments, Likes, Bookmarks, Follows, Notifications, Stories, Search, Media, Admin, Webhooks, Health
 
-### 5.2 `@vellum/auth`
+### 5.2 `@vellbase/auth`
 
 **Location**: [packages/auth/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/auth/)
 
 Shared React auth context provider.
 
-### 5.3 `@vellum/react-hooks`
+### 5.3 `@vellbase/react-hooks`
 
 **Location**: [packages/react-hooks/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/react-hooks/)
 
 Shared React hooks including `useApi`.
 
-### 5.4 `@vellum/social-store`
+### 5.4 `@vellbase/social-store`
 
 **Location**: [packages/social-store/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/social-store/)
 
 Shared Zustand-like state store for social interactions.
 
-### 5.5 `@vellum/utils`
+### 5.5 `@vellbase/utils`
 
 **Location**: [packages/utils/](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/packages/utils/)
 
@@ -841,7 +841,7 @@ Full-featured admin panel built with React + TanStack Router + shadcn/ui.
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
 - **State**: Custom hooks + API client
-- **Auth**: JWT via @vellum/api-client + auth context
+- **Auth**: JWT via @vellbase/api-client + auth context
 
 ### 6.2 Route Structure
 
@@ -905,9 +905,9 @@ Located in [src/components/dashboard/](file:///Users/mcdarsenemwale/projects/dev
 
 ### 6.4 Authentication & RBAC
 
-- **Auth**: JWT via `@vellum/api-client` with auth context
+- **Auth**: JWT via `@vellbase/api-client` with auth context
 - **RBAC**: Role-based access control via [src/lib/auth/rbac.ts](file:///Users/mcdarsenemwale/projects/dev/ai_article_worskspace/apps/admin-dashboard/src/lib/auth/rbac.ts)
-- **Route protection**: `@vellum/auth` context guards
+- **Route protection**: `@vellbase/auth` context guards
 
 ---
 
@@ -923,8 +923,8 @@ Public-facing content consumption web app.
 - **Routing**: TanStack Router (file-based)
 - **Styling**: Tailwind CSS
 - **Components**: shadcn/ui (partial)
-- **State**: @vellum/social-store + custom hooks
-- **Auth**: @vellum/api-client + auth context
+- **State**: @vellbase/social-store + custom hooks
+- **Auth**: @vellbase/api-client + auth context
 
 ### 7.2 Route Structure
 
@@ -977,7 +977,7 @@ Cross-platform mobile app built with Expo (React Native).
 - **Framework**: Expo SDK + React Native
 - **Navigation**: Expo Router (file-based)
 - **State**: React Context (AuthContext)
-- **API**: @vellum/api-client (via custom api.ts wrapper)
+- **API**: @vellbase/api-client (via custom api.ts wrapper)
 - **Platform**: iOS + Android
 
 ### 8.2 Route Structure
@@ -1555,7 +1555,7 @@ The platform has **foundational building blocks** but no integrated bot/AI agent
                            │
                            ▼
 ┌──────────────────────────────────────────────────────────┐
-│                   Vellum Platform                        │
+│                   Vellbase Platform                        │
 │                                                           │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │              Bot User (System User)               │  │
@@ -1720,10 +1720,10 @@ External System → POST /api/webhooks/content (with x-api-key header)
 curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "publisher@vellum.app",
+    "email": "publisher@vellbase.app",
     "password": "SecurePass123!",
-    "handle": "vellumpublisher",
-    "name": "Vellum Publisher"
+    "handle": "vellbasepublisher",
+    "name": "Vellbase Publisher"
   }'
 ```
 
@@ -1733,9 +1733,9 @@ Response:
 {
   "user": {
     "id": "abc-123",
-    "email": "publisher@vellum.app",
-    "handle": "vellumpublisher",
-    "name": "Vellum Publisher",
+    "email": "publisher@vellbase.app",
+    "handle": "vellbasepublisher",
+    "name": "Vellbase Publisher",
     "role": "USER"
   },
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -1983,7 +1983,7 @@ Bot users leverage the existing `User` model + `ApiKey` model + `AIAgent` model.
 curl -X POST https://your-api.ewr.prisma.build/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "ai-assistant@vellum.bot",
+    "email": "ai-assistant@vellbase.bot",
     "password": "BotSecurePass456!",
     "handle": "aiassistant",
     "name": "AI Assistant"
@@ -1996,7 +1996,7 @@ Response:
 {
   "user": {
     "id": "bot-user-001",
-    "email": "ai-assistant@vellum.bot",
+    "email": "ai-assistant@vellbase.bot",
     "handle": "aiassistant",
     "name": "AI Assistant",
     "role": "USER",
@@ -2026,7 +2026,7 @@ Response:
 ```json
 {
   "id": "bot-user-001",
-  "email": "ai-assistant@vellum.bot",
+  "email": "ai-assistant@vellbase.bot",
   "handle": "aiassistant",
   "name": "AI Assistant",
   "role": "CREATOR",
@@ -2301,7 +2301,7 @@ async function runDailyPost() {
 
   const result = await postArticle(article);
   console.log(`Article published: ${result.slug}`);
-  console.log(`URL: https://vellum.app/article/${result.slug}`);
+  console.log(`URL: https://vellbase.app/article/${result.slug}`);
 }
 
 runDailyPost().catch(console.error);
@@ -2376,4 +2376,4 @@ npm run deploy:compute # Deploy to Prisma Compute (needs bun)
 
 ---
 
-*Generated for Vellum monorepo. Last updated: 2026-07-18 (Sections 13–15 added: Webhook & Bot practical examples)*
+*Generated for Vellbase monorepo. Last updated: 2026-07-18 (Sections 13–15 added: Webhook & Bot practical examples)*

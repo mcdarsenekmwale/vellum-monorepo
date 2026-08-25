@@ -7,7 +7,7 @@ import { useSystemStatus } from "@/lib/api/hooks";
 import type { SystemStatus } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/status")({
-  head: () => ({ meta: [{ title: "System Status · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "System Status · Vellbase Admin" }] }),
   component: StatusPage,
 });
 
@@ -38,7 +38,7 @@ function StatusPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="System" title="System status" description="Live health of every service Vellum depends on." />
+      <PageHeader eyebrow="System" title="System status" description="Live health of every service Vellbase depends on." />
 
       {isLoading ? (
         <ChartSkeleton height={80} />

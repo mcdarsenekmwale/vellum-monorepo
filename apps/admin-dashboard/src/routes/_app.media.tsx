@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMedia, useDeleteMedia, useStorageStats, type MediaAsset } from "@/lib/api/hooks";
 
 export const Route = createFileRoute("/_app/media")({
-  head: () => ({ meta: [{ title: "Media Library · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Media Library · Vellbase Admin" }] }),
   component: MediaPage,
 });
 

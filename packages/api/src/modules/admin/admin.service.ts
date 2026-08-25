@@ -93,14 +93,14 @@ export class AdminService {
 
   /** Deterministic HMAC-SHA256 hash for API keys (so we can look them up by hash). */
   private hashApiKey(rawKey: string): string {
-    const secret = this.configService.get('API_KEY_SECRET') || this.configService.get('JWT_SECRET') || 'vellum-dev-secret-change-me';
+    const secret = this.configService.get('API_KEY_SECRET') || this.configService.get('JWT_SECRET') || 'vellbase-dev-secret-change-me';
     return crypto.createHmac('sha256', secret).update(rawKey).digest('hex');
   }
 
   // ─── Legacy Role → RBAC bidirectional sync ────────────────────────────────
   // MUST match rbac.service.assignDefaultRolesToUsers() mapping.
   // 1:1 enum-level roles map directly to their matching RbacRole.key.
-  // SUPER_ADMIN is the highest rank (granted only to admin@vellum.com via the
+  // SUPER_ADMIN is the highest rank (granted only to admin@vellbase.com via the
   // dedicated seeder path in assignDefaultRolesToUsers()).
   private readonly LEGACY_TO_RBAC: Record<Role, string> = {
     [Role.GUEST]: 'guest',
@@ -2853,13 +2853,13 @@ export class AdminService {
 
     const admin = await this.prisma.user.create({
       data: {
-        email: 'admin@vellum.com',
+        email: 'admin@vellbase.com',
         passwordHash,
-        handle: 'vellumadmin',
-        name: 'Vellum Admin',
+        handle: 'vellbaseadmin',
+        name: 'Vellbase Admin',
         role: 'ADMIN',
         emailVerified: now,
-        bio: 'Founder and admin of Vellum',
+        bio: 'Founder and admin of Vellbase',
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -2868,10 +2868,10 @@ export class AdminService {
 
     const moderator = await this.prisma.user.create({
       data: {
-        email: 'moderator@vellum.com',
+        email: 'moderator@vellbase.com',
         passwordHash,
-        handle: 'vellummod',
-        name: 'Vellum Moderator',
+        handle: 'vellbasemod',
+        name: 'Vellbase Moderator',
         role: 'MODERATOR',
         emailVerified: now,
         bio: 'Community moderator',
@@ -2883,7 +2883,7 @@ export class AdminService {
 
     const creator = await this.prisma.user.create({
       data: {
-        email: 'creator@vellum.com',
+        email: 'creator@vellbase.com',
         passwordHash,
         handle: 'contentcreator',
         name: 'Content Creator',
@@ -3072,7 +3072,7 @@ export class AdminService {
         userId: admin.id,
         action: 'CREATE_USER',
         resource: 'User',
-        details: { email: 'admin@vellum.com', role: 'ADMIN' },
+        details: { email: 'admin@vellbase.com', role: 'ADMIN' },
         createdAt: now,
       },
     });
@@ -3081,10 +3081,10 @@ export class AdminService {
       data: [
         {
           slug: 'getting-started',
-          title: 'Getting started with Vellum Admin',
+          title: 'Getting started with Vellbase Admin',
           description: 'Learn the fundamentals of navigating the admin dashboard, understanding key metrics, and managing your first workflow.',
           content: [
-            'Welcome to Vellum Admin! This guide will help you get started with the admin dashboard.',
+            'Welcome to Vellbase Admin! This guide will help you get started with the admin dashboard.',
             'The dashboard provides a comprehensive overview of your platform including user statistics, content metrics, and system health.',
             'Key sections include Users, Articles, Highlights, Comments, Analytics, and Settings.',
             'Use the sidebar navigation to access different sections of the admin panel.',
@@ -3101,7 +3101,7 @@ export class AdminService {
           title: 'Managing user roles and permissions',
           description: 'Configure RBAC policies, create custom roles, and audit permission grants across your organization.',
           content: [
-            'Vellum Admin uses Role-Based Access Control (RBAC) to manage permissions.',
+            'Vellbase Admin uses Role-Based Access Control (RBAC) to manage permissions.',
             'Available roles include: ADMIN, MODERATOR, CREATOR, USER, and GUEST.',
             'Admins have full access to all features and settings.',
             'Moderators can manage content, review reports, and handle user issues.',
@@ -3137,7 +3137,7 @@ export class AdminService {
           title: 'Building a webhook integration',
           description: 'Receive real-time event notifications, verify signatures, and handle retries with idempotency.',
           content: [
-            'Webhooks allow your application to receive real-time notifications when events happen on Vellum.',
+            'Webhooks allow your application to receive real-time notifications when events happen on Vellbase.',
             'To get started, create a webhook endpoint in the Webhooks section of admin settings.',
             'Configure which events you want to receive and provide a secure URL.',
             'Each webhook includes a signature header that you can use to verify the request authenticity.',
@@ -3189,7 +3189,7 @@ export class AdminService {
           title: 'Managing API keys and secrets',
           description: 'Rotate credentials, set scoped permissions, and monitor usage across environments.',
           content: [
-            'API keys allow developers to integrate with Vellum programmatically.',
+            'API keys allow developers to integrate with Vellbase programmatically.',
             'Create API keys with specific scopes to limit access to needed endpoints.',
             'Rotate keys regularly to maintain security.',
             'Monitor API usage and set up alerts for unusual activity.',

@@ -9,7 +9,7 @@ WEB_ORIGIN = os.environ.get("WEB_ORIGIN", "http://localhost:3000")
 ADMIN_ORIGIN = os.environ.get("ADMIN_ORIGIN", "http://localhost:3002")
 
 DEMO_USER = {
-    "email": "admin@vellum.com",
+    "email": "admin@vellbase.com",
     "password": "password123",
 }
 

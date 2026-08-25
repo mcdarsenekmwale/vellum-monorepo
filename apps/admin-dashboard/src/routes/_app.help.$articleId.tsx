@@ -45,7 +45,7 @@ function getIcon(iconName: string): React.ComponentType<{ className?: string }> 
 }
 
 export const Route = createFileRoute("/_app/help/$articleId")({
-  head: ({ params }) => ({ meta: [{ title: `Help · ${params.articleId} · Vellum Admin` }] }),
+  head: ({ params }) => ({ meta: [{ title: `Help · ${params.articleId} · Vellbase Admin` }] }),
   component: HelpArticleDetail,
   notFoundComponent: () => (
     <div className="p-10 text-center text-sm text-muted-foreground">
@@ -264,7 +264,7 @@ function HelpArticleDetail() {
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" asChild>
-                    <a href="mailto:support@vellum.app">Email us</a>
+                    <a href="mailto:support@vellbase.app">Email us</a>
                   </Button>
                 </div>
               </div>

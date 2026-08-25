@@ -289,8 +289,8 @@ export function WebhookFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="OUTGOING">Outgoing (Vellum → external)</SelectItem>
-                              <SelectItem value="INCOMING">Incoming (external → Vellum)</SelectItem>
+                              <SelectItem value="OUTGOING">Outgoing (Vellbase → external)</SelectItem>
+                              <SelectItem value="INCOMING">Incoming (external → Vellbase)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormDescription>
@@ -345,8 +345,8 @@ export function WebhookFormDialog({
                         </FormControl>
                         <FormDescription>
                           {watchedType === "INCOMING"
-                            ? "External services POST to this path on the Vellum API."
-                            : "Vellum will POST event payloads to this URL."}
+                            ? "External services POST to this path on the Vellbase API."
+                            : "Vellbase will POST event payloads to this URL."}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -462,7 +462,7 @@ export function WebhookFormDialog({
                           <FormDescription>
                             {watchedType === "INCOMING"
                               ? "Require external callers to sign requests using the shared secret."
-                              : "Vellum will add X-Webhook-Signature headers to outbound calls."}
+                              : "Vellbase will add X-Webhook-Signature headers to outbound calls."}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -783,7 +783,7 @@ export function WebhookFormDialog({
                               <span className="font-mono"> Basic → Endpoint URL </span>field.
                             </li>
                             <li>
-                              Vellum renders the card and POSTs it as JSON to the URL on each
+                              Vellbase renders the card and POSTs it as JSON to the URL on each
                               matching event.
                             </li>
                             <li>Use the preview to validate layout before saving.</li>

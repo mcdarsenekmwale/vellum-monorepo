@@ -17,11 +17,11 @@ const DEFAULT_MESSAGE_TEMPLATE = {
   "@type": "MessageCard",
   "@context": "https://schema.org/extensions",
   themeColor: "6264A7",
-  summary: "Vellum Event Notification",
+  summary: "Vellbase Event Notification",
   sections: [
     {
       activityTitle: "**{{event}}**",
-      activitySubtitle: "via Vellum Webhook",
+      activitySubtitle: "via Vellbase Webhook",
       activityImage: "https://adaptivecards.io/content/cats/1.png",
       facts: [
         { name: "Environment", value: "Production" },
@@ -65,8 +65,8 @@ const DEFAULT_ADAPTIVE_TEMPLATE = {
   actions: [
     {
       type: "Action.OpenUrl",
-      title: "View in Vellum",
-      url: "https://app.vellum.example.com",
+      title: "View in Vellbase",
+      url: "https://app.vellbase.example.com",
     },
   ],
 };
@@ -200,7 +200,7 @@ export function TeamsCardPreview({
                   type="button"
                   className="text-xs rounded-md bg-indigo-500 text-white px-3 py-1.5 hover:bg-indigo-600 transition-colors"
                 >
-                  View in Vellum
+                  View in Vellbase
                 </button>
               </div>
             </>
@@ -212,10 +212,10 @@ export function TeamsCardPreview({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold leading-snug">
-                    {firstSection?.activityTitle?.replace(/\*\*/g, "") ?? "Vellum Notification"}
+                    {firstSection?.activityTitle?.replace(/\*\*/g, "") ?? "Vellbase Notification"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {firstSection?.activitySubtitle ?? "via Vellum Webhook"}
+                    {firstSection?.activitySubtitle ?? "via Vellbase Webhook"}
                   </p>
                 </div>
                 <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />

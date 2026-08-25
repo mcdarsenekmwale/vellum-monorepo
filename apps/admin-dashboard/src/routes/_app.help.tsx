@@ -112,7 +112,7 @@ const SUPPORT_OPTIONS: SupportOption[] = [
     description: "Send us an email for non-urgent inquiries.",
     icon: Mail,
     action: "Send email",
-    href: "mailto:support@vellum.app",
+    href: "mailto:support@vellbase.app",
     responseTime: "Within 48h",
     available: true,
   },
@@ -122,7 +122,7 @@ const SUPPORT_OPTIONS: SupportOption[] = [
     description: "Check current platform health and incident history.",
     icon: CheckCircle2,
     action: "View status",
-    href: "https://status.vellum.app",
+    href: "https://status.vellbase.app",
     responseTime: "Real-time",
     available: true,
   },
@@ -146,7 +146,7 @@ const searchSchema = z.object({ ticket: z.enum(["open"]).optional() });
 
 export const Route = createFileRoute("/_app/help")({
   validateSearch: searchSchema,
-  head: () => ({ meta: [{ title: "Help Center · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Help Center · Vellbase Admin" }] }),
   component: HelpPage,
 });
 
@@ -501,7 +501,7 @@ function HelpPage() {
                 { label: "API Documentation", href: "/docs/api", icon: Code },
                 { label: "Changelog", href: "/changelog", icon: FileText },
                 { label: "Community Forum", href: "/community", icon: MessageCircle },
-                { label: "Status Page", href: "https://status.vellum.app", icon: CheckCircle2, external: true },
+                { label: "Status Page", href: "https://status.vellbase.app", icon: CheckCircle2, external: true },
               ].map((item) => {
                 const Icon = item.icon;
                 const Wrapper = item.external ? "a" : Link;

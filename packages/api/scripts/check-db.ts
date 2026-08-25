@@ -65,11 +65,11 @@ async function main() {
     }
   }
 
-  // Try to get the Vellum project apps directly
-  const vellumProjectId = process.env.PRISMA_PROJECT_ID || "cmrbpoqgp0b6srmdzdgg9936j";
-  console.log(`\n=== Trying Vellum project: ${vellumProjectId} ===`);
+  // Try to get the Vellbase project apps directly
+  const vellbaseProjectId = process.env.PRISMA_PROJECT_ID || "cmrbpoqgp0b6srmdzdgg9936j";
+  console.log(`\n=== Trying Vellbase project: ${vellbaseProjectId} ===`);
   try {
-    const appsResult = await compute.listApps({ projectId: vellumProjectId });
+    const appsResult = await compute.listApps({ projectId: vellbaseProjectId });
     if (appsResult.isOk()) {
       console.log("Apps:", JSON.stringify(appsResult.value, null, 2));
       for (const app of appsResult.value) {

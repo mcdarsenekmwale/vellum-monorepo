@@ -26,7 +26,7 @@ export type ErrorLogEntry = {
   acknowledged: boolean;
 };
 
-const STORAGE_KEY = "vellum.error_logs.v1";
+const STORAGE_KEY = "vellbase.error_logs.v1";
 const MAX_LOGS = 200;
 
 let errorLogs: ErrorLogEntry[] = loadLogs();

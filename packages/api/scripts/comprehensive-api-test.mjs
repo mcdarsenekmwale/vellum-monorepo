@@ -59,7 +59,7 @@ async function testAuthFlow() {
   let token = null;
 
   // Login as existing creator user for CRUD tests
-  const creatorEmail = "creator@vellum.com";
+  const creatorEmail = "creator@vellbase.com";
   const creatorPassword = "Admin123!";
   try {
     const r = await request("POST", "/auth/login", {

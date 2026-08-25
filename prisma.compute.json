@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "@vellum/api",
+    "name": "@vellbase/api",
     "root": "packages/api",
     "framework": "nestjs",
     "httpPort": 3000,

@@ -29,13 +29,13 @@ def wait_until(fn, tries=10, sleep=2):
 sh("agent-browser open http://localhost:3002/auth/login?redirect=%2Fsupport%2Fagents")
 time.sleep(3)
 raw, _ = elements()
-print("Initial page:", [w for w in ["Sign in","Login","Vellum","404"] if w in raw])
+print("Initial page:", [w for w in ["Sign in","Login","Vellbase","404"] if w in raw])
 
 # Fill email
 email_refs = find_els(lambda l: 'textbox "Email"' in l)
 if email_refs:
     sh(f"agent-browser click ref@{email_refs[0]}")
-    sh("agent-browser type admin@vellum.com")
+    sh("agent-browser type admin@vellbase.com")
     time.sleep(0.5)
 # Fill password
 pwd_refs = find_els(lambda l: 'textbox "Password"' in l)

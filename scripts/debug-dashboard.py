@@ -2,7 +2,7 @@ import sys
 import json
 from playwright.sync_api import sync_playwright
 
-DASHBOARD_URL = "https://vellum-admin-dashboard-eta-kappa.vercel.app"
+DASHBOARD_URL = "https://vellbase-admin-dashboard-eta-kappa.vercel.app"
 OUTPUT_DIR = "/tmp/dashboard-debug"
 
 def log(msg):

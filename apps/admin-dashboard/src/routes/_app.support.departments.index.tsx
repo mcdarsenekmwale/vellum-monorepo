@@ -98,7 +98,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_app/support/departments/")({
-  head: () => ({ meta: [{ title: "Support Departments · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Support Departments · Vellbase Admin" }] }),
   component: DepartmentsPage,
 });
 

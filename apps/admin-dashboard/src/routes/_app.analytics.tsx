@@ -9,7 +9,7 @@ import { ChartSkeleton } from "@/components/dashboard/skeletons";
 import { useAnalyticsOverview, useAnalyticsTimeseries, useTrafficSources } from "@/lib/api/hooks";
 
 export const Route = createFileRoute("/_app/analytics")({
-  head: () => ({ meta: [{ title: "Analytics · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Analytics · Vellbase Admin" }] }),
   component: AnalyticsPage,
 });
 

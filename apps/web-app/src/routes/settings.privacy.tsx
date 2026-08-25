@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/privacy")({
   head: () => ({
-    meta: [{ title: "Privacy — Vellum" }],
+    meta: [{ title: "Privacy — Vellbase" }],
   }),
   component: PrivacyPage,
 });
@@ -25,7 +25,7 @@ function PrivacyPage() {
   // Hydrate visibility from storage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("vellum.web.settings.v1");
+      const raw = localStorage.getItem("vellbase.web.settings.v1");
       const v = raw ? JSON.parse(raw) : {};
       if (v.profileVisibility === "followers" || v.profileVisibility === "private") {
         setVisibilityState(v.profileVisibility);
@@ -36,10 +36,10 @@ function PrivacyPage() {
   const setVisibility = (v: Visibility) => {
     setVisibilityState(v);
     try {
-      const raw = localStorage.getItem("vellum.web.settings.v1");
+      const raw = localStorage.getItem("vellbase.web.settings.v1");
       const cur = raw ? JSON.parse(raw) : {};
       localStorage.setItem(
-        "vellum.web.settings.v1",
+        "vellbase.web.settings.v1",
         JSON.stringify({ ...cur, profileVisibility: v }),
       );
     } catch {}

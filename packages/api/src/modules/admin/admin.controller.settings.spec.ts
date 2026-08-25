@@ -53,7 +53,7 @@ describe('AdminController — settings (e2e)', () => {
     it('returns settings grouped by category', async () => {
       const grouped = {
         general: [
-          { id: '1', key: 'workspace.name', value: 'Vellum', category: 'general', description: '', version: 1 },
+          { id: '1', key: 'workspace.name', value: 'Vellbase', category: 'general', description: '', version: 1 },
         ],
         security: [
           { id: '2', key: 'security.require_2fa', value: 'false', category: 'security', description: '', version: 1 },
@@ -99,9 +99,9 @@ describe('AdminController — settings (e2e)', () => {
 
       await request(app.getHttpServer())
         .put('/api/admin/settings')
-        .send({ key: 'workspace.name', value: 'Vellum', category: 'general' });
+        .send({ key: 'workspace.name', value: 'Vellbase', category: 'general' });
 
-      expect(adminService.updateSystemSetting).toHaveBeenCalledWith('workspace.name', 'Vellum', 'general');
+      expect(adminService.updateSystemSetting).toHaveBeenCalledWith('workspace.name', 'Vellbase', 'general');
     });
 
     it('returns 500 when validation fails (service throws)', async () => {

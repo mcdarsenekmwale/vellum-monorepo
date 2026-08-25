@@ -177,7 +177,7 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
 
   // ─── Breadcrumb Builder ─────────────────────────────────────────────
   const buildBreadcrumbs = () => {
-    const crumbs: { label: string; to?: string }[] = [{ label: "Vellum", to: "/dashboard" }];
+    const crumbs: { label: string; to?: string }[] = [{ label: "Vellbase", to: "/dashboard" }];
 
     if (item) {
       crumbs.push({ label: item.title, to: item.to });

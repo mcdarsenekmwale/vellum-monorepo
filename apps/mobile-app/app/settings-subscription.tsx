@@ -33,7 +33,7 @@ function formatDate(dateStr?: string): string {
 
 async function openPricing(): Promise<void> {
   try {
-    await Linking.openURL('https://vellum.example.com/pricing');
+    await Linking.openURL('https://vellbase.example.com/pricing');
   } catch {
     // ignore
   }

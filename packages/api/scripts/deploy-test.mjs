@@ -47,7 +47,7 @@ async function main() {
 
   const result = await compute.deploy({
     projectId,
-    appName: "vellum-api-test",
+    appName: "vellbase-api-test",
     region: "ap-southeast-1",
     strategy: new NestjsBuild({
       appPath,

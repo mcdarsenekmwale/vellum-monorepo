@@ -76,7 +76,7 @@ import { toast } from "sonner";
 import { AISettingsPanel } from "@/components/dashboard/ai-settings-panel";
 
 export const Route = createFileRoute("/_app/reports")({
-  head: () => ({ meta: [{ title: "Reports · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Reports · Vellbase Admin" }] }),
   component: ReportsPage,
 });
 

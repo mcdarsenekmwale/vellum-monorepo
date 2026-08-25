@@ -106,8 +106,8 @@ ALL_COLOR_KEYS = [
     "textPrimary", "textSecondary", "textMuted", "accent", "accentMuted",
     "danger", "success", "warning", "overlay", "inverseSurface", "inverseText",
 ]
-STORAGE_JSON_KEY = "vellum.settings.v1"
-STORAGE_APPEARANCE_KEY = "vellum.settings.appearance"
+STORAGE_JSON_KEY = "vellbase.settings.v1"
+STORAGE_APPEARANCE_KEY = "vellbase.settings.appearance"
 WEB_ORIGIN = "http://localhost:8081"
 IOS_WEBAPP_BASE = "http://localhost:8081"
 
@@ -125,7 +125,7 @@ CATEGORIES = [
     ("CATEGORY_PERSIST_NEW_TAB", "New tab reuses stored theme"),
     ("CATEGORY_RESPONSIVE", "Theme holds @ 390×844, 1280×800, 1920×1080"),
     ("CATEGORY_TRANSITION", "No unexpected artifacts during mode transition"),
-    ("CATEGORY_STORAGE_KEYS", "Both vellum.settings.v1 and APPEARANCE_KEY dual-write"),
+    ("CATEGORY_STORAGE_KEYS", "Both vellbase.settings.v1 and APPEARANCE_KEY dual-write"),
     ("CATEGORY_CONTRAST", "WCAG 2.1 AA contrast for key foreground/background pairs"),
 ]
 
@@ -230,11 +230,11 @@ class CategoryResult:
 def read_storage_settings(page) -> tuple[Optional[str], dict]:
     """Return (appearance_string_or_None, v1_json_or_empty_dict)."""
     try:
-        json_raw = page.evaluate("() => window.localStorage.getItem('vellum.settings.v1')") or ""
+        json_raw = page.evaluate("() => window.localStorage.getItem('vellbase.settings.v1')") or ""
     except Exception:
         json_raw = ""
     try:
-        appearance_raw = page.evaluate("() => window.localStorage.getItem('vellum.settings.appearance')") or ""
+        appearance_raw = page.evaluate("() => window.localStorage.getItem('vellbase.settings.appearance')") or ""
     except Exception:
         appearance_raw = ""
     v1: dict = {}
@@ -282,8 +282,8 @@ def do_web_login(page, cfg: Config) -> bool:
             page.goto(WEB_ORIGIN + "/login", wait_until="commit", timeout=60_000)
             page.evaluate(
                 """(tk) => {
-                    window.localStorage.setItem('vellum:accessToken', tk);
-                    window.localStorage.setItem('vellum_access_token', tk);
+                    window.localStorage.setItem('vellbase:accessToken', tk);
+                    window.localStorage.setItem('vellbase_access_token', tk);
                 }""",
                 tok,
             )
@@ -333,7 +333,7 @@ def do_web_login(page, cfg: Config) -> bool:
         return False
     try:
         page.wait_for_function(
-            """() => (localStorage.getItem('vellum:accessToken') || localStorage.getItem('vellum_access_token')) && location.pathname !== '/login'""",
+            """() => (localStorage.getItem('vellbase:accessToken') || localStorage.getItem('vellbase_access_token')) && location.pathname !== '/login'""",
             timeout=20_000,
         )
         return True

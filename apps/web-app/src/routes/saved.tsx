@@ -10,7 +10,7 @@ import { useI18n } from "@/components/providers/I18nProvider";
 export const Route = createFileRoute("/saved")({
   head: () => ({
     meta: [
-      { title: "Saved — Vellum" },
+      { title: "Saved — Vellbase" },
       { name: "description", content: "The stories you've bookmarked to read later." },
     ],
   }),

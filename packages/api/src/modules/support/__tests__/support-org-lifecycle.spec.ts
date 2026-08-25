@@ -411,11 +411,11 @@ describe("Support Org Lifecycle — Departments + Teams (TDD)", () => {
     prisma = new MockPrisma();
 
     prisma.users = [
-      { id: "u-alice", name: "Alice Head", email: "alice@vellum.com" },
-      { id: "u-bob", name: "Bob Lead", email: "bob@vellum.com" },
-      { id: "u-carol", name: "Carol Agent", email: "carol@vellum.com" },
-      { id: "u-dave", name: "Dave Agent", email: "dave@vellum.com" },
-      { id: "u-eve", name: "Eve Lead", email: "eve@vellum.com" },
+      { id: "u-alice", name: "Alice Head", email: "alice@vellbase.com" },
+      { id: "u-bob", name: "Bob Lead", email: "bob@vellbase.com" },
+      { id: "u-carol", name: "Carol Agent", email: "carol@vellbase.com" },
+      { id: "u-dave", name: "Dave Agent", email: "dave@vellbase.com" },
+      { id: "u-eve", name: "Eve Lead", email: "eve@vellbase.com" },
     ];
 
     const now = new Date();
@@ -423,7 +423,7 @@ describe("Support Org Lifecycle — Departments + Teams (TDD)", () => {
     prisma.departments = [
       {
         id: "dept-eng", key: "ENG", name: "Engineering",
-        description: "Product engineering support", email: "eng@vellum.com",
+        description: "Product engineering support", email: "eng@vellbase.com",
         isActive: true, createdAt: now, updatedAt: now, deletedAt: null,
         headId: "u-alice",
         firstResponseSlaMinutes: 15, resolutionSlaMinutes: 480,
@@ -434,7 +434,7 @@ describe("Support Org Lifecycle — Departments + Teams (TDD)", () => {
       },
       {
         id: "dept-billing", key: "BILL", name: "Billing",
-        description: "Billing and payments support", email: "billing@vellum.com",
+        description: "Billing and payments support", email: "billing@vellbase.com",
         isActive: true, createdAt: now, updatedAt: now, deletedAt: null,
         headId: null,
         firstResponseSlaMinutes: 30, resolutionSlaMinutes: 1440,

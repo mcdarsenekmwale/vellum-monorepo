@@ -76,10 +76,10 @@ describe("support-sheet-assignment logic (RED)", () => {
     type Agent = { userId: string; user: { name: string; email: string }; role: string; skills?: string[] };
 
     const agents: Agent[] = [
-      { userId: "a1", user: { name: "Sarah Chen", email: "sarah@vellum.app" }, role: "SupportAgent", skills: ["billing"] },
-      { userId: "a2", user: { name: "Mike Johnson", email: "mike@vellum.app" }, role: "SupportAgent", skills: ["technical"] },
-      { userId: "a3", user: { name: "Emma Admin", email: "emma@vellum.app" }, role: "SupportAdmin" },
-      { userId: "a4", user: { name: "Raj Patel", email: "raj@vellum.app" }, role: "Admin" },
+      { userId: "a1", user: { name: "Sarah Chen", email: "sarah@vellbase.app" }, role: "SupportAgent", skills: ["billing"] },
+      { userId: "a2", user: { name: "Mike Johnson", email: "mike@vellbase.app" }, role: "SupportAgent", skills: ["technical"] },
+      { userId: "a3", user: { name: "Emma Admin", email: "emma@vellbase.app" }, role: "SupportAdmin" },
+      { userId: "a4", user: { name: "Raj Patel", email: "raj@vellbase.app" }, role: "Admin" },
     ];
 
     it("as a SupportAgent → only other SupportAgents visible", async () => {
@@ -109,7 +109,7 @@ describe("support-sheet-assignment logic (RED)", () => {
       visible = filterAssignableAgents({
         agents,
         actorRole: "Admin",
-        search: "@vellum",
+        search: "@vellbase",
       });
       expect(visible.length).toBe(4);
 

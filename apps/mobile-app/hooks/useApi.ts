@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import type { Article, Highlight, Story, Category, Notification, PaginatedResponse } from '@vellum/api-client/types';
+import type { Article, Highlight, Story, Category, Notification, PaginatedResponse } from '@vellbase/api-client/types';
 
 // Generic hook for fetching data
 function useFetch<T>(

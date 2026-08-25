@@ -41,7 +41,7 @@ function buildInlineMockPrisma() {
 
   const departments: any[] = Array.from({ length: N_DEPTS }, (_, i) => ({
     id: `dept-${i}`, key: `d${i}`, name: `Department ${i}`, description: `desc ${i}`,
-    email: `d${i}@vellum.app`, tier: "standard", supportChannels: ["email", "chat"],
+    email: `d${i}@vellbase.app`, tier: "standard", supportChannels: ["email", "chat"],
     isActive: true, firstResponseSlaMinutes: 60, resolutionSlaMinutes: 1440,
     timezone: "UTC", businessHoursStartMin: 480, businessHoursEndMin: 1200,
     businessDays: [1, 2, 3, 4, 5], requirePrivateNotesForClosure: false, hideCustomerFromAgents: false,
@@ -62,7 +62,7 @@ function buildInlineMockPrisma() {
   });
 
   const users: any[] = Array.from({ length: N_AGENTS }, (_, i) => ({
-    id: `user-${i}`, email: `agent${i}@vellum.app`, name: `Agent ${i}`, handle: `agent${i}`,
+    id: `user-${i}`, email: `agent${i}@vellbase.app`, name: `Agent ${i}`, handle: `agent${i}`,
     avatar: null, roles: [{ role: "support_agent" }], status: "ACTIVE",
   }));
 

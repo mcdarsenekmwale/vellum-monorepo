@@ -44,7 +44,7 @@ import type {
   TicketPriority,
   TicketStatus,
   TicketMessage as TicketMessageType,
-} from "@vellum/api-client/types";
+} from "@vellbase/api-client/types";
 import { useI18n } from "@/components/providers/I18nProvider";
 
 const STATUS_KEY_MAP: Record<TicketStatus, string> = {
@@ -69,8 +69,8 @@ const PRIORITY_KEY_MAP: Record<TicketPriority, string> = {
 export const Route = createFileRoute("/settings/help")({
   head: () => ({
     meta: [
-      { title: "Help Center — Vellum" },
-      { name: "description", content: "Frequently asked questions and support for Vellum." },
+      { title: "Help Center — Vellbase" },
+      { name: "description", content: "Frequently asked questions and support for Vellbase." },
     ],
   }),
   component: HelpPage,
@@ -631,7 +631,7 @@ function HelpPage() {
                   Once signed in, you'll see all your past and open support conversations here.
                 </p>
                 <Link to="/login">
-                  <Button size="sm">Sign in to Vellum</Button>
+                  <Button size="sm">Sign in to Vellbase</Button>
                 </Link>
               </div>
             )}

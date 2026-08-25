@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { Eye } from 'lucide-react-native';
 import { useArticles, useHighlights, useStories, useSocialActions, useAuthState } from '../hooks/useApi';
 import { useMemo, useState, useCallback } from 'react';
-import type { Article, Story } from '@vellum/api-client/types';
+import type { Article, Story } from '@vellbase/api-client/types';
 import ShimmerImage from '../components/ShimmerImage';
 import { Avatar } from '../components/Avatar';
 import { ArticleActions } from '../components/ArticleActions';

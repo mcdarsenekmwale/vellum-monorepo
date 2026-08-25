@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/moderation/$reportId")({
-  head: () => ({ meta: [{ title: "Review Report · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Review Report · Vellbase Admin" }] }),
   component: ReportDetailPage,
 });
 

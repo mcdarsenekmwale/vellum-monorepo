@@ -1,4 +1,4 @@
-# Vellum - Comprehensive Testing & Debugging Report
+# Vellbase - Comprehensive Testing & Debugging Report
 
 **Date:** 2026-07-11
 **Scope:** Web application, Mobile application, Backend API
@@ -30,11 +30,11 @@
 
 ### 1.2 Integration / E2E Tests (Production - Vercel)
 
-**URL:** `https://vellum-monorepo-webapp.vercel.app`
+**URL:** `https://vellbase-monorepo-webapp.vercel.app`
 
 | Test Case | Result | Details |
 |-----------|--------|---------|
-| Home page loads | ✅ PASS | Title: "Vellum — Stories, highlights & voices worth reading" |
+| Home page loads | ✅ PASS | Title: "Vellbase — Stories, highlights & voices worth reading" |
 | Featured section | ✅ PASS | "TypeScript Fundamentals" by John Doe, 67 likes |
 | Atmospherics section | ✅ PASS | CSS Grid Layout, React Hooks Tutorial |
 | Latest articles section | ✅ PASS | Node.js Best Practices, Introduction to React Native |
@@ -158,7 +158,7 @@ data: { commentsCount: commentCount },  // Correct: actual count from DB
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Navigation (Expo Router) | ✅ GOOD | File-based routing with `app/` directory |
-| Auth Context | ⚠️ DUPLICATE | Has own `AuthContext.tsx` instead of using `@vellum/auth` |
+| Auth Context | ⚠️ DUPLICATE | Has own `AuthContext.tsx` instead of using `@vellbase/auth` |
 | API integration | ✅ GOOD | Uses custom `useApi` and `useSocial` hooks |
 | Highlights feature | ✅ GOOD | Full highlight player with pager, video, actions |
 | Compose screen | ✅ PRESENT | `compose.tsx` route exists |
@@ -166,11 +166,11 @@ data: { commentsCount: commentCount },  // Correct: actual count from DB
 
 ### 3.3 Mobile App Improvement Opportunity
 
-**Issue:** The mobile app has a duplicate `AuthContext` implementation in `context/AuthContext.tsx` instead of using the shared `@vellum/auth` package.
+**Issue:** The mobile app has a duplicate `AuthContext` implementation in `context/AuthContext.tsx` instead of using the shared `@vellbase/auth` package.
 
 **Risk:** Auth logic divergence between web and mobile apps over time.
 
-**Recommendation:** Refactor to use `@vellum/auth` package with React Native storage adapter. (Not fixed in this round - requires platform-specific storage handling.)
+**Recommendation:** Refactor to use `@vellbase/auth` package with React Native storage adapter. (Not fixed in this round - requires platform-specific storage handling.)
 
 ---
 
@@ -231,7 +231,7 @@ All fixes verified:
 
 ### Medium Priority
 1. **Resolve Vite dev React duplicate** - Consider switching to pnpm or Turbopack for better workspace dedupe
-2. **Unify auth implementation** - Refactor mobile app to use `@vellum/auth` package
+2. **Unify auth implementation** - Refactor mobile app to use `@vellbase/auth` package
 3. **Add unit tests** - Currently no unit tests exist for API or frontend
 
 ### Low Priority
@@ -243,7 +243,7 @@ All fixes verified:
 
 ## Conclusion
 
-The Vellum application is **production-ready** with the following key findings:
+The Vellbase application is **production-ready** with the following key findings:
 
 - ✅ **Production web app is fully functional** - all pages, features, and API integrations work correctly
 - ✅ **Production API is stable** - all tested endpoints return correct data

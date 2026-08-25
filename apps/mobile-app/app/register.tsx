@@ -74,7 +74,7 @@ export default function RegisterScreen() {
                 letterSpacing: -1,
               }}
             >
-              Vellum.
+              Vellbase.
             </Text>
             <Text
               style={{

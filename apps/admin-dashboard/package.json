@@ -1,5 +1,5 @@
 {
-  "name": "@vellum/admin-dashboard",
+  "name": "@vellbase/admin-dashboard",
   "version": "1.0.0",
   "private": true,
   "sideEffects": false,

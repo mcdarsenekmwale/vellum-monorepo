@@ -4,8 +4,8 @@ import { requireAuth } from "@/lib/auth";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Vellum" },
-      { name: "description", content: "Customize your Vellum experience." },
+      { title: "Settings — Vellbase" },
+      { name: "description", content: "Customize your Vellbase experience." },
     ],
   }),
   beforeLoad: async ({ location }) => {

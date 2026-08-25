@@ -26,7 +26,7 @@ async function adminLogin(page: Page) {
   const emailInput = page.locator('input[id="email"]');
   const emailValue = await emailInput.inputValue().catch(() => "");
   if (!emailValue) {
-    await emailInput.fill("admin@vellum.com");
+    await emailInput.fill("admin@vellbase.com");
     const pwInput = page.locator('input[id="password"], input[type="password"]').first();
     if (await pwInput.isVisible().catch(() => false)) {
       await pwInput.fill("password123");

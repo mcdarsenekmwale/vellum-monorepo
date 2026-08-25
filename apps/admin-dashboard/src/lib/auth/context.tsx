@@ -53,8 +53,8 @@ export type AuthState = {
   canVisit: (path: string) => boolean;
 };
 
-const STORAGE_KEY = "vellum.admin.session.v1";
-const REFRESH_TOKEN_KEY = "vellum.admin.refresh.v1";
+const STORAGE_KEY = "vellbase.admin.session.v1";
+const REFRESH_TOKEN_KEY = "vellbase.admin.refresh.v1";
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 

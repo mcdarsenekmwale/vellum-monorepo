@@ -22,17 +22,17 @@ const baseCtx: VariableContext = {
   userRole: "USER",
   userJoinedAt: "2024-01-15T10:00:00Z",
   agentName: "Jane Smith",
-  agentEmail: "jane.smith@vellum.com",
+  agentEmail: "jane.smith@vellbase.com",
   agentId: "agent-456",
   agentRole: "SUPPORT_ADMIN",
   departmentName: "Engineering",
   teamName: "Frontend",
-  ticketUrl: "https://admin.vellum.com/support/tickets/ticket-uuid-123",
+  ticketUrl: "https://admin.vellbase.com/support/tickets/ticket-uuid-123",
   ticketCreatedAt: "2025-08-20T09:00:00Z",
   ticketUpdatedAt: "2025-08-22T14:30:00Z",
-  workspaceName: "Vellum",
-  companyName: "Vellum",
-  supportEmail: "support@vellum.com",
+  workspaceName: "Vellbase",
+  companyName: "Vellbase",
+  supportEmail: "support@vellbase.com",
 };
 
 describe("Variable Replacement Engine", () => {
@@ -245,8 +245,8 @@ describe("Variable Replacement Engine", () => {
     describe("Agent email aliases", () => {
       const aliases = ["agent_email", "staff_email"];
       for (const alias of aliases) {
-        it(`resolves {{${alias}}} → "jane.smith@vellum.com"`, () => {
-          expect(resolveVariable(alias, baseCtx)).toBe("jane.smith@vellum.com");
+        it(`resolves {{${alias}}} → "jane.smith@vellbase.com"`, () => {
+          expect(resolveVariable(alias, baseCtx)).toBe("jane.smith@vellbase.com");
         });
       }
     });
@@ -272,8 +272,8 @@ describe("Variable Replacement Engine", () => {
     describe("Organization aliases", () => {
       const aliases = ["workspace", "workspace_name", "company", "company_name", "organization"];
       for (const alias of aliases) {
-        it(`resolves {{${alias}}} → "Vellum"`, () => {
-          expect(resolveVariable(alias, baseCtx)).toBe("Vellum");
+        it(`resolves {{${alias}}} → "Vellbase"`, () => {
+          expect(resolveVariable(alias, baseCtx)).toBe("Vellbase");
         });
       }
     });
@@ -547,8 +547,8 @@ describe("Variable Replacement Engine", () => {
       expect(interpolateCannedVariables("{{description}}", ctx)).toBe("Fallback message");
     });
     it("falls back from agent email to support email", () => {
-      const ctx: VariableContext = { supportEmail: "support@vellum.com" };
-      expect(interpolateCannedVariables("{{support_email}}", ctx)).toBe("support@vellum.com");
+      const ctx: VariableContext = { supportEmail: "support@vellbase.com" };
+      expect(interpolateCannedVariables("{{support_email}}", ctx)).toBe("support@vellbase.com");
     });
   });
 });

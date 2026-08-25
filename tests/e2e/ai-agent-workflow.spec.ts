@@ -4,7 +4,7 @@ import { test, assertClean, type ConsoleCollector } from "./helpers";
 const WEB_ORIGIN = process.env.WEB_ORIGIN || "http://localhost:3000";
 const API_ORIGIN = process.env.API_ORIGIN || "http://localhost:3001";
 
-const TEST_USER_EMAIL = "admin@vellum.com";
+const TEST_USER_EMAIL = "admin@vellbase.com";
 const TEST_USER_PASSWORD = "password123";
 
 test.describe.configure({ mode: "serial", retries: 0, timeout: 300000 });
@@ -54,7 +54,7 @@ test.describe("AI Agent Browser Testing Workflow", () => {
   async function login(page: any) {
     await page.goto(`${WEB_ORIGIN}/`, { waitUntil: "commit" });
     await page.evaluate((token: string) => {
-      localStorage.setItem("vellum_access_token", token);
+      localStorage.setItem("vellbase_access_token", token);
     }, accessToken);
     await page.waitForTimeout(1000);
     await page.reload({ waitUntil: "commit" });

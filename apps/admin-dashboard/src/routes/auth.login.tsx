@@ -13,7 +13,7 @@ const searchSchema = z.object({ redirect: z.string().optional() });
 
 export const Route = createFileRoute("/auth/login")({
   validateSearch: searchSchema,
-  head: () => ({ meta: [{ title: "Sign in · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Sign in · Vellbase Admin" }] }),
   beforeLoad: async ({ search }) => {
     await waitForAuthReady(5000);
     const auth = getRouterAuth();
@@ -30,7 +30,7 @@ function LoginPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const router = useRouter();
-  const [email, setEmail] = useState("admin@vellum.com");
+  const [email, setEmail] = useState("admin@vellbase.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,10 +55,10 @@ function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <div className="grid size-14 place-items-center rounded-xl overflow-hidden border border-border">
-            <img src="/favicon.svg" alt="Vellum" className="size-8" />
+            <img src="/favicon.svg" alt="Vellbase" className="size-8" />
           </div>
           <div>
-            <h1 className="font-display italic text-3xl tracking-tight">Vellum</h1>
+            <h1 className="font-display italic text-3xl tracking-tight">Vellbase</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Admin console for operators.
             </p>
@@ -101,9 +101,9 @@ function LoginPage() {
 
           {DEV && (
           <p className="text-center text-[11px] text-muted-foreground">
-            Demo mode — try <code className="font-mono">admin@vellum.com</code>,{" "}
-            <code className="font-mono">moderator@vellum.com</code>,{" "}
-            <code className="font-mono">creator@vellum.com</code>, etc. Password:{" "}
+            Demo mode — try <code className="font-mono">admin@vellbase.com</code>,{" "}
+            <code className="font-mono">moderator@vellbase.com</code>,{" "}
+            <code className="font-mono">creator@vellbase.com</code>, etc. Password:{" "}
             <code className="font-mono">password123</code>.
           </p>
         )}

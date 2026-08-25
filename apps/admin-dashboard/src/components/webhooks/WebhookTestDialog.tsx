@@ -135,8 +135,8 @@ const EVENT_PRESETS = {
       event: "article.published",
       payload: {
         id: "art_123456",
-        title: "Getting Started with Vellum",
-        slug: "getting-started-with-vellum",
+        title: "Getting Started with Vellbase",
+        slug: "getting-started-with-vellbase",
         author: "Jane Smith",
         publishedAt: new Date().toISOString(),
       },
@@ -754,8 +754,8 @@ export function WebhookTestDialog({ open, onOpenChange, webhook, onTest }: Webho
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {webhookType === "INCOMING"
-                          ? "Receives data from external services into Vellum"
-                          : "Sends Vellum event data to external services"}
+                          ? "Receives data from external services into Vellbase"
+                          : "Sends Vellbase event data to external services"}
                       </p>
                     </div>
                     {webhook?.secret && (
@@ -996,24 +996,24 @@ export function WebhookTestDialog({ open, onOpenChange, webhook, onTest }: Webho
                               log.type === "response" && "border-emerald-500/30 text-emerald-500",
                             )}
                           >
-                            {log.type.toUpperCase()}
+                            {log?.type?.toUpperCase() || ""}
                           </Badge>
-                          {log.statusCode && (
+                          {log?.statusCode && (
                             <Badge
                               variant="outline"
                               className={cn(
                                 "text-[10px]",
-                                log.statusCode >= 200 && log.statusCode < 300
+                                log?.statusCode >= 200 && log?.statusCode < 300
                                   ? "border-emerald-500/30 text-emerald-500"
                                   : "border-rose-500/30 text-rose-500",
                               )}
                             >
-                              {log.statusCode}
+                              {log?.statusCode || ""}
                             </Badge>
                           )}
                         </div>
                         <span className="text-[10px] text-muted-foreground tabular-nums">
-                          {new Date(log.timestamp).toLocaleTimeString()}
+                          {log?.timestamp ? new Date(log.timestamp).toLocaleTimeString() : ""}
                         </span>
                       </div>
                       <pre className="text-[10px] text-muted-foreground whitespace-pre-wrap break-all">

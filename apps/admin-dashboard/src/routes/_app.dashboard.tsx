@@ -38,7 +38,7 @@ import { SupportAdminDashboard } from "@/components/dashboard/SupportAdminDashbo
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
-    meta: [{ title: "Dashboard · Vellum" }],
+    meta: [{ title: "Dashboard · Vellbase" }],
   }),
   component: DashboardPage,
 });

@@ -139,7 +139,7 @@ async function main() {
 
   const deptCount = await prisma.supportDepartment.count();
   if (deptCount === 0) {
-    const general = await prisma.supportDepartment.create({ data: { key: 'general', name: 'General Support', email: 'support@vellum.app' } });
+    const general = await prisma.supportDepartment.create({ data: { key: 'general', name: 'General Support', email: 'support@vellbase.app' } });
     await prisma.supportTeam.create({ data: { name: 'Tier 1 Support', departmentId: general.id } });
     for (const [i, cat] of ['account', 'billing', 'technical', 'feature', 'bug'].entries()) {
       await prisma.ticketCategory.create({ data: { key: cat, name: cat.charAt(0).toUpperCase() + cat.slice(1), sortOrder: i } });
@@ -150,9 +150,9 @@ async function main() {
   // Assign roles to existing users
   const roleMap = new Map((await prisma.rbacRole.findMany()).map((r) => [r.key, r.id]));
   const userRoles: Array<{ email: string; roleKeys: string[] }> = [
-    { email: 'admin@vellum.com', roleKeys: ['super_admin'] },
-    { email: 'moderator@vellum.com', roleKeys: ['moderator', 'support_agent'] },
-    { email: 'creator@vellum.com', roleKeys: ['author', 'editor'] },
+    { email: 'admin@vellbase.com', roleKeys: ['super_admin'] },
+    { email: 'moderator@vellbase.com', roleKeys: ['moderator', 'support_agent'] },
+    { email: 'creator@vellbase.com', roleKeys: ['author', 'editor'] },
     { email: 'user1@example.com', roleKeys: ['registered_user'] },
     { email: 'user2@example.com', roleKeys: ['registered_user', 'premium_user'] },
   ];

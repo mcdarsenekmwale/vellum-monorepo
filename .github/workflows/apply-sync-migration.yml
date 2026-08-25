@@ -173,7 +173,7 @@ jobs:
               console.log(`\nMigration '${migrationName}' already recorded in _prisma_migrations`);
             }
             
-            // Verify with a simple query on a Vellum table
+            // Verify with a simple query on a Vellbase table
             try {
               await client.query('SELECT 1 as test FROM "User" LIMIT 0');
               console.log("\nVerification: User table exists ✓");

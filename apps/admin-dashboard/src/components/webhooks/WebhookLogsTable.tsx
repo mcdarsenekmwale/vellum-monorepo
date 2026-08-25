@@ -31,6 +31,7 @@ import {
   Calendar,
   XCircle,
   Filter,
+  CheckCircle,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -148,6 +149,35 @@ export function WebhookLogsTable({
       return false;
     });
   }, [logs, q]);
+
+
+  function renderLogResponse(log: WebhookLog) {
+    if (!log.response) return null;
+    if (!log.response?.data) return null;
+    if (typeof log.response?.data === 'string') {
+      return (
+        <div className="flex items-start gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+          <CheckCircle className="size-3 mt-0.5 shrink-0" />
+          <span className="font-mono break-all">{log?.response?.data || ""}</span>
+        </div>
+      );
+    }
+    if (typeof log.response?.data === 'object') {
+      return (
+        <div className="flex items-start gap-1.5 text-xs  dark:text-emerald-400">
+          {
+            Object.keys(log.response?.data).map((key) => {
+              if (key === 'message') return <div className="flex flex-row gap-2">
+                  <span className="font-medium capitalize ">{key}:</span>
+                  <span className="text-red font-mono break-all">{log.response?.data[key]} </span>
+                </div> ;
+              return null;
+            })
+          }
+        </div>
+      );
+    }
+  }
 
   return (
     <Card>
@@ -281,7 +311,7 @@ export function WebhookLogsTable({
             </div>
           ) : (
             filteredRows.map((log) => {
-              const open = openedId === log.id;
+              const open = openedId === log?.id;
               return (
                 <Collapsible
                   key={log.id}
@@ -306,17 +336,17 @@ export function WebhookLogsTable({
 
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <StatusPill code={log.statusCode} error={log.error} />
+                        <StatusPill code={log?.statusCode || 0} error={log?.error || ""} />
                         <Badge variant="secondary" className="font-mono text-[10px]">
-                          {log.event}
+                          {log?.event || ""}
                         </Badge>
-                        {typeof log.attempt === "number" && log.attempt > 1 && (
+                        {typeof log?.attempt === "number" && log?.attempt > 1 && (
                           <Badge
                             variant="outline"
                             className="text-[10px] gap-1 border-amber-500/30 text-amber-600"
                           >
                             <RefreshCw className="size-2.5" />
-                            attempt {log.attempt}
+                            attempt {log?.attempt}
                           </Badge>
                         )}
                         {typeof log.durationMs === "number" && (
@@ -325,7 +355,7 @@ export function WebhookLogsTable({
                               <TooltipTrigger asChild>
                                 <Badge variant="outline" className="gap-1 text-[10px]">
                                   <TrendingUp className="size-2.5" />
-                                  {log.durationMs.toLocaleString()}ms
+                                  {log?.durationMs?.toLocaleString()}ms
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-[11px]">
@@ -335,12 +365,19 @@ export function WebhookLogsTable({
                           </TooltipProvider>
                         )}
                       </div>
-                      {log.error && (
+                      {log?.error && (
                         <div className="flex items-start gap-1.5 text-xs text-rose-600 dark:text-rose-400">
                           <AlertCircle className="size-3 mt-0.5 shrink-0" />
-                          <span className="font-mono break-all">{log.error}</span>
+                          <span className="font-mono break-all">{log?.error || ""}</span>
                         </div>
                       )}
+                      {renderLogResponse(log)}
+                      {/* {log?.response?.data && (
+                        <div className="flex items-start gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle className="size-3 mt-0.5 shrink-0" />
+                          <span className="font-mono break-all">{log?.response?.data || ""}</span>
+                        </div>
+                      )} */}
                     </div>
 
                     <div className="shrink-0 text-right">
@@ -350,13 +387,13 @@ export function WebhookLogsTable({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="tabular-nums">
-                                {formatDistanceToNow(new Date(log.createdAt), {
+                                {formatDistanceToNow(new Date(log?.createdAt || log?.timestamp || ""), {
                                   addSuffix: true,
                                 })}
                               </span>
                             </TooltipTrigger>
                             <TooltipContent side="left" className="text-[11px]">
-                              {format(new Date(log.createdAt), "PPp")}
+                              {format(new Date(log?.createdAt || log?.timestamp || ""), "PPp")}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -366,9 +403,9 @@ export function WebhookLogsTable({
                   <CollapsibleContent>
                     <div className="px-3 pb-4 pl-11 pr-4 space-y-3 border-t bg-muted/10">
                       <div className="pt-3">
-                        <PayloadInspector label="Request payload" value={log.payload} />
+                        <PayloadInspector label="Request payload" value={log?.payload || ""} />
                       </div>
-                      <PayloadInspector label="Response" value={log.response} />
+                      <PayloadInspector label="Response" value={log?.response || ""} />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>

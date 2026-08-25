@@ -10,8 +10,8 @@ import {
 import { apiClient } from "@/lib/api";
 import type { UserSettings } from "@/lib/api";
 
-const STORAGE_V1 = "vellum.web.settings.v1";
-const STORAGE_SOUND_RAW = "vellum.web.sound";
+const STORAGE_V1 = "vellbase.web.settings.v1";
+const STORAGE_SOUND_RAW = "vellbase.web.sound";
 
 type PrivacyState = {
   allowComments: boolean;

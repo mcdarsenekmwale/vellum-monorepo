@@ -38,7 +38,7 @@ type SocialContextValue = SocialState & {
 };
 
 const SocialContext = createContext<SocialContextValue | null>(null);
-const STORAGE_KEY = "vellum:social:v2";
+const STORAGE_KEY = "vellbase:social:v2";
 
 function formatAgo(dateStr: string): string {
   const date = new Date(dateStr);

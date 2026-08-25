@@ -91,16 +91,16 @@ class BackendApiService {
     try {
       if (isWeb) {
         if (typeof window === 'undefined') return null;
-        // api-client (lib/api.ts) uses 'vellum_access_token' for storage; also
+        // api-client (lib/api.ts) uses 'vellbase_access_token' for storage; also
         // support the legacy ':' key used by BackendApi for reads.
         return (
-          window.localStorage.getItem('vellum_access_token') ||
-          window.localStorage.getItem('vellum:access_token')
+          window.localStorage.getItem('vellbase_access_token') ||
+          window.localStorage.getItem('vellbase:access_token')
         );
       }
-      const token = await SecureStore.getItemAsync('vellum_access_token');
+      const token = await SecureStore.getItemAsync('vellbase_access_token');
       if (token) return token;
-      return await SecureStore.getItemAsync('vellum:access_token');
+      return await SecureStore.getItemAsync('vellbase:access_token');
     } catch {
       return null;
     }

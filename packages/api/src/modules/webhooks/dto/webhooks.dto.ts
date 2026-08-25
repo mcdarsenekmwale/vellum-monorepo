@@ -39,7 +39,7 @@ export class CreateWebhookDto {
   @IsEnum(WebhookType)
   type: WebhookType;
 
-  @ApiProperty({ example: 'https://vellumcorp.webhook.office.com/webhookb2/...' })
+  @ApiProperty({ example: 'https://vellbasecorp.webhook.office.com/webhookb2/...' })
   @IsString()
   @IsNotEmpty()
   url: string;

@@ -11,22 +11,22 @@ async function main() {
 
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@vellum.com',
+      email: 'admin@vellbase.com',
       passwordHash,
-      handle: 'vellumadmin',
-      name: 'Vellum Admin',
+      handle: 'vellbaseadmin',
+      name: 'Vellbase Admin',
       role: 'ADMIN',
       emailVerified: now,
-      bio: 'Founder and admin of Vellum',
+      bio: 'Founder and admin of Vellbase',
     },
   });
 
   const moderator = await prisma.user.create({
     data: {
-      email: 'moderator@vellum.com',
+      email: 'moderator@vellbase.com',
       passwordHash,
-      handle: 'vellummod',
-      name: 'Vellum Moderator',
+      handle: 'vellbasemod',
+      name: 'Vellbase Moderator',
       role: 'MODERATOR',
       emailVerified: now,
       bio: 'Community moderator',
@@ -35,7 +35,7 @@ async function main() {
 
   const creator = await prisma.user.create({
     data: {
-      email: 'creator@vellum.com',
+      email: 'creator@vellbase.com',
       passwordHash,
       handle: 'contentcreator',
       name: 'Content Creator',
@@ -206,7 +206,7 @@ async function main() {
       action: 'create',
       resource: 'User',
       resourceId: creator.id,
-      details: { email: 'creator@vellum.com', role: 'CREATOR' },
+      details: { email: 'creator@vellbase.com', role: 'CREATOR' },
       metadata: { description: 'Created new creator account via admin panel' },
       success: true,
       ipAddress: '192.168.1.100',
@@ -231,9 +231,9 @@ async function main() {
       action: 'settings_change',
       resource: 'SystemSettings',
       resourceId: 'site-name',
-      details: { key: 'site_name', previousValue: 'Vellum', newValue: 'Vellum Platform' },
+      details: { key: 'site_name', previousValue: 'Vellbase', newValue: 'Vellbase Platform' },
       metadata: { description: 'Updated site name setting' },
-      changes: { site_name: { old: 'Vellum', new: 'Vellum Platform' } },
+      changes: { site_name: { old: 'Vellbase', new: 'Vellbase Platform' } },
       success: true,
       ipAddress: '192.168.1.101',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -381,7 +381,7 @@ async function main() {
       action: 'user_invite',
       resource: 'User',
       resourceId: null,
-      details: { email: 'newuser@vellum.com', role: 'CREATOR' },
+      details: { email: 'newuser@vellbase.com', role: 'CREATOR' },
       metadata: { description: 'Invited new creator to platform' },
       success: true,
       ipAddress: '192.168.1.100',
@@ -435,7 +435,7 @@ async function main() {
       category: 'Getting Started',
       question: 'How do I personalize my feed?',
       answer:
-        'Follow authors you enjoy reading, bookmark articles you love, and react to the stories that resonate. Vellum surfaces content based on the topics you engage with. You can also tap Discover to explore new categories and trending topics curated just for you.',
+        'Follow authors you enjoy reading, bookmark articles you love, and react to the stories that resonate. Vellbase surfaces content based on the topics you engage with. You can also tap Discover to explore new categories and trending topics curated just for you.',
     },
     {
       category: 'Getting Started',
@@ -451,9 +451,9 @@ async function main() {
     },
     {
       category: 'Account & Billing',
-      question: 'What is included in the Vellum Pro plan?',
+      question: 'What is included in the Vellbase Pro plan?',
       answer:
-        'Vellum Pro includes AI-powered drafts and edits (up to 500/month), a custom domain for your publication, advanced analytics with audience geography and retention curves, priority customer support, and removal of Vellum branding from newsletters you send.',
+        'Vellbase Pro includes AI-powered drafts and edits (up to 500/month), a custom domain for your publication, advanced analytics with audience geography and retention curves, priority customer support, and removal of Vellbase branding from newsletters you send.',
     },
     {
       category: 'Account & Billing',
@@ -463,7 +463,7 @@ async function main() {
     },
     {
       category: 'Content & Writing',
-      question: 'Does Vellum support Markdown?',
+      question: 'Does Vellbase support Markdown?',
       answer:
         "Yes — the composer accepts pasted Markdown and renders it instantly. If you prefer to write in Markdown, toggle the Markdown mode switch in the composer's three-dot menu to get a split preview pane.",
     },
@@ -477,13 +477,13 @@ async function main() {
       category: 'Content & Writing',
       question: 'How do SEO and social previews work?',
       answer:
-        'Every published article automatically generates a social card using your cover image, title, and excerpt. You can override the SEO title, description, or social image per article under Article Settings → Social Sharing Cards. Google typically indexes new Vellum articles within 24-48 hours.',
+        'Every published article automatically generates a social card using your cover image, title, and excerpt. You can override the SEO title, description, or social image per article under Article Settings → Social Sharing Cards. Google typically indexes new Vellbase articles within 24-48 hours.',
     },
     {
       category: 'Notifications',
       question: 'Why am I not receiving push notifications?',
       answer:
-        'First, make sure notifications are enabled for Vellum in your device Settings (iOS: Settings → Notifications → Vellum; Android: Long-press the app icon → App Info → Notifications). Then visit Settings → Notifications inside Vellum and confirm the specific categories you want are on. If everything is on, try logging out and back in — this refreshes your push token.',
+        'First, make sure notifications are enabled for Vellbase in your device Settings (iOS: Settings → Notifications → Vellbase; Android: Long-press the app icon → App Info → Notifications). Then visit Settings → Notifications inside Vellbase and confirm the specific categories you want are on. If everything is on, try logging out and back in — this refreshes your push token.',
     },
     {
       category: 'Notifications',
@@ -513,7 +513,7 @@ async function main() {
       category: 'Troubleshooting',
       question: 'Why are my images failing to upload?',
       answer:
-        'Vellum accepts JPG, PNG, WebP, and HEIC images up to 25 MB each. Animated GIFs are supported up to 10 MB. If an upload fails, check the file size, try reducing the resolution, or switch to a faster network. Uploads automatically retry three times before giving up.',
+        'Vellbase accepts JPG, PNG, WebP, and HEIC images up to 25 MB each. Animated GIFs are supported up to 10 MB. If an upload fails, check the file size, try reducing the resolution, or switch to a faster network. Uploads automatically retry three times before giving up.',
     },
     {
       category: 'Troubleshooting',

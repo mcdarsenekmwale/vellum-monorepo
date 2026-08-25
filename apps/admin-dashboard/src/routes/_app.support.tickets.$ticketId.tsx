@@ -103,7 +103,7 @@ import { interpolateCannedVariables, RICH_TEXT_FORMATS, type RichTextFormat, typ
 import { getSmartTextareaRows } from "@/lib/utils/textarea-utils";
 
 export const Route = createFileRoute("/_app/support/tickets/$ticketId")({
-  head: () => ({ meta: [{ title: "Ticket Detail · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Ticket Detail · Vellbase Admin" }] }),
   component: TicketDetailPage,
 });
 
@@ -383,9 +383,9 @@ function TicketDetailPage() {
       ticketUrl: typeof window !== "undefined" ? window.location.href : undefined,
       ticketCreatedAt: ticket?.createdAt,
       ticketUpdatedAt: ticket?.updatedAt,
-      workspaceName: "Vellum",
-      companyName: "Vellum",
-      supportEmail: "support@vellum.com",
+      workspaceName: "Vellbase",
+      companyName: "Vellbase",
+      supportEmail: "support@vellbase.com",
     };
 
     // ─── Apply comprehensive variable substitution ───

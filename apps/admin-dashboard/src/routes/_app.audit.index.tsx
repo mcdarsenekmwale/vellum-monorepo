@@ -57,7 +57,7 @@ import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/audit/")({
-  head: () => ({ meta: [{ title: "Audit Logs · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Audit Logs · Vellbase Admin" }] }),
   component: AuditPage,
 });
 

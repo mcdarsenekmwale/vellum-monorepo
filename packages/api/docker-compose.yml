@@ -3,13 +3,13 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: vellum-postgres
+    container_name: vellbase-postgres
     ports:
       - '5432:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: vellum_db
+      POSTGRES_DB: vellbase_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: vellum-redis
+    container_name: vellbase-redis
     ports:
       - '6379:6379'
     volumes:

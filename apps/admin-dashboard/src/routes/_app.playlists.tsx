@@ -75,7 +75,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/playlists")({
-  head: () => ({ meta: [{ title: "Playlists · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Playlists · Vellbase Admin" }] }),
   component: PlaylistsPage,
 });
 

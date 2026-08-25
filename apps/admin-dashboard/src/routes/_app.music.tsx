@@ -34,7 +34,7 @@ import {
 } from "@/lib/api/hooks";
 
 export const Route = createFileRoute("/_app/music")({
-  head: () => ({ meta: [{ title: "Music · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Music · Vellbase Admin" }] }),
   component: MusicPage,
 });
 
@@ -116,7 +116,7 @@ function MusicPage() {
       <PageHeader
         eyebrow="Content"
         title="Music"
-        description="Every licensed track available inside Vellum."
+        description="Every licensed track available inside Vellbase."
         actions={
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>

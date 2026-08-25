@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/categories")({
-  head: () => ({ meta: [{ title: "Categories · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Categories · Vellbase Admin" }] }),
   component: CategoriesPage,
 });
 

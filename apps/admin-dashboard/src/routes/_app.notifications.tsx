@@ -66,7 +66,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_app/notifications")({
-  head: () => ({ meta: [{ title: "Notifications · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Notifications · Vellbase Admin" }] }),
   component: NotificationsPage,
 });
 

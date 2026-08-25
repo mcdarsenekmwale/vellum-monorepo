@@ -28,7 +28,7 @@ const makeAgent = (overrides: Partial<SupportAgent> = {}): SupportAgent =>
     user: {
       id: "u-1",
       name: "Sarah Chen",
-      email: "sarah.chen@vellum.com",
+      email: "sarah.chen@vellbase.com",
       avatar: null,
       handle: "sarahc",
       role: "MODERATOR",
@@ -157,7 +157,7 @@ describe("support-agents logic (RED)", () => {
       const row = agentToCsvRow(makeAgent());
       expect(row).toHaveLength(10);
       expect(row[0]).toBe("Sarah Chen"); // Name
-      expect(row[1]).toBe("sarah.chen@vellum.com"); // Email
+      expect(row[1]).toBe("sarah.chen@vellbase.com"); // Email
       expect(row[2]).toBe("MODERATOR"); // Role
       expect(row[3]).toBe("ONLINE"); // Status
       expect(row[4]).toBe("Technical Support"); // Department
@@ -197,7 +197,7 @@ describe("support-agents logic (RED)", () => {
 
     it("matches search by email substring", async () => {
       const { agentMatches } = await import("./support-agent.logic");
-      expect(agentMatches(makeAgent(), { search: "@vellum" })).toBe(true);
+      expect(agentMatches(makeAgent(), { search: "@vellbase" })).toBe(true);
       expect(agentMatches(makeAgent(), { search: "@example.com" })).toBe(false);
     });
 

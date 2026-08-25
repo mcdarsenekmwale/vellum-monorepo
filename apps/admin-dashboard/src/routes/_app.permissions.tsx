@@ -23,7 +23,7 @@ import { usePermissionGroups, useRbacRoles } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/permissions")({
-  head: () => ({ meta: [{ title: "Permissions · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Permissions · Vellbase Admin" }] }),
   component: PermissionsPage,
 });
 

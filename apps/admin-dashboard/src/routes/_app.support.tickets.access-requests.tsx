@@ -45,7 +45,7 @@ import { resolveAvatar } from "@/lib/avatar";
 import type { TicketAccessRequest, TicketAccessRequestStatus } from "@/lib/api/services";
 
 export const Route = createFileRoute("/_app/support/tickets/access-requests")({
-  head: () => ({ meta: [{ title: "Ticket Access Requests · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Ticket Access Requests · Vellbase Admin" }] }),
   component: TicketAccessRequestsPage,
 });
 

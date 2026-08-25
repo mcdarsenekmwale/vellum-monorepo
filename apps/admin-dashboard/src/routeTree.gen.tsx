@@ -9,244 +9,84 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthLoginRouteImport } from './routes/auth.login'
-import { Route as AppWebhooksRouteImport } from './routes/_app.webhooks'
-import { Route as AppVideosRouteImport } from './routes/_app.videos'
-import { Route as AppUsersRouteImport } from './routes/_app.users'
-import { Route as AppTagsRouteImport } from './routes/_app.tags'
-import { Route as AppStorageRouteImport } from './routes/_app.storage'
-import { Route as AppStatusRouteImport } from './routes/_app.status'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
-import { Route as AppRolesRouteImport } from './routes/_app.roles'
-import { Route as AppRoleRequestsRouteImport } from './routes/_app.role-requests'
-import { Route as AppRequestAccessRouteImport } from './routes/_app.request-access'
-import { Route as AppReportsRouteImport } from './routes/_app.reports'
-import { Route as AppProfileRouteImport } from './routes/_app.profile'
-import { Route as AppPostsRouteImport } from './routes/_app.posts'
-import { Route as AppPlaylistsRouteImport } from './routes/_app.playlists'
-import { Route as AppPermissionsRouteImport } from './routes/_app.permissions'
-import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
-import { Route as AppMusicRouteImport } from './routes/_app.music'
-import { Route as AppModerationRouteImport } from './routes/_app.moderation'
-import { Route as AppMediaRouteImport } from './routes/_app.media'
-import { Route as AppJobsRouteImport } from './routes/_app.jobs'
-import { Route as AppHighlightsRouteImport } from './routes/_app.highlights'
-import { Route as AppHelpRouteImport } from './routes/_app.help'
-import { Route as AppFollowersRouteImport } from './routes/_app.followers'
-import { Route as AppFlagsRouteImport } from './routes/_app.flags'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppCommentsRouteImport } from './routes/_app.comments'
-import { Route as AppCategoriesRouteImport } from './routes/_app.categories'
-import { Route as AppAuditRouteImport } from './routes/_app.audit'
-import { Route as AppArticlesRouteImport } from './routes/_app.articles'
-import { Route as AppApiRouteImport } from './routes/_app.api'
-import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
-import { Route as AppAiRouteImport } from './routes/_app.ai'
-import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppAccessControlRouteImport } from './routes/_app.access-control'
-import { Route as AppWebhooksIndexRouteImport } from './routes/_app.webhooks.index'
-import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
-import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index'
-import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
-import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
+import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
+import { Route as AppAiRouteImport } from './routes/_app.ai'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppApiRouteImport } from './routes/_app.api'
+import { Route as AppArticlesRouteImport } from './routes/_app.articles'
+import { Route as AppAuditRouteImport } from './routes/_app.audit'
+import { Route as AppCategoriesRouteImport } from './routes/_app.categories'
+import { Route as AppCommentsRouteImport } from './routes/_app.comments'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppFlagsRouteImport } from './routes/_app.flags'
+import { Route as AppFollowersRouteImport } from './routes/_app.followers'
+import { Route as AppHelpRouteImport } from './routes/_app.help'
+import { Route as AppHighlightsRouteImport } from './routes/_app.highlights'
+import { Route as AppJobsRouteImport } from './routes/_app.jobs'
+import { Route as AppMediaRouteImport } from './routes/_app.media'
+import { Route as AppModerationRouteImport } from './routes/_app.moderation'
+import { Route as AppMusicRouteImport } from './routes/_app.music'
+import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
+import { Route as AppPermissionsRouteImport } from './routes/_app.permissions'
+import { Route as AppPlaylistsRouteImport } from './routes/_app.playlists'
+import { Route as AppPostsRouteImport } from './routes/_app.posts'
+import { Route as AppProfileRouteImport } from './routes/_app.profile'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
+import { Route as AppRequestAccessRouteImport } from './routes/_app.request-access'
+import { Route as AppRoleRequestsRouteImport } from './routes/_app.role-requests'
+import { Route as AppRolesRouteImport } from './routes/_app.roles'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppStatusRouteImport } from './routes/_app.status'
+import { Route as AppStorageRouteImport } from './routes/_app.storage'
+import { Route as AppTagsRouteImport } from './routes/_app.tags'
+import { Route as AppUsersRouteImport } from './routes/_app.users'
+import { Route as AppVideosRouteImport } from './routes/_app.videos'
+import { Route as AppWebhooksRouteImport } from './routes/_app.webhooks'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AppArticlesIndexRouteImport } from './routes/_app.articles.index'
-import { Route as AppWebhooksIdRouteImport } from './routes/_app.webhooks.$id'
-import { Route as AppUsersDeletedRouteImport } from './routes/_app.users.deleted'
-import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
-import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
-import { Route as AppSupportReportsRouteImport } from './routes/_app.support.reports'
-import { Route as AppSupportKbRouteImport } from './routes/_app.support.kb'
-import { Route as AppSupportComparisonsRouteImport } from './routes/_app.support.comparisons'
-import { Route as AppSupportCannedResponsesRouteImport } from './routes/_app.support.canned-responses'
-import { Route as AppSupportAgentsRouteImport } from './routes/_app.support.agents'
-import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
-import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
-import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
 import { Route as AppArticlesArticleIdRouteImport } from './routes/_app.articles.$articleId'
-import { Route as AppSupportTicketsIndexRouteImport } from './routes/_app.support.tickets.index'
-import { Route as AppSupportTeamsIndexRouteImport } from './routes/_app.support.teams.index'
-import { Route as AppSupportDepartmentsIndexRouteImport } from './routes/_app.support.departments.index'
-import { Route as AppSupportTicketsDeletedRouteImport } from './routes/_app.support.tickets.deleted'
-import { Route as AppSupportTicketsAccessRequestsRouteImport } from './routes/_app.support.tickets.access-requests'
-import { Route as AppSupportTicketsTicketIdRouteImport } from './routes/_app.support.tickets.$ticketId'
-import { Route as AppSupportTeamsIdRouteImport } from './routes/_app.support.teams.$id'
-import { Route as AppSupportDepartmentsIdRouteImport } from './routes/_app.support.departments.$id'
+import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
+import { Route as AppAuditEntryIdRouteImport } from './routes/_app.audit.$entryId'
+import { Route as AppHelpArticleIdRouteImport } from './routes/_app.help.$articleId'
+import { Route as AppModerationIndexRouteImport } from './routes/_app.moderation.index'
+import { Route as AppModerationReportIdRouteImport } from './routes/_app.moderation.$reportId'
+import { Route as AppSupportIndexRouteImport } from './routes/_app.support.index'
+import { Route as AppSupportAgentsRouteImport } from './routes/_app.support.agents'
+import { Route as AppSupportCannedResponsesRouteImport } from './routes/_app.support.canned-responses'
+import { Route as AppSupportComparisonsRouteImport } from './routes/_app.support.comparisons'
+import { Route as AppSupportKbRouteImport } from './routes/_app.support.kb'
+import { Route as AppSupportReportsRouteImport } from './routes/_app.support.reports'
+import { Route as AppSupportTicketsRouteImport } from './routes/_app.support.tickets'
+import { Route as AppUsersIndexRouteImport } from './routes/_app.users.index'
+import { Route as AppUsersUserIdRouteImport } from './routes/_app.users.$userId'
+import { Route as AppUsersDeletedRouteImport } from './routes/_app.users.deleted'
+import { Route as AppWebhooksIndexRouteImport } from './routes/_app.webhooks.index'
+import { Route as AppWebhooksIdRouteImport } from './routes/_app.webhooks.$id'
 import { Route as AppSupportAnalyticsIdRouteImport } from './routes/_app.support.analytics.$id'
+import { Route as AppSupportDepartmentsIndexRouteImport } from './routes/_app.support.departments.index'
+import { Route as AppSupportDepartmentsIdRouteImport } from './routes/_app.support.departments.$id'
+import { Route as AppSupportTeamsIndexRouteImport } from './routes/_app.support.teams.index'
+import { Route as AppSupportTeamsIdRouteImport } from './routes/_app.support.teams.$id'
+import { Route as AppSupportTicketsIndexRouteImport } from './routes/_app.support.tickets.index'
+import { Route as AppSupportTicketsTicketIdRouteImport } from './routes/_app.support.tickets.$ticketId'
+import { Route as AppSupportTicketsAccessRequestsRouteImport } from './routes/_app.support.tickets.access-requests'
+import { Route as AppSupportTicketsDeletedRouteImport } from './routes/_app.support.tickets.deleted'
 
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/auth/login',
-  path: '/auth/login',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppWebhooksRoute = AppWebhooksRouteImport.update({
-  id: '/webhooks',
-  path: '/webhooks',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppVideosRoute = AppVideosRouteImport.update({
-  id: '/videos',
-  path: '/videos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppUsersRoute = AppUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTagsRoute = AppTagsRouteImport.update({
-  id: '/tags',
-  path: '/tags',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppStorageRoute = AppStorageRouteImport.update({
-  id: '/storage',
-  path: '/storage',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppStatusRoute = AppStatusRouteImport.update({
-  id: '/status',
-  path: '/status',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRolesRoute = AppRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRoleRequestsRoute = AppRoleRequestsRouteImport.update({
-  id: '/role-requests',
-  path: '/role-requests',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRequestAccessRoute = AppRequestAccessRouteImport.update({
-  id: '/request-access',
-  path: '/request-access',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppProfileRoute = AppProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPostsRoute = AppPostsRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPlaylistsRoute = AppPlaylistsRouteImport.update({
-  id: '/playlists',
-  path: '/playlists',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPermissionsRoute = AppPermissionsRouteImport.update({
-  id: '/permissions',
-  path: '/permissions',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppNotificationsRoute = AppNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMusicRoute = AppMusicRouteImport.update({
-  id: '/music',
-  path: '/music',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppModerationRoute = AppModerationRouteImport.update({
-  id: '/moderation',
-  path: '/moderation',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMediaRoute = AppMediaRouteImport.update({
-  id: '/media',
-  path: '/media',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppJobsRoute = AppJobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppHighlightsRoute = AppHighlightsRouteImport.update({
-  id: '/highlights',
-  path: '/highlights',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppHelpRoute = AppHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFollowersRoute = AppFollowersRouteImport.update({
-  id: '/followers',
-  path: '/followers',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFlagsRoute = AppFlagsRouteImport.update({
-  id: '/flags',
-  path: '/flags',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCommentsRoute = AppCommentsRouteImport.update({
-  id: '/comments',
-  path: '/comments',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppCategoriesRoute = AppCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAuditRoute = AppAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppArticlesRoute = AppArticlesRouteImport.update({
-  id: '/articles',
-  path: '/articles',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppApiRoute = AppApiRouteImport.update({
-  id: '/api',
-  path: '/api',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiRoute = AppAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
+const AppAccessControlRoute = AppAccessControlRouteImport.update({
+  id: '/access-control',
+  path: '/access-control',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAdvertisementsRoute = AppAdvertisementsRouteImport.update({
@@ -254,74 +94,214 @@ const AppAdvertisementsRoute = AppAdvertisementsRouteImport.update({
   path: '/advertisements',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAccessControlRoute = AppAccessControlRouteImport.update({
-  id: '/access-control',
-  path: '/access-control',
+const AppAiRoute = AppAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => AppRoute,
 } as any)
-const AppWebhooksIndexRoute = AppWebhooksIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppWebhooksRoute,
-} as any)
-const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppUsersRoute,
-} as any)
-const AppSupportIndexRoute = AppSupportIndexRouteImport.update({
-  id: '/support/',
-  path: '/support/',
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
-const AppModerationIndexRoute = AppModerationIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppModerationRoute,
+const AppApiRoute = AppApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppAuditIndexRoute = AppAuditIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppAuditRoute,
+const AppArticlesRoute = AppArticlesRouteImport.update({
+  id: '/articles',
+  path: '/articles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCategoriesRoute = AppCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCommentsRoute = AppCommentsRouteImport.update({
+  id: '/comments',
+  path: '/comments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFlagsRoute = AppFlagsRouteImport.update({
+  id: '/flags',
+  path: '/flags',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFollowersRoute = AppFollowersRouteImport.update({
+  id: '/followers',
+  path: '/followers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHelpRoute = AppHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHighlightsRoute = AppHighlightsRouteImport.update({
+  id: '/highlights',
+  path: '/highlights',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppJobsRoute = AppJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMediaRoute = AppMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppModerationRoute = AppModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMusicRoute = AppMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPermissionsRoute = AppPermissionsRouteImport.update({
+  id: '/permissions',
+  path: '/permissions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlaylistsRoute = AppPlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPostsRoute = AppPostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRequestAccessRoute = AppRequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRoleRequestsRoute = AppRoleRequestsRouteImport.update({
+  id: '/role-requests',
+  path: '/role-requests',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRolesRoute = AppRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStatusRoute = AppStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStorageRoute = AppStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTagsRoute = AppTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersRoute = AppUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVideosRoute = AppVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWebhooksRoute = AppWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppArticlesIndexRoute = AppArticlesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppArticlesRoute,
 } as any)
-const AppWebhooksIdRoute = AppWebhooksIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppWebhooksRoute,
+const AppArticlesArticleIdRoute = AppArticlesArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => AppArticlesRoute,
 } as any)
-const AppUsersDeletedRoute = AppUsersDeletedRouteImport.update({
-  id: '/deleted',
-  path: '/deleted',
-  getParentRoute: () => AppUsersRoute,
+const AppAuditIndexRoute = AppAuditIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAuditRoute,
 } as any)
-const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => AppUsersRoute,
+const AppAuditEntryIdRoute = AppAuditEntryIdRouteImport.update({
+  id: '/$entryId',
+  path: '/$entryId',
+  getParentRoute: () => AppAuditRoute,
 } as any)
-const AppSupportTicketsRoute = AppSupportTicketsRouteImport.update({
-  id: '/support/tickets',
-  path: '/support/tickets',
+const AppHelpArticleIdRoute = AppHelpArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => AppHelpRoute,
+} as any)
+const AppModerationIndexRoute = AppModerationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppModerationRoute,
+} as any)
+const AppModerationReportIdRoute = AppModerationReportIdRouteImport.update({
+  id: '/$reportId',
+  path: '/$reportId',
+  getParentRoute: () => AppModerationRoute,
+} as any)
+const AppSupportIndexRoute = AppSupportIndexRouteImport.update({
+  id: '/support/',
+  path: '/support/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSupportReportsRoute = AppSupportReportsRouteImport.update({
-  id: '/support/reports',
-  path: '/support/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSupportKbRoute = AppSupportKbRouteImport.update({
-  id: '/support/kb',
-  path: '/support/kb',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSupportComparisonsRoute = AppSupportComparisonsRouteImport.update({
-  id: '/support/comparisons',
-  path: '/support/comparisons',
+const AppSupportAgentsRoute = AppSupportAgentsRouteImport.update({
+  id: '/support/agents',
+  path: '/support/agents',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSupportCannedResponsesRoute =
@@ -330,39 +310,54 @@ const AppSupportCannedResponsesRoute =
     path: '/support/canned-responses',
     getParentRoute: () => AppRoute,
   } as any)
-const AppSupportAgentsRoute = AppSupportAgentsRouteImport.update({
-  id: '/support/agents',
-  path: '/support/agents',
+const AppSupportComparisonsRoute = AppSupportComparisonsRouteImport.update({
+  id: '/support/comparisons',
+  path: '/support/comparisons',
   getParentRoute: () => AppRoute,
 } as any)
-const AppModerationReportIdRoute = AppModerationReportIdRouteImport.update({
-  id: '/$reportId',
-  path: '/$reportId',
-  getParentRoute: () => AppModerationRoute,
+const AppSupportKbRoute = AppSupportKbRouteImport.update({
+  id: '/support/kb',
+  path: '/support/kb',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppHelpArticleIdRoute = AppHelpArticleIdRouteImport.update({
-  id: '/$articleId',
-  path: '/$articleId',
-  getParentRoute: () => AppHelpRoute,
+const AppSupportReportsRoute = AppSupportReportsRouteImport.update({
+  id: '/support/reports',
+  path: '/support/reports',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppAuditEntryIdRoute = AppAuditEntryIdRouteImport.update({
-  id: '/$entryId',
-  path: '/$entryId',
-  getParentRoute: () => AppAuditRoute,
+const AppSupportTicketsRoute = AppSupportTicketsRouteImport.update({
+  id: '/support/tickets',
+  path: '/support/tickets',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppArticlesArticleIdRoute = AppArticlesArticleIdRouteImport.update({
-  id: '/$articleId',
-  path: '/$articleId',
-  getParentRoute: () => AppArticlesRoute,
-} as any)
-const AppSupportTicketsIndexRoute = AppSupportTicketsIndexRouteImport.update({
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppSupportTicketsRoute,
+  getParentRoute: () => AppUsersRoute,
 } as any)
-const AppSupportTeamsIndexRoute = AppSupportTeamsIndexRouteImport.update({
-  id: '/support/teams/',
-  path: '/support/teams/',
+const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AppUsersRoute,
+} as any)
+const AppUsersDeletedRoute = AppUsersDeletedRouteImport.update({
+  id: '/deleted',
+  path: '/deleted',
+  getParentRoute: () => AppUsersRoute,
+} as any)
+const AppWebhooksIndexRoute = AppWebhooksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppWebhooksRoute,
+} as any)
+const AppWebhooksIdRoute = AppWebhooksIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppWebhooksRoute,
+} as any)
+const AppSupportAnalyticsIdRoute = AppSupportAnalyticsIdRouteImport.update({
+  id: '/support/analytics/$id',
+  path: '/support/analytics/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSupportDepartmentsIndexRoute =
@@ -371,10 +366,30 @@ const AppSupportDepartmentsIndexRoute =
     path: '/support/departments/',
     getParentRoute: () => AppRoute,
   } as any)
-const AppSupportTicketsDeletedRoute =
-  AppSupportTicketsDeletedRouteImport.update({
-    id: '/deleted',
-    path: '/deleted',
+const AppSupportDepartmentsIdRoute = AppSupportDepartmentsIdRouteImport.update({
+  id: '/support/departments/$id',
+  path: '/support/departments/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportTeamsIndexRoute = AppSupportTeamsIndexRouteImport.update({
+  id: '/support/teams/',
+  path: '/support/teams/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportTeamsIdRoute = AppSupportTeamsIdRouteImport.update({
+  id: '/support/teams/$id',
+  path: '/support/teams/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportTicketsIndexRoute = AppSupportTicketsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSupportTicketsRoute,
+} as any)
+const AppSupportTicketsTicketIdRoute =
+  AppSupportTicketsTicketIdRouteImport.update({
+    id: '/$ticketId',
+    path: '/$ticketId',
     getParentRoute: () => AppSupportTicketsRoute,
   } as any)
 const AppSupportTicketsAccessRequestsRoute =
@@ -383,27 +398,12 @@ const AppSupportTicketsAccessRequestsRoute =
     path: '/access-requests',
     getParentRoute: () => AppSupportTicketsRoute,
   } as any)
-const AppSupportTicketsTicketIdRoute =
-  AppSupportTicketsTicketIdRouteImport.update({
-    id: '/$ticketId',
-    path: '/$ticketId',
+const AppSupportTicketsDeletedRoute =
+  AppSupportTicketsDeletedRouteImport.update({
+    id: '/deleted',
+    path: '/deleted',
     getParentRoute: () => AppSupportTicketsRoute,
   } as any)
-const AppSupportTeamsIdRoute = AppSupportTeamsIdRouteImport.update({
-  id: '/support/teams/$id',
-  path: '/support/teams/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSupportDepartmentsIdRoute = AppSupportDepartmentsIdRouteImport.update({
-  id: '/support/departments/$id',
-  path: '/support/departments/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSupportAnalyticsIdRoute = AppSupportAnalyticsIdRouteImport.update({
-  id: '/support/analytics/$id',
-  path: '/support/analytics/$id',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -803,13 +803,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -817,235 +810,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/webhooks': {
-      id: '/_app/webhooks'
-      path: '/webhooks'
-      fullPath: '/webhooks'
-      preLoaderRoute: typeof AppWebhooksRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/videos': {
-      id: '/_app/videos'
-      path: '/videos'
-      fullPath: '/videos'
-      preLoaderRoute: typeof AppVideosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/users': {
-      id: '/_app/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AppUsersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tags': {
-      id: '/_app/tags'
-      path: '/tags'
-      fullPath: '/tags'
-      preLoaderRoute: typeof AppTagsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/storage': {
-      id: '/_app/storage'
-      path: '/storage'
-      fullPath: '/storage'
-      preLoaderRoute: typeof AppStorageRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/status': {
-      id: '/_app/status'
-      path: '/status'
-      fullPath: '/status'
-      preLoaderRoute: typeof AppStatusRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/roles': {
-      id: '/_app/roles'
-      path: '/roles'
-      fullPath: '/roles'
-      preLoaderRoute: typeof AppRolesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/role-requests': {
-      id: '/_app/role-requests'
-      path: '/role-requests'
-      fullPath: '/role-requests'
-      preLoaderRoute: typeof AppRoleRequestsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/request-access': {
-      id: '/_app/request-access'
-      path: '/request-access'
-      fullPath: '/request-access'
-      preLoaderRoute: typeof AppRequestAccessRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports': {
-      id: '/_app/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/profile': {
-      id: '/_app/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AppProfileRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/posts': {
-      id: '/_app/posts'
-      path: '/posts'
-      fullPath: '/posts'
-      preLoaderRoute: typeof AppPostsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/playlists': {
-      id: '/_app/playlists'
-      path: '/playlists'
-      fullPath: '/playlists'
-      preLoaderRoute: typeof AppPlaylistsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/permissions': {
-      id: '/_app/permissions'
-      path: '/permissions'
-      fullPath: '/permissions'
-      preLoaderRoute: typeof AppPermissionsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/notifications': {
-      id: '/_app/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AppNotificationsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/music': {
-      id: '/_app/music'
-      path: '/music'
-      fullPath: '/music'
-      preLoaderRoute: typeof AppMusicRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/moderation': {
-      id: '/_app/moderation'
-      path: '/moderation'
-      fullPath: '/moderation'
-      preLoaderRoute: typeof AppModerationRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/media': {
-      id: '/_app/media'
-      path: '/media'
-      fullPath: '/media'
-      preLoaderRoute: typeof AppMediaRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/jobs': {
-      id: '/_app/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
-      preLoaderRoute: typeof AppJobsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/highlights': {
-      id: '/_app/highlights'
-      path: '/highlights'
-      fullPath: '/highlights'
-      preLoaderRoute: typeof AppHighlightsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/help': {
-      id: '/_app/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof AppHelpRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/followers': {
-      id: '/_app/followers'
-      path: '/followers'
-      fullPath: '/followers'
-      preLoaderRoute: typeof AppFollowersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/flags': {
-      id: '/_app/flags'
-      path: '/flags'
-      fullPath: '/flags'
-      preLoaderRoute: typeof AppFlagsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/comments': {
-      id: '/_app/comments'
-      path: '/comments'
-      fullPath: '/comments'
-      preLoaderRoute: typeof AppCommentsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/categories': {
-      id: '/_app/categories'
-      path: '/categories'
-      fullPath: '/categories'
-      preLoaderRoute: typeof AppCategoriesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/audit': {
-      id: '/_app/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AppAuditRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/articles': {
-      id: '/_app/articles'
-      path: '/articles'
-      fullPath: '/articles'
-      preLoaderRoute: typeof AppArticlesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/api': {
-      id: '/_app/api'
-      path: '/api'
-      fullPath: '/api'
-      preLoaderRoute: typeof AppApiRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/analytics': {
-      id: '/_app/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AppAnalyticsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai': {
-      id: '/_app/ai'
-      path: '/ai'
-      fullPath: '/ai'
-      preLoaderRoute: typeof AppAiRouteImport
+    '/_app/access-control': {
+      id: '/_app/access-control'
+      path: '/access-control'
+      fullPath: '/access-control'
+      preLoaderRoute: typeof AppAccessControlRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/advertisements': {
@@ -1055,47 +831,236 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdvertisementsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/access-control': {
-      id: '/_app/access-control'
-      path: '/access-control'
-      fullPath: '/access-control'
-      preLoaderRoute: typeof AppAccessControlRouteImport
+    '/_app/ai': {
+      id: '/_app/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AppAiRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/webhooks/': {
-      id: '/_app/webhooks/'
-      path: '/'
-      fullPath: '/webhooks/'
-      preLoaderRoute: typeof AppWebhooksIndexRouteImport
-      parentRoute: typeof AppWebhooksRoute
-    }
-    '/_app/users/': {
-      id: '/_app/users/'
-      path: '/'
-      fullPath: '/users/'
-      preLoaderRoute: typeof AppUsersIndexRouteImport
-      parentRoute: typeof AppUsersRoute
-    }
-    '/_app/support/': {
-      id: '/_app/support/'
-      path: '/support'
-      fullPath: '/support/'
-      preLoaderRoute: typeof AppSupportIndexRouteImport
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/moderation/': {
-      id: '/_app/moderation/'
-      path: '/'
-      fullPath: '/moderation/'
-      preLoaderRoute: typeof AppModerationIndexRouteImport
-      parentRoute: typeof AppModerationRoute
+    '/_app/api': {
+      id: '/_app/api'
+      path: '/api'
+      fullPath: '/api'
+      preLoaderRoute: typeof AppApiRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/audit/': {
-      id: '/_app/audit/'
-      path: '/'
-      fullPath: '/audit/'
-      preLoaderRoute: typeof AppAuditIndexRouteImport
-      parentRoute: typeof AppAuditRoute
+    '/_app/articles': {
+      id: '/_app/articles'
+      path: '/articles'
+      fullPath: '/articles'
+      preLoaderRoute: typeof AppArticlesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/audit': {
+      id: '/_app/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/categories': {
+      id: '/_app/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof AppCategoriesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/comments': {
+      id: '/_app/comments'
+      path: '/comments'
+      fullPath: '/comments'
+      preLoaderRoute: typeof AppCommentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/flags': {
+      id: '/_app/flags'
+      path: '/flags'
+      fullPath: '/flags'
+      preLoaderRoute: typeof AppFlagsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/followers': {
+      id: '/_app/followers'
+      path: '/followers'
+      fullPath: '/followers'
+      preLoaderRoute: typeof AppFollowersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/help': {
+      id: '/_app/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AppHelpRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/highlights': {
+      id: '/_app/highlights'
+      path: '/highlights'
+      fullPath: '/highlights'
+      preLoaderRoute: typeof AppHighlightsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/jobs': {
+      id: '/_app/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof AppJobsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/media': {
+      id: '/_app/media'
+      path: '/media'
+      fullPath: '/media'
+      preLoaderRoute: typeof AppMediaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/moderation': {
+      id: '/_app/moderation'
+      path: '/moderation'
+      fullPath: '/moderation'
+      preLoaderRoute: typeof AppModerationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/music': {
+      id: '/_app/music'
+      path: '/music'
+      fullPath: '/music'
+      preLoaderRoute: typeof AppMusicRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions': {
+      id: '/_app/permissions'
+      path: '/permissions'
+      fullPath: '/permissions'
+      preLoaderRoute: typeof AppPermissionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/playlists': {
+      id: '/_app/playlists'
+      path: '/playlists'
+      fullPath: '/playlists'
+      preLoaderRoute: typeof AppPlaylistsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/posts': {
+      id: '/_app/posts'
+      path: '/posts'
+      fullPath: '/posts'
+      preLoaderRoute: typeof AppPostsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/request-access': {
+      id: '/_app/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof AppRequestAccessRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/role-requests': {
+      id: '/_app/role-requests'
+      path: '/role-requests'
+      fullPath: '/role-requests'
+      preLoaderRoute: typeof AppRoleRequestsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/roles': {
+      id: '/_app/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AppRolesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/status': {
+      id: '/_app/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof AppStatusRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/storage': {
+      id: '/_app/storage'
+      path: '/storage'
+      fullPath: '/storage'
+      preLoaderRoute: typeof AppStorageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tags': {
+      id: '/_app/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof AppTagsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/users': {
+      id: '/_app/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AppUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/videos': {
+      id: '/_app/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof AppVideosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/webhooks': {
+      id: '/_app/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AppWebhooksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/articles/': {
       id: '/_app/articles/'
@@ -1104,60 +1069,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppArticlesIndexRouteImport
       parentRoute: typeof AppArticlesRoute
     }
-    '/_app/webhooks/$id': {
-      id: '/_app/webhooks/$id'
-      path: '/$id'
-      fullPath: '/webhooks/$id'
-      preLoaderRoute: typeof AppWebhooksIdRouteImport
-      parentRoute: typeof AppWebhooksRoute
+    '/_app/articles/$articleId': {
+      id: '/_app/articles/$articleId'
+      path: '/$articleId'
+      fullPath: '/articles/$articleId'
+      preLoaderRoute: typeof AppArticlesArticleIdRouteImport
+      parentRoute: typeof AppArticlesRoute
     }
-    '/_app/users/deleted': {
-      id: '/_app/users/deleted'
-      path: '/deleted'
-      fullPath: '/users/deleted'
-      preLoaderRoute: typeof AppUsersDeletedRouteImport
-      parentRoute: typeof AppUsersRoute
+    '/_app/audit/': {
+      id: '/_app/audit/'
+      path: '/'
+      fullPath: '/audit/'
+      preLoaderRoute: typeof AppAuditIndexRouteImport
+      parentRoute: typeof AppAuditRoute
     }
-    '/_app/users/$userId': {
-      id: '/_app/users/$userId'
-      path: '/$userId'
-      fullPath: '/users/$userId'
-      preLoaderRoute: typeof AppUsersUserIdRouteImport
-      parentRoute: typeof AppUsersRoute
+    '/_app/audit/$entryId': {
+      id: '/_app/audit/$entryId'
+      path: '/$entryId'
+      fullPath: '/audit/$entryId'
+      preLoaderRoute: typeof AppAuditEntryIdRouteImport
+      parentRoute: typeof AppAuditRoute
     }
-    '/_app/support/tickets': {
-      id: '/_app/support/tickets'
-      path: '/support/tickets'
-      fullPath: '/support/tickets'
-      preLoaderRoute: typeof AppSupportTicketsRouteImport
-      parentRoute: typeof AppRoute
+    '/_app/help/$articleId': {
+      id: '/_app/help/$articleId'
+      path: '/$articleId'
+      fullPath: '/help/$articleId'
+      preLoaderRoute: typeof AppHelpArticleIdRouteImport
+      parentRoute: typeof AppHelpRoute
     }
-    '/_app/support/reports': {
-      id: '/_app/support/reports'
-      path: '/support/reports'
-      fullPath: '/support/reports'
-      preLoaderRoute: typeof AppSupportReportsRouteImport
-      parentRoute: typeof AppRoute
+    '/_app/moderation/': {
+      id: '/_app/moderation/'
+      path: '/'
+      fullPath: '/moderation/'
+      preLoaderRoute: typeof AppModerationIndexRouteImport
+      parentRoute: typeof AppModerationRoute
     }
-    '/_app/support/kb': {
-      id: '/_app/support/kb'
-      path: '/support/kb'
-      fullPath: '/support/kb'
-      preLoaderRoute: typeof AppSupportKbRouteImport
-      parentRoute: typeof AppRoute
+    '/_app/moderation/$reportId': {
+      id: '/_app/moderation/$reportId'
+      path: '/$reportId'
+      fullPath: '/moderation/$reportId'
+      preLoaderRoute: typeof AppModerationReportIdRouteImport
+      parentRoute: typeof AppModerationRoute
     }
-    '/_app/support/comparisons': {
-      id: '/_app/support/comparisons'
-      path: '/support/comparisons'
-      fullPath: '/support/comparisons'
-      preLoaderRoute: typeof AppSupportComparisonsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/support/canned-responses': {
-      id: '/_app/support/canned-responses'
-      path: '/support/canned-responses'
-      fullPath: '/support/canned-responses'
-      preLoaderRoute: typeof AppSupportCannedResponsesRouteImport
+    '/_app/support/': {
+      id: '/_app/support/'
+      path: '/support'
+      fullPath: '/support/'
+      preLoaderRoute: typeof AppSupportIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/support/agents': {
@@ -1167,46 +1125,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSupportAgentsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/moderation/$reportId': {
-      id: '/_app/moderation/$reportId'
-      path: '/$reportId'
-      fullPath: '/moderation/$reportId'
-      preLoaderRoute: typeof AppModerationReportIdRouteImport
-      parentRoute: typeof AppModerationRoute
+    '/_app/support/canned-responses': {
+      id: '/_app/support/canned-responses'
+      path: '/support/canned-responses'
+      fullPath: '/support/canned-responses'
+      preLoaderRoute: typeof AppSupportCannedResponsesRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/help/$articleId': {
-      id: '/_app/help/$articleId'
-      path: '/$articleId'
-      fullPath: '/help/$articleId'
-      preLoaderRoute: typeof AppHelpArticleIdRouteImport
-      parentRoute: typeof AppHelpRoute
+    '/_app/support/comparisons': {
+      id: '/_app/support/comparisons'
+      path: '/support/comparisons'
+      fullPath: '/support/comparisons'
+      preLoaderRoute: typeof AppSupportComparisonsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/audit/$entryId': {
-      id: '/_app/audit/$entryId'
-      path: '/$entryId'
-      fullPath: '/audit/$entryId'
-      preLoaderRoute: typeof AppAuditEntryIdRouteImport
-      parentRoute: typeof AppAuditRoute
+    '/_app/support/kb': {
+      id: '/_app/support/kb'
+      path: '/support/kb'
+      fullPath: '/support/kb'
+      preLoaderRoute: typeof AppSupportKbRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/articles/$articleId': {
-      id: '/_app/articles/$articleId'
-      path: '/$articleId'
-      fullPath: '/articles/$articleId'
-      preLoaderRoute: typeof AppArticlesArticleIdRouteImport
-      parentRoute: typeof AppArticlesRoute
+    '/_app/support/reports': {
+      id: '/_app/support/reports'
+      path: '/support/reports'
+      fullPath: '/support/reports'
+      preLoaderRoute: typeof AppSupportReportsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/support/tickets/': {
-      id: '/_app/support/tickets/'
+    '/_app/support/tickets': {
+      id: '/_app/support/tickets'
+      path: '/support/tickets'
+      fullPath: '/support/tickets'
+      preLoaderRoute: typeof AppSupportTicketsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/users/': {
+      id: '/_app/users/'
       path: '/'
-      fullPath: '/support/tickets/'
-      preLoaderRoute: typeof AppSupportTicketsIndexRouteImport
-      parentRoute: typeof AppSupportTicketsRoute
+      fullPath: '/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppUsersRoute
     }
-    '/_app/support/teams/': {
-      id: '/_app/support/teams/'
-      path: '/support/teams'
-      fullPath: '/support/teams/'
-      preLoaderRoute: typeof AppSupportTeamsIndexRouteImport
+    '/_app/users/$userId': {
+      id: '/_app/users/$userId'
+      path: '/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof AppUsersUserIdRouteImport
+      parentRoute: typeof AppUsersRoute
+    }
+    '/_app/users/deleted': {
+      id: '/_app/users/deleted'
+      path: '/deleted'
+      fullPath: '/users/deleted'
+      preLoaderRoute: typeof AppUsersDeletedRouteImport
+      parentRoute: typeof AppUsersRoute
+    }
+    '/_app/webhooks/': {
+      id: '/_app/webhooks/'
+      path: '/'
+      fullPath: '/webhooks/'
+      preLoaderRoute: typeof AppWebhooksIndexRouteImport
+      parentRoute: typeof AppWebhooksRoute
+    }
+    '/_app/webhooks/$id': {
+      id: '/_app/webhooks/$id'
+      path: '/$id'
+      fullPath: '/webhooks/$id'
+      preLoaderRoute: typeof AppWebhooksIdRouteImport
+      parentRoute: typeof AppWebhooksRoute
+    }
+    '/_app/support/analytics/$id': {
+      id: '/_app/support/analytics/$id'
+      path: '/support/analytics/$id'
+      fullPath: '/support/analytics/$id'
+      preLoaderRoute: typeof AppSupportAnalyticsIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/support/departments/': {
@@ -1216,18 +1209,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSupportDepartmentsIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/support/tickets/deleted': {
-      id: '/_app/support/tickets/deleted'
-      path: '/deleted'
-      fullPath: '/support/tickets/deleted'
-      preLoaderRoute: typeof AppSupportTicketsDeletedRouteImport
-      parentRoute: typeof AppSupportTicketsRoute
+    '/_app/support/departments/$id': {
+      id: '/_app/support/departments/$id'
+      path: '/support/departments/$id'
+      fullPath: '/support/departments/$id'
+      preLoaderRoute: typeof AppSupportDepartmentsIdRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/support/tickets/access-requests': {
-      id: '/_app/support/tickets/access-requests'
-      path: '/access-requests'
-      fullPath: '/support/tickets/access-requests'
-      preLoaderRoute: typeof AppSupportTicketsAccessRequestsRouteImport
+    '/_app/support/teams/': {
+      id: '/_app/support/teams/'
+      path: '/support/teams'
+      fullPath: '/support/teams/'
+      preLoaderRoute: typeof AppSupportTeamsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/teams/$id': {
+      id: '/_app/support/teams/$id'
+      path: '/support/teams/$id'
+      fullPath: '/support/teams/$id'
+      preLoaderRoute: typeof AppSupportTeamsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/support/tickets/': {
+      id: '/_app/support/tickets/'
+      path: '/'
+      fullPath: '/support/tickets/'
+      preLoaderRoute: typeof AppSupportTicketsIndexRouteImport
       parentRoute: typeof AppSupportTicketsRoute
     }
     '/_app/support/tickets/$ticketId': {
@@ -1237,26 +1244,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSupportTicketsTicketIdRouteImport
       parentRoute: typeof AppSupportTicketsRoute
     }
-    '/_app/support/teams/$id': {
-      id: '/_app/support/teams/$id'
-      path: '/support/teams/$id'
-      fullPath: '/support/teams/$id'
-      preLoaderRoute: typeof AppSupportTeamsIdRouteImport
-      parentRoute: typeof AppRoute
+    '/_app/support/tickets/access-requests': {
+      id: '/_app/support/tickets/access-requests'
+      path: '/access-requests'
+      fullPath: '/support/tickets/access-requests'
+      preLoaderRoute: typeof AppSupportTicketsAccessRequestsRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
     }
-    '/_app/support/departments/$id': {
-      id: '/_app/support/departments/$id'
-      path: '/support/departments/$id'
-      fullPath: '/support/departments/$id'
-      preLoaderRoute: typeof AppSupportDepartmentsIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/support/analytics/$id': {
-      id: '/_app/support/analytics/$id'
-      path: '/support/analytics/$id'
-      fullPath: '/support/analytics/$id'
-      preLoaderRoute: typeof AppSupportAnalyticsIdRouteImport
-      parentRoute: typeof AppRoute
+    '/_app/support/tickets/deleted': {
+      id: '/_app/support/tickets/deleted'
+      path: '/deleted'
+      fullPath: '/support/tickets/deleted'
+      preLoaderRoute: typeof AppSupportTicketsDeletedRouteImport
+      parentRoute: typeof AppSupportTicketsRoute
     }
   }
 }

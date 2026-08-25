@@ -7,7 +7,7 @@ import { type LocaleTag } from "@/lib/i18n/types";
 
 export const Route = createFileRoute("/settings/language")({
   head: () => ({
-    meta: [{ title: "Language — Vellum" }],
+    meta: [{ title: "Language — Vellbase" }],
   }),
   component: LanguagePage,
 });

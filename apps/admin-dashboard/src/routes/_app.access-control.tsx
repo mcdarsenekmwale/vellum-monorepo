@@ -110,7 +110,7 @@ import {
 } from "@/lib/api/hooks";
 
 export const Route = createFileRoute("/_app/access-control")({
-  head: () => ({ meta: [{ title: "Access Control · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Access Control · Vellbase Admin" }] }),
   component: AccessControlPage,
 });
 

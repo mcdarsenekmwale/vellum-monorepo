@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ApiClient } from '@vellum/api-client';
+import { ApiClient } from '@vellbase/api-client';
 import type {
   Article,
   Highlight,
@@ -9,7 +9,7 @@ import type {
   PaginatedResponse,
   User,
   UserSettings,
-} from '@vellum/api-client';
+} from '@vellbase/api-client';
 
 function useFetch<T>(
   fetchFn: () => Promise<T>,

@@ -56,7 +56,7 @@ import type { RbacRole } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/roles")({
-  head: () => ({ meta: [{ title: "Roles · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Roles · Vellbase Admin" }] }),
   component: RolesPage,
 });
 

@@ -1,4 +1,4 @@
-// Dictionaries are now sourced from @vellum/shared-i18n.
+// Dictionaries are now sourced from @vellbase/shared-i18n.
 // The I18nProvider implements its own inline fallback logic in `t`,
 // so the legacy `translateWithFallback` helper is no longer re-exported here.
 

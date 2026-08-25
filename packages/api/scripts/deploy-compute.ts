@@ -60,7 +60,7 @@ async function main() {
     console.log(`  Found ${apps.length} existing apps`);
     for (const app of apps) {
       console.log(`  - ${app.name} (${app.id}) branch=${(app as any).branchId || 'unknown'}`);
-      if (app.name === "@vellum/api") {
+      if (app.name === "@vellbase/api") {
         existingAppId = app.id;
         console.log(`  → Found existing app: ${app.id}`);
       }
@@ -80,7 +80,7 @@ async function main() {
 
   console.log("→ Deploying to Prisma Compute...");
   console.log(`  Project: ${projectId}`);
-  console.log(`  Service: @vellum/api`);
+  console.log(`  Service: @vellbase/api`);
   console.log(`  Region: us-east-1`);
   console.log("");
 
@@ -107,7 +107,7 @@ async function main() {
     strategy,
     projectId,
     appId: existingAppId || undefined,
-    appName: "@vellum/api",
+    appName: "@vellbase/api",
     region: "us-east-1",
     envVars,
     portMapping: { http: 3000 },

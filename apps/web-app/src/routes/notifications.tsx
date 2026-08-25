@@ -43,7 +43,7 @@ const verbFor: Record<string, string> = {
 export const Route = createFileRoute("/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications — Vellum" },
+      { title: "Notifications — Vellbase" },
       { name: "description", content: "Recent activity on your stories and profile." },
     ],
   }),

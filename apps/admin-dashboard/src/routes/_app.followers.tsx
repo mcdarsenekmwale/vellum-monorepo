@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/followers")({
-  head: () => ({ meta: [{ title: "Followers · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Followers · Vellbase Admin" }] }),
   component: FollowersPage,
 });
 

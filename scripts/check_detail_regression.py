@@ -29,7 +29,7 @@ def label(title):
     print(f"\n{'='*70}\n{title}\n{'='*70}")
 
 # ─── 1. Auth ───
-code, login = req("POST", "/auth/login", body={"email":"admin@vellum.com","password":"password123"})
+code, login = req("POST", "/auth/login", body={"email":"admin@vellbase.com","password":"password123"})
 if code not in (200, 201):
     print("LOGIN FAIL", code, login); sys.exit(1)
 t = login["accessToken"]

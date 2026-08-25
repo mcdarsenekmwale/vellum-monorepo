@@ -40,7 +40,7 @@ async function runDailyPost() {
 
   const result = await postArticle(article);
   console.log(`Article published: ${result.slug}`);
-  console.log(`URL: https://vellum.app/article/${result.slug}`);
+  console.log(`URL: https://vellbase.app/article/${result.slug}`);
 }
 
 runDailyPost().catch(console.error);

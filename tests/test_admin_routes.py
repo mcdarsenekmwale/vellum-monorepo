@@ -63,7 +63,7 @@ def main():
         print("Step 2: Filling in login credentials...")
         login_success = False
         try:
-            page.fill('input[type="email"]', "admin@vellum.app")
+            page.fill('input[type="email"]', "admin@vellbase.app")
             page.fill('input[type="password"]', "password123")
             
             print("Step 3: Submitting login form...")

@@ -4,8 +4,8 @@
     <script>
       (function () {
         try {
-          var raw = localStorage.getItem("vellum.web.theme");
-          var v1Raw = localStorage.getItem("vellum.web.settings.v1");
+          var raw = localStorage.getItem("vellbase.web.theme");
+          var v1Raw = localStorage.getItem("vellbase.web.settings.v1");
           var v1 = v1Raw ? JSON.parse(v1Raw) : {};
           var mode = raw || v1.appearance || "system";
           var isDark = false;
@@ -21,7 +21,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7f4ee" />
-    <title>Vellum — Stories, highlights & voices worth reading</title>
+    <title>Vellbase — Stories, highlights & voices worth reading</title>
     <meta name="description" content="A social reading app for stories, articles and short-form highlights from independent writers and publications." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -64,7 +64,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 
 export const Route = createFileRoute("/_app/role-requests")({
   head: () => ({
-    meta: [{ title: "Role Requests · Vellum Admin" }],
+    meta: [{ title: "Role Requests · Vellbase Admin" }],
   }),
   component: RoleRequestsAdminPage,
 });

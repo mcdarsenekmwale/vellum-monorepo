@@ -24,7 +24,7 @@ import {
   SettingsStoreProvider,
   useSettingsStore,
 } from '../context/SettingsStore';
-import { VellumThemeProvider, useThemeColors } from '../context/ThemeProvider';
+import { VellbaseThemeProvider, useThemeColors } from '../context/ThemeProvider';
 import { I18nProvider, useI18n } from '../context/I18nProvider';
 import { createSoundService, sounds } from '../services/SoundService';
 import React, { useEffect, useState, useRef } from 'react';
@@ -59,7 +59,7 @@ export function HeaderLogo() {
         letterSpacing: -0.5,
       }}
     >
-      Vellum.
+      Vellbase.
     </Text>
   );
 }
@@ -267,7 +267,7 @@ export function ThemedHeaderLogo() {
         letterSpacing: -0.5,
       }}
     >
-      Vellum.
+      Vellbase.
     </Text>
   );
 }
@@ -483,13 +483,13 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <SettingsStoreProvider initialSettings={initialSettings}>
-        <VellumThemeProvider>
+        <VellbaseThemeProvider>
           <I18nProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <AppShellContent />
             </GestureHandlerRootView>
           </I18nProvider>
-        </VellumThemeProvider>
+        </VellbaseThemeProvider>
       </SettingsStoreProvider>
     </AuthProvider>
   );

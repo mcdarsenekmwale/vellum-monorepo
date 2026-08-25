@@ -94,7 +94,7 @@ type BrandFont = {
 /* ─── Color Palette Presets ─── */
 
 const COLOR_PRESETS = [
-  { name: "Vellum", primary: "#d4653a", secondary: "#1a1a1a", accent: "#f7f4ee" },
+  { name: "Vellbase", primary: "#d4653a", secondary: "#1a1a1a", accent: "#f7f4ee" },
   { name: "Ocean", primary: "#0ea5e9", secondary: "#0f172a", accent: "#f0f9ff" },
   { name: "Forest", primary: "#10b981", secondary: "#064e3b", accent: "#ecfdf5" },
   { name: "Berry", primary: "#e11d48", secondary: "#881337", accent: "#fff1f2" },
@@ -539,7 +539,7 @@ function SettingsConfirmDialog({
 /* ─── Route ─── */
 
 export const Route = createFileRoute("/_app/settings")({
-  head: () => ({ meta: [{ title: "Settings · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Settings · Vellbase Admin" }] }),
   component: SettingsPage,
 });
 
@@ -626,7 +626,7 @@ function SettingsPage() {
               Workspace Info
             </div>
             <div className="space-y-2 text-sm">
-              <InfoRow label="Name" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.name")?.value ?? "Vellum Admin"} />
+              <InfoRow label="Name" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.name")?.value ?? "Vellbase Admin"} />
               <InfoRow label="Language" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.language")?.value ?? "English"} />
               <InfoRow label="Timezone" value={(settingsByCategory["general"] ?? []).find((s) => s.key === "workspace.timezone")?.value ?? "UTC"} />
               <InfoRow label="Theme" value={(settingsByCategory["appearance"] ?? []).find((s) => s.key === "theme.default")?.value ?? "System"} />
@@ -2392,7 +2392,7 @@ function CategorySettingsPanel({
   // Get workspace-specific settings for display
   const workspaceLanguage = section.getValue("workspace.language", "en");
   const workspaceTimezone = section.getValue("workspace.timezone", "UTC");
-  const workspaceName = section.getValue("workspace.name", "Vellum Dev Space");
+  const workspaceName = section.getValue("workspace.name", "Vellbase Dev Space");
   const workspaceDescription = section.getValue("workspace.description", "");
   const workspaceUrl = section.getValue("workspace.url", "");
   const maintenanceMessage = section.getValue("workspace.maintenance_message", "");

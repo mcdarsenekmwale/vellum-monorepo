@@ -301,18 +301,18 @@ def classify(e: Evidence) -> Optional[str]:
 
     # S2: tokens NOT written to storage after login 200
     if e.login_status == 200:
-        tok = e.storage_after.get("vellum_access_token") or e.storage_after.get("vellum:access_token")
+        tok = e.storage_after.get("vellbase_access_token") or e.storage_after.get("vellbase:access_token")
         if not tok:
             return "S2"
 
     # S3: login 200 + tokens present, but me=401 (missing Bearer in BackendApi on web)
-    if e.login_status == 200 and (e.storage_after.get("vellum_access_token") or e.storage_after.get("vellum:access_token")):
+    if e.login_status == 200 and (e.storage_after.get("vellbase_access_token") or e.storage_after.get("vellbase:access_token")):
         if e.me_status == 401:
             return "S3"
 
     # S8 (checked earlier but catch here too): EADDRINUSE in console/network is not in evidence; probe handles
     # S9: checkAuth silent fail → tokens absent, pathname=/ not /login, but DOM empty
-    if (not (e.storage_after.get("vellum_access_token") or e.storage_after.get("vellum:access_token"))
+    if (not (e.storage_after.get("vellbase_access_token") or e.storage_after.get("vellbase:access_token"))
             and e.path_after == "/"
             and len(e.dom_inner.strip()) < 200):
         return "S9"
@@ -465,10 +465,10 @@ const isWeb = Platform.OS === 'web' || isRuntimeWeb;'''
         return r
 
     if sig == "S2":
-        # TOKEN_KEYS route: ensure both vellum_access_token + vellum_refresh_token routed to secureTokens,
+        # TOKEN_KEYS route: ensure both vellbase_access_token + vellbase_refresh_token routed to secureTokens,
         # and legacy ':' keys written as well in setItem.
-        old1 = "const TOKEN_KEYS = new Set(['vellum_access_token', 'vellum_refresh_token']);"
-        new1 = "const TOKEN_KEYS = new Set(['vellum_access_token', 'vellum_refresh_token', 'vellum:access_token', 'vellum:refresh_token']);"
+        old1 = "const TOKEN_KEYS = new Set(['vellbase_access_token', 'vellbase_refresh_token']);"
+        new1 = "const TOKEN_KEYS = new Set(['vellbase_access_token', 'vellbase_refresh_token', 'vellbase:access_token', 'vellbase:refresh_token']);"
         r1 = _patch("apps/mobile-app/lib/api.ts", old1, new1, "S2", applied_hashes)
         # Write legacy colon keys on setItem too
         old2 = "  setItem: async (key: string, value: string) => {\n    if (TOKEN_KEYS.has(key)) {\n      await secureTokens.setItem(key, value);\n    } else {\n      await AsyncStorage.setItem(key, value);\n    }\n  },"
@@ -476,8 +476,8 @@ const isWeb = Platform.OS === 'web' || isRuntimeWeb;'''
                 "    if (TOKEN_KEYS.has(key)) {\n"
                 "      await secureTokens.setItem(key, value);\n"
                 "      // Legacy colon key used by BackendApi.ts reads on web.\n"
-                "      if (key === 'vellum_access_token') await secureTokens.setItem('vellum:access_token', value);\n"
-                "      if (key === 'vellum_refresh_token') await secureTokens.setItem('vellum:refresh_token', value);\n"
+                "      if (key === 'vellbase_access_token') await secureTokens.setItem('vellbase:access_token', value);\n"
+                "      if (key === 'vellbase_refresh_token') await secureTokens.setItem('vellbase:refresh_token', value);\n"
                 "    } else {\n"
                 "      await AsyncStorage.setItem(key, value);\n"
                 "    }\n"
@@ -502,16 +502,16 @@ const isWeb = Platform.OS === 'web' || isRuntimeWeb;'''
                "    try {\n"
                "      if (isWeb) {\n"
                "        if (typeof window === 'undefined') return null;\n"
-               "        // api-client (lib/api.ts) uses 'vellum_access_token' for storage; also\n"
+               "        // api-client (lib/api.ts) uses 'vellbase_access_token' for storage; also\n"
                "        // support the legacy ':' key used by BackendApi for reads.\n"
                "        return (\n"
-               "          window.localStorage.getItem('vellum_access_token') ||\n"
-               "          window.localStorage.getItem('vellum:access_token')\n"
+               "          window.localStorage.getItem('vellbase_access_token') ||\n"
+               "          window.localStorage.getItem('vellbase:access_token')\n"
                "        );\n"
                "      }\n"
-               "      const token = await SecureStore.getItemAsync('vellum_access_token');\n"
+               "      const token = await SecureStore.getItemAsync('vellbase_access_token');\n"
                "      if (token) return token;\n"
-               "      return await SecureStore.getItemAsync('vellum:access_token');\n"
+               "      return await SecureStore.getItemAsync('vellbase:access_token');\n"
                "    } catch {\n"
                "      return null;\n"
                "    }\n"
@@ -525,13 +525,13 @@ const isWeb = Platform.OS === 'web' || isRuntimeWeb;'''
                "      if (__isWebEffective) {\n"
                "        if (typeof window === 'undefined') return null;\n"
                "        return (\n"
-               "          window.localStorage.getItem('vellum_access_token') ||\n"
-               "          window.localStorage.getItem('vellum:access_token')\n"
+               "          window.localStorage.getItem('vellbase_access_token') ||\n"
+               "          window.localStorage.getItem('vellbase:access_token')\n"
                "        );\n"
                "      }\n"
-               "      const token = await SecureStore.getItemAsync('vellum_access_token');\n"
+               "      const token = await SecureStore.getItemAsync('vellbase_access_token');\n"
                "      if (token) return token;\n"
-               "      return await SecureStore.getItemAsync('vellum:access_token');\n"
+               "      return await SecureStore.getItemAsync('vellbase:access_token');\n"
                "    } catch {\n"
                "      return null;\n"
                "    }\n"
@@ -1108,7 +1108,7 @@ def run_web_login(cfg: Config, page: Page, iter_n: int, target_dir: Path) -> Run
                     const out = {};
                     try { for (let i = 0; i < localStorage.length; i++) {
                         const k = localStorage.key(i);
-                        if (k && /vellum|token|user/i.test(k)) out[k] = localStorage.getItem(k);
+                        if (k && /vellbase|token|user/i.test(k)) out[k] = localStorage.getItem(k);
                     } } catch {}
                     return out;
                 }"""
@@ -1128,17 +1128,17 @@ def run_web_login(cfg: Config, page: Page, iter_n: int, target_dir: Path) -> Run
         # Determine PASS:
         # (1) login POST returned 200 AND either:
         #   (2a) me_status == 200 (fresh from API), OR
-        #   (2b) storage has vellum_access_token AND path_after is / (or any non-/login)
+        #   (2b) storage has vellbase_access_token AND path_after is / (or any non-/login)
         passed = False
         if login_status == 200:
             if me_status == 200:
                 passed = True
-            elif storage.get("vellum_access_token") or storage.get("vellum:access_token"):
+            elif storage.get("vellbase_access_token") or storage.get("vellbase:access_token"):
                 if path_after != "/login":
                     passed = True
         if not passed:
             # Final fallback: if we have the token AND path_after != /login AND home feed / tabs visible
-            if (storage.get("vellum_access_token") or storage.get("vellum:access_token")) and path_after != "/login" and len(dom_inner.strip()) > 300:
+            if (storage.get("vellbase_access_token") or storage.get("vellbase:access_token")) and path_after != "/login" and len(dom_inner.strip()) > 300:
                 passed = True
 
         tabbar_zindex: Optional[int] = None

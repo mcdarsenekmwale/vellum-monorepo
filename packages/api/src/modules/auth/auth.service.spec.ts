@@ -148,7 +148,7 @@ describe('AuthService — Security', () => {
   });
 
   describe('login', () => {
-    const dto = { email: 'admin@vellum.com', password: 'password123' };
+    const dto = { email: 'admin@vellbase.com', password: 'password123' };
 
     it('rejects login for an unknown user with Invalid credentials (no user enumeration)', async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
@@ -230,10 +230,10 @@ describe('AuthService — Security', () => {
       // Known email
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'u1',
-        email: 'admin@vellum.com',
+        email: 'admin@vellbase.com',
       });
       (prisma.user.update as jest.Mock).mockResolvedValue({});
-      const result = await service.forgotPassword({ email: 'admin@vellum.com' } as any);
+      const result = await service.forgotPassword({ email: 'admin@vellbase.com' } as any);
       expect(result).toEqual(expected);
       // Reset token must NEVER be in the response body
       expect((result as any).resetToken).toBeUndefined();
@@ -242,11 +242,11 @@ describe('AuthService — Security', () => {
     it('persists the reset token in dedicated columns (never overwrites passwordHash)', async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({
         id: 'u1',
-        email: 'admin@vellum.com',
+        email: 'admin@vellbase.com',
       });
       (prisma.user.update as jest.Mock).mockResolvedValue({});
 
-      await service.forgotPassword({ email: 'admin@vellum.com' } as any);
+      await service.forgotPassword({ email: 'admin@vellbase.com' } as any);
 
       const updateCall = (prisma.user.update as jest.Mock).mock.calls[0][0];
       expect(updateCall.where).toEqual({ id: 'u1' });

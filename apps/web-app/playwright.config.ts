@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright config for the @vellum/web-app i18n smoke tests.
+ * Playwright config for the @vellbase/web-app i18n smoke tests.
  *
  * The Vite dev server (see vite.config.ts) runs on port 3000.
  * Set WEB_APP_URL to point at a different environment (e.g. preview build).

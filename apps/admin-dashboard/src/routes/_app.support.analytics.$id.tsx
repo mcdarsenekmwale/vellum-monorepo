@@ -58,7 +58,7 @@ import type { SupportOrgMetrics } from "@/lib/api/services";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/support/analytics/$id")({
-  head: () => ({ meta: [{ title: "Department Analytics · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Department Analytics · Vellbase Admin" }] }),
   component: DepartmentAnalyticsPage,
 });
 

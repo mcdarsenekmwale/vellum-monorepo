@@ -94,7 +94,7 @@ export default function AuthorPage() {
     if (!author) return;
     try {
       await Share.share({
-        message: `Check out ${author.name} (@${author.handle}) on Vellum`,
+        message: `Check out ${author.name} (@${author.handle}) on Vellbase`,
       });
     } catch (err) {
       console.error('Share error:', err);

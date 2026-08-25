@@ -144,7 +144,7 @@ const DEFAULT_CONFIG = {
 type SheetMode = "create" | "edit" | "view";
 
 export const Route = createFileRoute("/_app/ai")({
-  head: () => ({ meta: [{ title: "AI Automation · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "AI Automation · Vellbase Admin" }] }),
   component: AIPage,
 });
 

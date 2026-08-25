@@ -154,7 +154,7 @@ function configureStatusBar(variant: ThemeVariant) {
   }
 }
 
-export function VellumThemeProvider({ children }: { children: React.ReactNode }) {
+export function VellbaseThemeProvider({ children }: { children: React.ReactNode }) {
   const { settings, setAppearance: persistAppearance } = useSettingsStore();
   const system = useColorScheme();
   const [override, setOverride] = useState<ColorSchemeName>(null);
@@ -185,7 +185,7 @@ export function VellumThemeProvider({ children }: { children: React.ReactNode })
     if (Platform.OS !== 'web') return;
     if (typeof document === 'undefined') return;
     try {
-      const id = '__vellum_rnscreens_bg_fix__';
+      const id = '__vellbase_rnscreens_bg_fix__';
       let el = document.getElementById(id) as HTMLStyleElement | null;
       if (!el) {
         el = document.createElement('style');

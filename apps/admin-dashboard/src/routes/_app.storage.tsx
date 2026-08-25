@@ -8,7 +8,7 @@ import { ChartSkeleton } from "@/components/dashboard/skeletons";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_app/storage")({
-  head: () => ({ meta: [{ title: "Storage · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Storage · Vellbase Admin" }] }),
   component: StoragePage,
 });
 

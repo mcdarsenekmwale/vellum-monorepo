@@ -4,7 +4,7 @@ import { Heart, MessageCircle, UserPlus, Bookmark } from 'lucide-react-native';
 import { useNotifications, useArticles } from '../hooks/useApi';
 import { apiClient } from '../lib/api';
 import { useMemo } from 'react';
-import type { Notification } from '@vellum/api-client/types';
+import type { Notification } from '@vellbase/api-client/types';
 import { Avatar } from '../components/Avatar';
 import { useTheme } from 'context/ThemeProvider';
 import { useI18n } from '../context/I18nProvider';

@@ -108,7 +108,7 @@ import {
 } from "@/lib/support/support-agent.logic";
 
 export const Route = createFileRoute("/_app/support/teams/$id")({
-  head: () => ({ meta: [{ title: "Team · Vellum Admin" }] }),
+  head: () => ({ meta: [{ title: "Team · Vellbase Admin" }] }),
   component: TeamDetailPage,
   notFoundComponent: () => (
     <div className="p-10 text-center text-sm text-muted-foreground">

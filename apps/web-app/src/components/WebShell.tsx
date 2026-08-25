@@ -81,7 +81,7 @@ export function WebShell({ children }: { children: ReactNode }) {
             to="/"
             className="font-display italic text-3xl tracking-tight mb-10 inline-block"
           >
-            Vellum.
+            Vellbase.
           </Link>
           <nav className="flex flex-col gap-2 flex-1">
             {navItems.map((item) => {
@@ -188,7 +188,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                 to="/"
                 className="md:hidden font-display italic text-2xl"
               >
-                Vellum.
+                Vellbase.
               </Link>
               <div className="hidden md:flex flex-1 max-w-[280px]">
                 <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 w-full">
@@ -320,7 +320,7 @@ export function WebShell({ children }: { children: ReactNode }) {
                 </Link>
               )}
             </div>
-            <p>&copy; 2026 Vellum</p>
+            <p>&copy; 2026 Vellbase</p>
           </div>
         </aside>
       </div>
