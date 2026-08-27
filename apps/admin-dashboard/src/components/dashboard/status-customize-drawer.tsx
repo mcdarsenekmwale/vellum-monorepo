@@ -46,7 +46,7 @@ export function mergePrefs(p: Partial<ViewPrefs> | null): ViewPrefs {
   } as ViewPrefs;
 }
 
-const SERVICES: ServiceName[] = ["database", "api", "redis", "storage", "webhooks"];
+export const SERVICES: ServiceName[] = ["database", "api", "redis", "storage", "webhooks"];
 const TITLES: Record<ServiceName, string> = {
   database: "Database",
   api: "API Gateway",
