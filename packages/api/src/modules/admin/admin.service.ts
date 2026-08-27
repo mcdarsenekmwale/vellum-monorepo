@@ -8,6 +8,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { MetricsCollectorService } from './metrics-collector.service';
+import { ThresholdEvaluatorService } from './threshold-evaluator.service';
 import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type SettingCategory } from './settings-definitions';
 
 /**
@@ -46,6 +48,8 @@ export class AdminService {
     private configService: ConfigService,
     private cache: CacheService,
     private webhooksService: WebhooksService,
+    private metricsCollector: MetricsCollectorService,
+    private threshold: ThresholdEvaluatorService,
   ) { }
 
   /** Strip sensitive fields before returning a user to callers. */
@@ -3639,5 +3643,112 @@ export class AdminService {
     });
 
     return { message: 'Seed data created successfully!' };
+  }
+
+  // ============== STATUS METRICS ==============
+  async getRealtimeStatus() {
+    const probes = await this.metricsCollector.getLatestStatuses();
+    const overall: 'operational' | 'degraded' | 'outage' = probes.every((p: any) => p.status === 'healthy') ? 'operational'
+      : probes.some((p: any) => p.status === 'down') ? 'outage' : 'degraded';
+    const byService: Record<string, any> = {};
+    for (const p of probes) {
+      const spark = await this.metricsCollector.getSeries(p.service as any, 24 * 3600_000);
+      byService[p.service] = { current: p, spark: spark.slice(-24) };
+    }
+    const recentAlerts = await this.prisma.alert.findMany({ orderBy: { createdAt: 'desc' }, take: 25, include: { rule: true, incident: true } });
+    return { overall, updatedAt: new Date().toISOString(), services: byService, recentAlerts };
+  }
+
+  async getMetricsSeries(service: string, range: '1h' | '6h' | '24h' | '7d') {
+    const map = { '1h': 3600_000, '6h': 21600_000, '24h': 86400_000, '7d': 604_800_000 } as const;
+    const series = await this.metricsCollector.getSeries(service as any, map[range] ?? map['24h']);
+    return { service, range, points: series };
+  }
+
+  // ============== RULES ==============
+  async listRules(page = 1, pageSize = 50) {
+    const [items, total] = await Promise.all([
+      this.prisma.alertRule.findMany({ skip: (page - 1) * pageSize, take: pageSize, orderBy: { createdAt: 'desc' } }),
+      this.prisma.alertRule.count(),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
+  async createRule(data: any, createdById: string) {
+    const r = await this.prisma.alertRule.create({ data: { ...data, createdById } });
+    await this.logStatusActivity(createdById, 'alertrule.create', 'AlertRule', { id: r.id, data });
+    return r;
+  }
+
+  async updateRule(id: string, patch: any, updatedById: string) {
+    const before = await this.prisma.alertRule.findUnique({ where: { id } });
+    const r = await this.prisma.alertRule.update({ where: { id }, data: patch });
+    await this.logStatusActivity(updatedById, 'alertrule.update', 'AlertRule', { id, before, after: r });
+    return r;
+  }
+
+  async deleteRule(id: string, byId: string) {
+    const r = await this.prisma.alertRule.update({ where: { id }, data: { enabled: false } });
+    await this.logStatusActivity(byId, 'alertrule.archive', 'AlertRule', { id });
+    return r;
+  }
+
+  async testRule(id: string) {
+    const r = await this.prisma.alertRule.findUniqueOrThrow({ where: { id } });
+    return this.threshold.testRule(r);
+  }
+
+  // ============== ALERTS ==============
+  async listAlerts(params: { severity?: string; service?: string; acked?: boolean; since?: Date; until?: Date; cursor?: string; limit?: number }) {
+    const { severity, service, acked, since, until, cursor, limit = 50 } = params;
+    const where: any = {};
+    if (severity) where.severity = severity;
+    if (service) where.service = service;
+    if (acked !== undefined) where.acknowledgedAt = acked ? { not: null } : null;
+    if (since || until) where.createdAt = { ...(since ? { gte: since } : {}), ...(until ? { lte: until } : {}) };
+    if (cursor) where.id = { lt: cursor };
+    const items = await this.prisma.alert.findMany({ where, orderBy: { createdAt: 'desc' }, take: (limit as number) + 1, include: { rule: true, incident: true } });
+    const hasMore = items.length > (limit as number);
+    if (hasMore) items.pop();
+    return { items, hasMore, nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null };
+  }
+
+  async bulkAckAlerts(ids: string[], adminId: string) { return { acked: await this.threshold.bulkAcknowledge(ids, adminId) }; }
+  async bulkSnoozeAlerts(ids: string[], until: Date, adminId: string) { return { snoozed: await this.threshold.bulkSnooze(ids, adminId, until) }; }
+  async closeAlert(id: string, closeNote: string, adminId: string) { return this.threshold.closeAlert(id, adminId, closeNote); }
+
+  // ============== INCIDENTS ==============
+  async listIncidents(limit = 30) {
+    return this.prisma.incident.findMany({ orderBy: { startedAt: 'desc' }, take: limit, include: { _count: { select: { alerts: true } } } });
+  }
+
+  async updateIncident(id: string, patch: { title?: string; postmortemUrl?: string; summary?: string }, adminId: string) {
+    const before = await this.prisma.incident.findUnique({ where: { id } });
+    const r = await this.prisma.incident.update({ where: { id }, data: patch });
+    await this.logStatusActivity(adminId, 'incident.update', 'Incident', { id, before, after: r });
+    return r;
+  }
+
+  // ============== VIEW PREFS ==============
+  async getStatusViewPrefs(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
+    return ((u?.settings as any)?.statusViewPrefs) ?? null;
+  }
+
+  async saveStatusViewPrefs(userId: string, prefs: Record<string, unknown>) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
+    const current: any = (u?.settings as any) ?? {};
+    const merged = { ...current, statusViewPrefs: prefs };
+    await this.prisma.user.update({ where: { id: userId }, data: { settings: merged as any } });
+    return { ok: true };
+  }
+
+  // ============== SHARED HELPERS ==============
+  private async logStatusActivity(userId: string, action: string, entityType: string, details: Record<string, unknown>) {
+    try {
+      await this.prisma.activityLog.create({
+        data: { userId, action, entityType, details: details as any },
+      });
+    } catch { /* ignore */ }
   }
 }

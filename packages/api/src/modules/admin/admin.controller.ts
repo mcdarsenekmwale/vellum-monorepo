@@ -1,4 +1,5 @@
 import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
@@ -696,6 +697,153 @@ export class AdminController {
   async getTrafficSources() {
     return this.adminService.getTrafficSources();
   }
+
+  //analytics/realtime
+  @Get('analytics/realtime')
+  @ApiOperation({ summary: 'Get real-time analytics' })
+  @ApiResponse({ status: 200, description: 'Real-time analytics retrieved' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getRealtimeAnalytics() {
+    return this.adminService.getRealtimeAnalytics();
+  }
+
+  //analytics/retention
+  @Get('analytics/retention')
+  @ApiOperation({ summary: 'Get retention analytics' })
+  @ApiResponse({ status: 200, description: 'Retention analytics retrieved' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getRetentionAnalytics() {
+    return this.adminService.getRetentionAnalytics();
+  }
+
+  //analytics/heatmap
+  @Get('analytics/heatmap')
+  @ApiOperation({ summary: 'Get heatmap analytics' })
+  @ApiResponse({ status: 200, description: 'Heatmap analytics retrieved' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getHeatmapAnalytics() {
+    return this.adminService.getHeatmapAnalytics();
+  }
+
+  // ============== STATUS METRICS ==============
+  @Get('metrics/realtime')
+  @ApiOperation({ summary: 'Get realtime operational status' })
+  @ApiResponse({ status: 200, description: 'Current platform operational status' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getRealtimeStatus() { return this.adminService.getRealtimeStatus(); }
+
+  @Get('metrics/series')
+  @ApiOperation({ summary: 'Get metrics series for a service' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getMetricsSeries(@Query('service') service: string, @Query('range') range: '1h' | '6h' | '24h' | '7d' = '24h') {
+    return this.adminService.getMetricsSeries(service, range);
+  }
+
+  // ============== ALERT RULES ==============
+  @Get('alerts/rules')
+  @ApiOperation({ summary: 'List alert rules' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async listAlertRules(@Query('page') page = 1, @Query('pageSize') pageSize = 50) {
+    return this.adminService.listRules(Number(page), Number(pageSize));
+  }
+
+  @Post('alerts/rules')
+  @ApiOperation({ summary: 'Create alert rule' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  async createAlertRule(@Body() dto: any, @Req() req: any) {
+    return this.adminService.createRule(dto, actorId(req));
+  }
+
+  @Patch('alerts/rules/:id')
+  @ApiOperation({ summary: 'Update alert rule' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async updateAlertRule(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
+    return this.adminService.updateRule(id, dto, actorId(req));
+  }
+
+  @Delete('alerts/rules/:id')
+  @ApiOperation({ summary: 'Archive alert rule' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async deleteAlertRule(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.deleteRule(id, actorId(req));
+  }
+
+  @Post('alerts/rules/:id/test')
+  @ApiOperation({ summary: 'Dry-run alert rule' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  async testAlertRule(@Param('id') id: string) { return this.adminService.testRule(id); }
+
+  // ============== ALERTS MANAGEMENT ==============
+  @Get('alerts')
+  @ApiOperation({ summary: 'List alerts' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async listAlerts(
+    @Query('severity') severity?: string, @Query('service') service?: string,
+    @Query('acked') acked?: string, @Query('since') since?: string, @Query('until') until?: string,
+    @Query('cursor') cursor?: string, @Query('limit') limit = 50,
+  ) {
+    return this.adminService.listAlerts({
+      severity, service,
+      acked: acked === undefined ? undefined : acked === 'true',
+      since: since ? new Date(since) : undefined,
+      until: until ? new Date(until) : undefined,
+      cursor, limit: Number(limit),
+    });
+  }
+
+  @Post('alerts/bulk-ack')
+  @ApiOperation({ summary: 'Bulk-acknowledge alerts' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async bulkAck(@Body() body: { ids: string[] }, @Req() req: any) {
+    return this.adminService.bulkAckAlerts(body.ids, actorId(req));
+  }
+
+  @Post('alerts/bulk-snooze')
+  @ApiOperation({ summary: 'Bulk-snooze alerts' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async bulkSnooze(@Body() body: { ids: string[]; until: string }, @Req() req: any) {
+    return this.adminService.bulkSnoozeAlerts(body.ids, new Date(body.until), actorId(req));
+  }
+
+  @Post('alerts/:id/close')
+  @ApiOperation({ summary: 'Close alert' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async closeAlert(@Param('id') id: string, @Body() body: { closeNote: string }, @Req() req: any) {
+    return this.adminService.closeAlert(id, body.closeNote, actorId(req));
+  }
+
+  // ============== INCIDENTS ==============
+  @Get('incidents')
+  @ApiOperation({ summary: 'List incidents' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async listIncidents(@Query('limit') limit = 30) { return this.adminService.listIncidents(Number(limit)); }
+
+  @Patch('incidents/:id')
+  @ApiOperation({ summary: 'Update incident' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async updateIncident(@Param('id') id: string, @Body() dto: { title?: string; postmortemUrl?: string; summary?: string }, @Req() req: any) {
+    return this.adminService.updateIncident(id, dto, actorId(req));
+  }
+
+  // ============== STATUS VIEW PREFS ==============
+  @Get('settings/status-view')
+  @ApiOperation({ summary: 'Get status view prefs' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async getStatusViewPrefs(@Req() req: any) { return this.adminService.getStatusViewPrefs(actorId(req)); }
+
+  @Put('settings/status-view')
+  @ApiOperation({ summary: 'Save status view prefs' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async saveStatusViewPrefs(@Body() dto: Record<string, unknown>, @Req() req: any) {
+    return this.adminService.saveStatusViewPrefs(actorId(req), dto);
+  }
+
+
+  //tags
 
   @Get('tags')
   @ApiOperation({ summary: 'List all tags' })

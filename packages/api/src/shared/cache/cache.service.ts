@@ -176,6 +176,15 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async publish(channel: string, message: string): Promise<number> {
+    if (!this.isConnected || !this.client) return 0;
+    try {
+      return await this.client.publish(channel, message);
+    } catch {
+      return 0;
+    }
+  }
+
   async info(section?: string): Promise<string> {
     if (!this.isConnected || !this.client) return '';
     try {
