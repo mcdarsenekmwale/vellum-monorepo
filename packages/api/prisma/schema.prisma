@@ -1381,3 +1381,84 @@ enum AgentStatus {
   AWAY
   OFFLINE
 }
+
+model SystemMetricSnapshot {
+  id            String   @id @default(uuid()) @db.Uuid
+  service       String
+  status        String
+  latencyP50    Int      @default(0)
+  latencyP95    Int      @default(0)
+  latencyP99    Int      @default(0)
+  utilization   Int      @default(0)
+  errorRate     Float    @default(0)
+  queueDepth    Int?
+  extra         Json?
+  createdAt     DateTime @default(now())
+
+  @@index([service, createdAt])
+  @@map("system_metric_snapshots")
+}
+
+model AlertRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  service         String
+  metric          String
+  operator        String
+  threshold       Float
+  windowSeconds   Int      @default(120)
+  severity        String
+  channels        Json
+  enabled         Boolean  @default(true)
+  cooldownSeconds Int      @default(600)
+  lastFiredAt     DateTime?
+  createdById     String?  @db.Uuid
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  alerts          Alert[]
+
+  @@index([service, enabled])
+  @@map("alert_rules")
+}
+
+model Alert {
+  id               String   @id @default(uuid()) @db.Uuid
+  ruleId           String?  @db.Uuid
+  service          String
+  severity         String
+  message          String
+  value            Float?
+  threshold        Float?
+  acknowledgedAt   DateTime?
+  acknowledgedById String?  @db.Uuid
+  snoozedUntil     DateTime?
+  closedAt         DateTime?
+  closedById       String?  @db.Uuid
+  closeNote        String?  @db.Text
+  incidentId       String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  rule             AlertRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  incident         Incident?  @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+
+  @@index([service, createdAt])
+  @@index([severity, createdAt])
+  @@map("alerts")
+}
+
+model Incident {
+  id             String   @id @default(uuid()) @db.Uuid
+  title          String
+  severity       String
+  service        String
+  startedAt      DateTime
+  detectedAt     DateTime?
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  postmortemUrl  String?
+  summary        String?  @db.Text
+  alerts         Alert[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([service, startedAt])
+  @@map("incidents")
+}
