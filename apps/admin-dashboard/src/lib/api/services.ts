@@ -128,6 +128,8 @@ export interface Notification {
 // ─── Highlights ─────────────────────────────────────────────────────────────
 
 export interface Highlight {
+  publisherId: string;
+  publisherAvatar: string | undefined;
   id: string;
   title: string;
   cover: string | null;
@@ -449,17 +451,30 @@ export interface ApiKey {
 // ─── Analytics ──────────────────────────────────────────────────────────────
 
 export interface AnalyticsOverview {
-  totalUsers: number;
-  activeUsers: number;
-  totalArticles: number;
-  totalHighlights: number;
-  totalComments: number;
-  totalLikes: number;
-  totalViews: number;
-  dailyActiveUsers: number;
-  weeklyActiveUsers: number;
-  newUsersToday: number;
-  newContentToday: number;
+  content: {
+    totalArticles: number;
+    totalHighlights: number;
+    totalComments: number;
+    newArticlesToday: number;
+    newCommentsToday: number;
+    newHighlightsToday: number;
+    totalTrafficSources?: number;
+    newContentToday?: number;
+  },
+  users: {
+    totalUsers: number;
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    newUsersToday: number;
+    monthlyActiveUsers: number;
+  },
+  engagement: {
+    totalLikes: number;
+    totalFollows: number;
+    totalBookmarks: number;
+    totalArticleViews: number;
+    avgViewsPerArticle: number;
+  }
 }
 
 export interface TimeseriesPoint {
@@ -467,6 +482,7 @@ export interface TimeseriesPoint {
   users: number;
   articles: number;
   highlights: number;
+  likes: number;
   comments: number;
 }
 
@@ -481,6 +497,36 @@ export interface TrafficSourcesResponse {
   totalArticleViews: number;
   highlightEngagement: number;
   totalViews: number;
+}
+
+export interface HeatmapPoint {
+  x: string;
+  y: string;
+  value: number;
+}
+
+export interface RealtimeEvent {
+  id: string;
+  type: "view" | "like" | "comment" | "share" | "register" | "publish";
+  user: string;
+  action: string;
+  target: string;
+  timestamp: string;
+}
+
+export interface RealtimeResponse {
+  events: RealtimeEvent[];
+  activeUsers: number;
+}
+
+export interface RetentionCohort {
+  id: string;
+  label: string;
+  values: number[];
+}
+
+export interface RetentionResponse {
+  cohorts: RetentionCohort[];
 }
 
 // ─── Storage ────────────────────────────────────────────────────────────────
@@ -1842,7 +1888,7 @@ export async function seedSystemSettings(): Promise<{ message: string; seeded: n
 
 // Analytics
 export async function getAnalyticsOverview(): Promise<AnalyticsOverview> {
-  return api("/admin/analytics/overview");
+  return  api("/admin/analytics/overview");
 }
 
 export async function getAnalyticsTimeseries(days?: number): Promise<TimeseriesPoint[]> {
@@ -1851,6 +1897,18 @@ export async function getAnalyticsTimeseries(days?: number): Promise<TimeseriesP
 
 export async function getTrafficSources(): Promise<TrafficSourcesResponse> {
   return api("/admin/analytics/traffic");
+}
+
+export async function getAnalyticsHeatmap(): Promise<HeatmapPoint[]> {
+  return api("/admin/analytics/heatmap");
+}
+
+export async function getAnalyticsRealtime(): Promise<RealtimeResponse> {
+  return api("/admin/analytics/realtime");
+}
+
+export async function getAnalyticsRetention(): Promise<RetentionResponse> {
+  return api("/admin/analytics/retention");
 }
 
 // Storage
@@ -3080,4 +3138,185 @@ export async function getSupportTicketRisk(ticketId: string): Promise<SlaBreachR
 
 export async function getSupportTicketCsatPrediction(ticketId: string): Promise<CsatPrediction> {
   return api(`/support/tickets/${encodeURIComponent(ticketId)}/csat-prediction`);
+}
+
+// ============ STATUS PAGE ============
+export type ServiceName = 'database' | 'api' | 'redis' | 'storage' | 'webhooks';
+export type ServiceStatus = 'healthy' | 'degraded' | 'down';
+export type OverallStatus = 'operational' | 'degraded' | 'outage';
+export type Severity = 'info' | 'warning' | 'critical';
+
+export interface ProbeResult {
+  service: ServiceName;
+  status: ServiceStatus;
+  latencyP50: number;
+  latencyP95: number;
+  latencyP99: number;
+  utilization: number;
+  errorRate: number;
+  queueDepth?: number;
+  extra?: Record<string, unknown>;
+}
+
+export interface RealtimeStatusResponse {
+  overall: OverallStatus;
+  updatedAt: string;
+  services: Record<ServiceName, { current: ProbeResult; spark: ProbeResult[] }>;
+  recentAlerts: AlertItem[];
+}
+
+export interface MetricsSeriesResponse {
+  service: ServiceName;
+  range: '1h' | '6h' | '24h' | '7d';
+  points: ProbeResult[];
+}
+
+export interface AlertRule {
+  id: string;
+  service: ServiceName;
+  metric: 'latency-p50' | 'latency-p95' | 'latency-p99' | 'utilization' | 'error-rate' | 'queue-depth';
+  operator: '>' | '<' | '>=' | '<=' | '==';
+  threshold: number;
+  windowSeconds: number;
+  severity: Severity;
+  channels: Record<string, unknown> & { dashboard?: boolean; email?: boolean; teams?: string; slack?: string };
+  enabled: boolean;
+  cooldownSeconds: number;
+  lastFiredAt?: string;
+  createdById?: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface AlertRuleListResponse {
+  items: AlertRule[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AlertItem {
+  id: string;
+  ruleId?: string;
+  service: ServiceName;
+  severity: Severity;
+  message: string;
+  value?: number;
+  threshold?: number;
+  acknowledgedAt?: string;
+  acknowledgedById?: string;
+  snoozedUntil?: string;
+  closedAt?: string;
+  closeNote?: string;
+  incidentId?: string;
+  createdAt: string;
+  rule?: AlertRule;
+  incident?: Incident;
+}
+
+export interface AlertListResponse {
+  items: AlertItem[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export interface Incident {
+  id: string;
+  title: string;
+  severity: Severity;
+  service: ServiceName;
+  startedAt: string;
+  detectedAt?: string;
+  acknowledgedAt?: string;
+  resolvedAt?: string;
+  postmortemUrl?: string;
+  summary?: string;
+  alerts: any[];
+  createdAt: string;
+  updatedAt: string;
+  _count?: { alerts: number };
+}
+
+export interface TestRuleResponse {
+  fired: boolean;
+  value: number | null;
+  reason: string;
+  channels: Array<{ name: string; ok: boolean; error?: string }>;
+}
+
+export async function getStatusRealtime(): Promise<RealtimeStatusResponse> {
+  return api("/admin/metrics/realtime");
+}
+
+export async function getMetricsSeries(
+  service: ServiceName,
+  range: '1h' | '6h' | '24h' | '7d' = '24h',
+): Promise<MetricsSeriesResponse> {
+  return api("/admin/metrics/series", { query: { service, range } });
+}
+
+export async function listAlertRules(page = 1, pageSize = 50): Promise<AlertRuleListResponse> {
+  return api("/admin/alerts/rules", { query: { page, pageSize } });
+}
+
+export async function createAlertRule(data: Omit<AlertRule, 'id' | 'createdAt' | 'updatedAt'>): Promise<AlertRule> {
+  return api("/admin/alerts/rules", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateAlertRule(
+  id: string,
+  patch: Partial<AlertRule>,
+): Promise<AlertRule> {
+  return api(`/admin/alerts/rules/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export async function deleteAlertRule(id: string): Promise<void> {
+  return api(`/admin/alerts/rules/${id}`, { method: "DELETE" });
+}
+
+export async function testAlertRule(id: string): Promise<TestRuleResponse> {
+  return api(`/admin/alerts/rules/${id}/test`, { method: "POST" });
+}
+
+export async function listAlerts(params?: {
+  severity?: string;
+  service?: string;
+  acked?: boolean;
+  since?: string;
+  until?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<AlertListResponse> {
+  return api("/admin/alerts", { query: params });
+}
+
+export async function bulkAckAlerts(ids: string[]): Promise<{ acked: number }> {
+  return api("/admin/alerts/bulk-ack", { method: "POST", body: JSON.stringify({ ids }) });
+}
+
+export async function bulkSnoozeAlerts(ids: string[], until: string): Promise<{ snoozed: number }> {
+  return api("/admin/alerts/bulk-snooze", { method: "POST", body: JSON.stringify({ ids, until }) });
+}
+
+export async function closeAlert(id: string, closeNote: string): Promise<AlertItem> {
+  return api(`/admin/alerts/${id}/close`, { method: "POST", body: JSON.stringify({ closeNote }) });
+}
+
+export async function listIncidents(limit = 30): Promise<Incident[]> {
+  return api("/admin/incidents", { query: { limit } });
+}
+
+export async function updateIncident(
+  id: string,
+  patch: { title?: string; postmortemUrl?: string; summary?: string },
+): Promise<Incident> {
+  return api(`/admin/incidents/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export async function getStatusViewPrefs(): Promise<Record<string, unknown> | null> {
+  return api("/admin/settings/status-view");
+}
+
+export async function saveStatusViewPrefs(prefs: Record<string, unknown>): Promise<{ ok: true }> {
+  return api("/admin/settings/status-view", { method: "PUT", body: JSON.stringify(prefs) });
 }

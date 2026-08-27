@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 import type { Paginated } from "./client";
 import {
   approveRoleRequest,
@@ -117,8 +117,24 @@ import {
   type StaffingRecommendation,
   type SlaBreachRisk,
   type CsatPrediction,
+  type ServiceName,
+  type ServiceStatus,
+  type OverallStatus,
+  type Severity,
+  type ProbeResult,
+  type RealtimeStatusResponse,
+  type MetricsSeriesResponse,
+  type AlertRule,
+  type AlertRuleListResponse,
+  type AlertItem,
+  type AlertListResponse,
+  type Incident,
+  type TestRuleResponse,
   getAnalyticsOverview,
   getAnalyticsTimeseries,
+  getAnalyticsHeatmap,
+  getAnalyticsRealtime,
+  getAnalyticsRetention,
   getApiKeys,
   getAccessRequests,
   getAccessRequestById,
@@ -171,6 +187,21 @@ import {
   getSupportStaffingRecommendation,
   getSupportTicketRisk,
   getSupportTicketCsatPrediction,
+  getStatusRealtime,
+  getMetricsSeries,
+  listAlertRules,
+  createAlertRule,
+  updateAlertRule,
+  deleteAlertRule,
+  testAlertRule,
+  listAlerts,
+  bulkAckAlerts,
+  bulkSnoozeAlerts,
+  closeAlert,
+  listIncidents,
+  updateIncident,
+  getStatusViewPrefs,
+  saveStatusViewPrefs,
   getSystemSettings,
   getSystemStatus,
   getTags,
@@ -339,7 +370,7 @@ export function useUsers(params: ListParams = {}) {
     queryFn: async () => {
       const result = await getUsers({
         page: params.page ?? 1,
-        limit: params.pageSize ?? 20,
+        limit: params.limit ?? (params.page ?? 1) * (params.pageSize ?? 20),
         sort: params.sort,
         filter: params.filter,
         except: params.except,
@@ -1031,6 +1062,29 @@ export function useTrafficSources() {
   return useQuery({
     queryKey: ["traffic-sources"],
     queryFn: getTrafficSources,
+  });
+}
+
+export function useAnalyticsHeatmap() {
+  return useQuery({
+    queryKey: ["analytics-heatmap"],
+    queryFn: getAnalyticsHeatmap,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useAnalyticsRealtime() {
+  return useQuery({
+    queryKey: ["analytics-realtime"],
+    queryFn: getAnalyticsRealtime,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAnalyticsRetention() {
+  return useQuery({
+    queryKey: ["analytics-retention"],
+    queryFn: getAnalyticsRetention,
   });
 }
 
@@ -3358,9 +3412,78 @@ export type {
   StaffingRecommendation,
   SlaBreachRisk,
   CsatPrediction,
+  ServiceName,
+  ServiceStatus,
+  OverallStatus,
+  Severity,
+  ProbeResult,
+  RealtimeStatusResponse,
+  MetricsSeriesResponse,
+  AlertRule,
+  AlertRuleListResponse,
+  AlertItem,
+  AlertListResponse,
+  Incident,
+  TestRuleResponse,
 };
 
 // Runtime value exports — keep these OUTSIDE the `export type { }` block above
 // so callers can destructure them as first-class runtime values (e.g. spread
 // VALID_LEGACY_ROLES inside an array, or call normalizeRoleToUpperSnake()).
 export { VALID_LEGACY_ROLES, collectRoleKeys, normalizeRoleToUpperSnake, toValidLegacyRole };
+
+// ============ STATUS PAGE ============
+export function useStatusRealtime(opts?: { refetchIntervalMs?: number }) {
+  return useQuery({
+    queryKey: ['admin', 'status', 'realtime'] as const,
+    queryFn: () => getStatusRealtime(),
+    refetchInterval: opts?.refetchIntervalMs ?? 3000,
+    staleTime: 2000,
+  });
+}
+
+export function useMetricsSeries(service: ServiceName | null, range: '1h' | '6h' | '24h' | '7d' = '24h') {
+  return useQuery({
+    queryKey: ['admin', 'status', 'series', service, range] as const,
+    queryFn: () => service ? getMetricsSeries(service, range) : Promise.resolve({ service: 'database' as ServiceName, range, points: [] }),
+    enabled: !!service,
+    staleTime: 20_000,
+  });
+}
+
+export function useAlertRules(page = 1, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'status', 'rules', page, pageSize] as const,
+    queryFn: () => listAlertRules(page, pageSize),
+    staleTime: 30_000,
+  });
+}
+
+export function useAlertRuleMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'status'] });
+  return {
+    create: useMutation({ mutationFn: createAlertRule, onSuccess: invalidate }),
+    update: useMutation({ mutationFn: (args: { id: string; patch: Partial<AlertRule> }) => updateAlertRule(args.id, args.patch), onSuccess: invalidate }),
+    remove: useMutation({ mutationFn: deleteAlertRule, onSuccess: invalidate }),
+    test:   useMutation({ mutationFn: testAlertRule }),
+  };
+}
+
+export function useAlerts(params: { severity?: string; service?: string; acked?: boolean; since?: string; until?: string; limit?: number }) {
+  return useInfiniteQuery({
+    queryKey: ['admin', 'status', 'alerts', params] as const,
+    queryFn: async ({ pageParam }: { pageParam?: string }) => listAlerts({ ...params, cursor: pageParam }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    initialPageParam: undefined as string | undefined,
+    staleTime: 10_000,
+  });
+}
+
+export function useIncidents(limit = 30) {
+  return useQuery({
+    queryKey: ['admin', 'status', 'incidents', limit] as const,
+    queryFn: () => listIncidents(limit),
+    staleTime: 60_000,
+  });
+}
