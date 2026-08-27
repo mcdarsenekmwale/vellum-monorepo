@@ -166,6 +166,26 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async ping(): Promise<boolean> {
+    if (!this.isConnected || !this.client) return false;
+    try {
+      const resp = await this.client.ping();
+      return resp === 'PONG';
+    } catch {
+      return false;
+    }
+  }
+
+  async info(section?: string): Promise<string> {
+    if (!this.isConnected || !this.client) return '';
+    try {
+      const resp = await this.client.info(section as any);
+      return typeof resp === 'string' ? resp : '';
+    } catch {
+      return '';
+    }
+  }
+
   getStatus() {
     return {
       connected: this.isConnected,
