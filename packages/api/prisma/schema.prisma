@@ -46,6 +46,7 @@ model User {
   stories                    Story[]                      @relation("StoryAuthor")
   storyViews                 StoryView[]                  @relation("StoryViewViewer")
   settings                   UserSettings?                @relation("UserSettings")
+  adminPrefs                 Json?
   reports                    Report[]                     @relation("ReportReporter")
   supportTickets             SupportTicket[]              @relation("SupportTicketUser")
   assignedTickets            SupportTicket[]              @relation("SupportTicketAssignee")

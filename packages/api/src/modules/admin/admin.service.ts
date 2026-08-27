@@ -3731,15 +3731,19 @@ export class AdminService {
 
   // ============== VIEW PREFS ==============
   async getStatusViewPrefs(userId: string) {
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
-    return ((u?.settings as any)?.statusViewPrefs) ?? null;
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { adminPrefs: true } });
+    const prefs = (u?.adminPrefs as any)?.statusViewPrefs;
+    return prefs ?? null;
   }
 
   async saveStatusViewPrefs(userId: string, prefs: Record<string, unknown>) {
-    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { settings: true } });
-    const current: any = (u?.settings as any) ?? {};
-    const merged = { ...current, statusViewPrefs: prefs };
-    await this.prisma.user.update({ where: { id: userId }, data: { settings: merged as any } });
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { adminPrefs: true } });
+    const current = (u?.adminPrefs && typeof u.adminPrefs === 'object') ? (u.adminPrefs as Record<string, unknown>) : {};
+    const merged: Record<string, unknown> = { ...current, statusViewPrefs: prefs };
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { adminPrefs: merged as any },
+    });
     return { ok: true };
   }
 
