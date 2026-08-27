@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
@@ -27,7 +27,7 @@ export class MetricsCollectorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-    private readonly adminService: AdminService,
+    @Inject(forwardRef(() => AdminService)) private readonly adminService: AdminService,
   ) {
     (['database', 'api', 'redis', 'storage', 'webhooks'] as ServiceName[]).forEach((s) =>
       this.window.set(s, []),

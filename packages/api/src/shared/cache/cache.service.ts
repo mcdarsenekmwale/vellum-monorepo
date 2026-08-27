@@ -201,4 +201,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       url: this.redisUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@'),
     };
   }
+
+  getClient(): redis.RedisClientType | null {
+    return this.client;
+  }
 }

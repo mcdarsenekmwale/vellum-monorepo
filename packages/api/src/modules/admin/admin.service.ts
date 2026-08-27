@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CacheService } from '../../shared/cache/cache.service';
@@ -48,7 +48,7 @@ export class AdminService {
     private configService: ConfigService,
     private cache: CacheService,
     private webhooksService: WebhooksService,
-    private metricsCollector: MetricsCollectorService,
+    @Inject(forwardRef(() => MetricsCollectorService)) private metricsCollector: MetricsCollectorService,
     private threshold: ThresholdEvaluatorService,
   ) { }
 
