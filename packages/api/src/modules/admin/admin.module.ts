@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AIChatController } from './ai-chat.controller';
 import { AdminController } from './admin.controller';
 import { AdminSseController } from './admin.sse.controller';
 import { AdminService } from './admin.service';
@@ -15,7 +16,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
 
 @Module({
   imports: [PrismaModule, CacheModule, AccessRequestsModule, WebhooksModule],
-  controllers: [AdminController, AdminSseController],
+  controllers: [AIChatController, AdminController, AdminSseController],
   providers: [
     AdminService,
     SoftDeleteCronService,
