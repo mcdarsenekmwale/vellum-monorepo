@@ -10,6 +10,7 @@ import * as path from 'path';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { MetricsCollectorService } from './metrics-collector.service';
 import { ThresholdEvaluatorService } from './threshold-evaluator.service';
+import { LLMGatewayService } from './llm-gateway.service';
 import { SETTINGS_DEFINITIONS, SETTINGS_VERSION, validateSettingValue, type SettingCategory } from './settings-definitions';
 
 /**
@@ -50,6 +51,7 @@ export class AdminService {
     private webhooksService: WebhooksService,
     @Inject(forwardRef(() => MetricsCollectorService)) private metricsCollector: MetricsCollectorService,
     private threshold: ThresholdEvaluatorService,
+    @Inject(forwardRef(() => LLMGatewayService)) private readonly llm: LLMGatewayService,
   ) { }
 
   /** Strip sensitive fields before returning a user to callers. */
@@ -3754,5 +3756,88 @@ export class AdminService {
         data: { userId, action, entityType, details: details as any },
       });
     } catch { /* ignore */ }
+  }
+
+  // Internal — do not call from outside module.
+  async logAdminAiActivity(userId: string, action: string, entityType: string, details: Record<string, any> = {}) {
+    try {
+      await this.prisma.activityLog.create({
+        data: {
+          userId,
+          action,
+          entityType,
+          details: JSON.stringify(details).slice(0, 2000) as any,
+        },
+      });
+    } catch (e) { /* non-fatal */ }
+  }
+
+  async listAiActivity(params: { page?: number; pageSize?: number; userId?: string; placement?: string; status?: string; model?: string; sinceIso?: string; untilIso?: string; }) {
+    const page = Math.max(1, Number(params.page ?? 1));
+    const pageSize = Math.min(200, Math.max(1, Number(params.pageSize ?? 20)));
+    const skip = (page - 1) * pageSize;
+    const where: any = {};
+    if (params.userId) where.userId = params.userId;
+    if (params.placement) where.placement = params.placement;
+    if (params.status) where.status = params.status;
+    if (params.model) where.model = { contains: params.model };
+    if (params.sinceIso) where.createdAt = { ...where.createdAt, gte: new Date(params.sinceIso) };
+    if (params.untilIso) where.createdAt = { ...where.createdAt, lte: new Date(params.untilIso) };
+    const [items, total] = await Promise.all([
+      this.prisma.aiActivity.findMany({
+        where, skip, take: pageSize + 1,
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, handle: true, email: true } } },
+      }),
+      this.prisma.aiActivity.count({ where }),
+    ]);
+    const hasMore = items.length > pageSize;
+    if (hasMore) items.pop();
+    return { page, pageSize, total, hasMore, items };
+  }
+
+  async exportAiActivityCSV(params: { userId?: string; placement?: string; status?: string; model?: string; sinceIso?: string; untilIso?: string; }) {
+    const { items } = await this.listAiActivity({ ...params, page: 1, pageSize: 10_000 });
+    const headers = ['id','userId','userHandle','email','placement','contextTag','model','inputTokens','outputTokens','durationMs','status','errorCode','errorMessage','createdAt','conversationId'];
+    const rows = items.map(r => [
+      r.id, r.userId, (r.user as any)?.handle ?? '', (r.user as any)?.email ?? '',
+      String(r.placement), r.contextTag ?? '', r.model, String(r.inputTokens ?? ''), String(r.outputTokens ?? ''),
+      String(r.durationMs), String(r.status), r.errorCode ?? '', r.errorMessage ?? '',
+      r.createdAt.toISOString(), r.conversationId ?? '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(cell => {
+      const s = String(cell ?? '');
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    }).join(',')).join('\n');
+    return csv;
+  }
+
+  async testAIModel(input: { model: string; temperature?: number; maxTokens?: number; customPrompt?: string; testPrompt?: string; }) {
+    const startedAt = Date.now();
+    try {
+      const chunks: string[] = [];
+      let tokensIn = 0;
+      let tokensOut = 0;
+      const gen = this.llm.streamChat({
+        persona: 'admin-fab',
+        toolEnabled: false,
+        modelOverride: {
+          model: input.model as any,
+          temperature: Number.isFinite(input.temperature) ? input.temperature : undefined,
+          maxTokens: Number.isFinite(input.maxTokens) ? input.maxTokens : undefined,
+          customPrompt: input.customPrompt,
+        },
+        messages: [{ role: 'user', content: input.testPrompt || 'Quickly introduce yourself in 2 sentences.' }],
+      });
+      for await (const c of gen as AsyncIterable<any>) {
+        if (c.type === 'text' && typeof c.delta === 'string') chunks.push(c.delta);
+        if (c.type === 'done') { tokensIn = c.usage?.inputTokens ?? 0; tokensOut = c.usage?.outputTokens ?? 0; }
+        if (c.type === 'error') return { success: false, error: `${c.errorCode}: ${c.errorMessage ?? ''}`, latencyMs: Date.now() - startedAt, tokensIn, tokensOut, output: chunks.join('') };
+      }
+      return { success: true, output: chunks.join(''), latencyMs: Date.now() - startedAt, tokensIn, tokensOut };
+    } catch (err: any) {
+      return { success: false, error: String(err?.message ?? err), latencyMs: Date.now() - startedAt, tokensIn: 0, tokensOut: 0, output: '' };
+    }
   }
 }

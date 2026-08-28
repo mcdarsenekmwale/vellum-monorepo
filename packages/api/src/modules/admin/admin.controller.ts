@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException, HttpCode, HttpStatus, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
@@ -1233,5 +1233,57 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SupportAdminGuard)
   async updateSupportTicketStatus(@Param('id') id: string, @Body() body: { status: string }) {
     return this.adminService.updateSupportTicketStatus(id, body.status);
+  }
+
+  /* ============ AI Activity & Model Testing ============ */
+
+  @Get('ai/activity')
+  @ApiOperation({ summary: 'List AI activity ledger (paginated, filterable)' })
+  @ApiResponse({ status: 200, description: 'AI activity page returned' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  async listAiActivity(@Req() req: any, @Query() q: any) {
+    const userId = actorId(req);
+    const res = await this.adminService.listAiActivity({
+      page: q.page, pageSize: q.pageSize,
+      userId: q.userId, placement: q.placement, status: q.status, model: q.model,
+      sinceIso: q.since, untilIso: q.until,
+    });
+    await this.adminService.logAdminAiActivity(userId!, 'ai.activity.view', 'AiActivity', { filterCount: res.total, filterUser: q.userId });
+    return res;
+  }
+
+  @Post('ai/activity/export')
+  @ApiOperation({ summary: 'Export AI activity ledger as CSV download' })
+  @ApiResponse({ status: 200, description: 'CSV file streamed' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 20, ttl: 300_000 } })
+  @HttpCode(HttpStatus.OK)
+  async exportAiActivity(@Req() req: any, @Body() body: any, @Res() res: any) {
+    const userId = actorId(req);
+    const csv = await this.adminService.exportAiActivityCSV({
+      userId: body.userId, placement: body.placement, status: body.status, model: body.model,
+      sinceIso: body.since, untilIso: body.until,
+    });
+    await this.adminService.logAdminAiActivity(userId!, 'ai.activity.export', 'AiActivity', { bytes: csv.length });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="ai-activity-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send('\uFEFF' + csv); // BOM for Excel
+  }
+
+  @Post('ai/model/test')
+  @ApiOperation({ summary: 'Test a candidate AI model before saving globally' })
+  @ApiResponse({ status: 200, description: 'Model test result (success/failure, latency, output)' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  async testAIModel(@Req() req: any, @Body() body: any) {
+    const userId = actorId(req);
+    const r = await this.adminService.testAIModel({
+      model: body.model, temperature: body.temperature, maxTokens: body.maxTokens,
+      customPrompt: body.customPrompt, testPrompt: body.testPrompt,
+    });
+    await this.adminService.logAdminAiActivity(userId!, 'ai.model.test', 'AISettings', { model: body.model, success: r.success, latencyMs: r.latencyMs });
+    return r;
   }
 }
