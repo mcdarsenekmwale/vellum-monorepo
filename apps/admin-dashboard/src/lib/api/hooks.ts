@@ -324,10 +324,32 @@ import {
   type WebhookLogsFilter,
   type WebhookBulkUpdate,
   type RotateSecretResult,
+  type AIModelName,
+  type AiPlacement,
+  type AiActivityStatus,
+  type ChatMessage,
+  type SSEEventMap,
+  type SSEEventType,
+  type ChatRequest,
+  type AiActivityUser,
+  type AiActivityItem,
+  type PaginatedAiActivity,
+  type AiActivityQuery,
+  type AiConversation,
+  type TestAIModelRequest,
+  type TestAIModelResponse,
+  type ModelAISettingsUpdate,
+  AI_MODEL_OPTIONS,
   SearchResourcesPayload,
   getDeletedSupportTickets,
   permanentlyDeleteSupportTicket,
   restoreSupportTicket,
+  streamAiChat,
+  listAiConversations,
+  deleteAiConversation,
+  listAiActivity,
+  exportAiActivity,
+  testAIModel,
 } from "./services";
 
 export type ListParams = {
@@ -3425,12 +3447,27 @@ export type {
   AlertListResponse,
   Incident,
   TestRuleResponse,
+  AIModelName,
+  AiPlacement,
+  AiActivityStatus,
+  ChatMessage,
+  SSEEventMap,
+  SSEEventType,
+  ChatRequest,
+  AiActivityUser,
+  AiActivityItem,
+  PaginatedAiActivity,
+  AiActivityQuery,
+  AiConversation,
+  TestAIModelRequest,
+  TestAIModelResponse,
+  ModelAISettingsUpdate,
 };
 
 // Runtime value exports — keep these OUTSIDE the `export type { }` block above
 // so callers can destructure them as first-class runtime values (e.g. spread
 // VALID_LEGACY_ROLES inside an array, or call normalizeRoleToUpperSnake()).
-export { VALID_LEGACY_ROLES, collectRoleKeys, normalizeRoleToUpperSnake, toValidLegacyRole };
+export { VALID_LEGACY_ROLES, AI_MODEL_OPTIONS, collectRoleKeys, normalizeRoleToUpperSnake, toValidLegacyRole };
 
 // ============ STATUS PAGE ============
 export function useStatusRealtime(opts?: { refetchIntervalMs?: number }) {
@@ -3487,3 +3524,49 @@ export function useIncidents(limit = 30) {
     staleTime: 60_000,
   });
 }
+
+/* ====== SECTION: AI COMPONENT HOOKS (Sub-project B) ====== */
+
+export function useAiActivity(q: AiActivityQuery) {
+  return useQuery({
+    queryKey: ['ai', 'activity', JSON.stringify(q)] as const,
+    queryFn: () => listAiActivity(q),
+    placeholderData: keepPreviousData,
+    staleTime: 10_000,
+  });
+}
+
+export function useAiConversations(params: { placement?: AiPlacement; limit?: number; enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['ai', 'conversations', params.placement ?? 'all', params.limit ?? 20] as const,
+    queryFn: () => listAiConversations({ placement: params.placement, limit: params.limit }),
+    enabled: params.enabled ?? true,
+    staleTime: 30_000,
+  });
+}
+
+export function useDeleteAiConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAiConversation(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ai', 'conversations'] }),
+  });
+}
+
+/**
+ * Returns helper that streams one chat round and collects chunks/tool calls.
+ * Not a React Query hook — streaming SSE isn't well-suited to useQuery. We expose
+ * a fire-and-return promise helper for use inside Sheet/chat UI state machine.
+ */
+export function useAiChatRunner() {
+  return {
+    runRound: (req: ChatRequest) => streamAiChat(req),
+  };
+}
+
+export function useTestAIModel() {
+  return useMutation({
+    mutationFn: (body: TestAIModelRequest): Promise<TestAIModelResponse> => testAIModel(body),
+  });
+}
+

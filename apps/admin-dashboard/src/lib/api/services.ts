@@ -2170,6 +2170,20 @@ export async function getRoles(): Promise<AdminRolesResponse> {
 }
 
 // AI Settings & Moderation
+export type AIModelName = 'gpt-4' | 'gpt-4o' | 'gpt-4o-mini' | 'gpt-3.5-turbo' | 'gpt-3.5' | 'claude-3-opus' | 'claude-3-5-sonnet' | 'claude' | 'custom';
+
+export const AI_MODEL_OPTIONS: { label: string; value: AIModelName; note?: string }[] = [
+  { label: 'GPT-4o', value: 'gpt-4o', note: 'Latest, best quality + fast (recommended)' },
+  { label: 'GPT-4o Mini', value: 'gpt-4o-mini', note: 'Fast and cheap, great for tool bursts' },
+  { label: 'GPT-4', value: 'gpt-4', note: 'Stable, legacy' },
+  { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo', note: 'Budget, quick summaries' },
+  { label: 'GPT-3.5', value: 'gpt-3.5', note: 'Legacy' },
+  { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet', note: 'Best reasoning + long context (recommended)' },
+  { label: 'Claude 3 Opus', value: 'claude-3-opus', note: 'Highest quality, slower, pricier' },
+  { label: 'Claude', value: 'claude', note: 'Legacy' },
+  { label: 'Custom (OpenRouter)', value: 'custom', note: 'Provide fully-qualified model slug in Custom Prompt field (e.g. meta-llama/llama-3.1-405b-instruct)' },
+];
+
 export interface AISettings {
   enabled: boolean;
   autoFlag: boolean;
@@ -2194,7 +2208,7 @@ export interface AISettings {
     digestFrequency: "realtime" | "hourly" | "daily" | "weekly";
   };
   modelConfig: {
-    model: "gpt-4" | "gpt-3.5" | "claude" | "custom";
+    model: AIModelName;
     temperature: number;
     maxTokens: number;
     customPrompt?: string;
@@ -3320,3 +3334,228 @@ export async function getStatusViewPrefs(): Promise<Record<string, unknown> | nu
 export async function saveStatusViewPrefs(prefs: Record<string, unknown>): Promise<{ ok: true }> {
   return api("/admin/settings/status-view", { method: "PUT", body: JSON.stringify(prefs) });
 }
+
+/* ===========================================================
+ * SECTION: AI COMPONENT TYPES & SERVICES
+ * Sub-project B — Admin AI Chat, Tools, Activity, Model Tests
+ * =========================================================== */
+
+export type AiPlacement = 'web-profile' | 'mobile-nav' | 'admin-fab' | 'admin-quick-action';
+
+export type AiActivityStatus = 'SUCCESS' | 'STREAM_TRUNCATED' | 'ERROR' | 'RATE_LIMITED' | 'AUTH_FAILED';
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{ id: string; name: string; arguments: Record<string, any> }>;
+}
+
+export interface SSEEventMap {
+  meta:    { conversationId: string; model: string; persona: AiPlacement; placement: AiPlacement };
+  chunk:   { delta: string };
+  tool_call:{ id: string; name: string; arguments: Record<string, any>; requiresConfirmation?: boolean };
+  error:   { code: string; message: string; retryAfter?: number };
+  done:    { usage: { inputTokens: number; outputTokens: number }; durationMs: number };
+}
+
+export type SSEEventType = keyof SSEEventMap;
+
+export interface ChatRequest {
+  conversationId?: string;
+  placement: AiPlacement;
+  messages: Array<Pick<ChatMessage, 'role' | 'content' | 'tool_call_id'>>;
+  confirmedToolCalls?: Array<{ id: string; name: string; arguments: Record<string, any> }>;
+  quickActionName?: string;
+}
+
+export interface AiActivityUser {
+  id: string;
+  handle?: string | null;
+  email?: string | null;
+}
+
+export interface AiActivityItem {
+  id: string;
+  userId: string;
+  user?: AiActivityUser | null;
+  conversationId?: string | null;
+  placement: string;
+  contextTag?: string | null;
+  model: string;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  durationMs: number;
+  toolInvocations?: any[] | null;
+  messages: any;
+  status: AiActivityStatus;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  createdAt: string;
+}
+
+export interface PaginatedAiActivity {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+  items: AiActivityItem[];
+}
+
+export interface AiActivityQuery {
+  [key: string]: string | number | boolean | AiActivityStatus | undefined | null;
+  page?: number;
+  pageSize?: number;
+  userId?: string;
+  placement?: string;
+  status?: AiActivityStatus;
+  model?: string;
+  since?: string;
+  until?: string;
+}
+
+export interface AiConversation {
+  id: string;
+  title: string;
+  placement: string;
+  lastMessageAt: string;
+  messageCount: number;
+}
+
+export interface TestAIModelRequest {
+  model: AIModelName | string;
+  temperature?: number;
+  maxTokens?: number;
+  customPrompt?: string;
+  testPrompt?: string;
+}
+
+export interface TestAIModelResponse {
+  success: boolean;
+  output?: string;
+  error?: string;
+  latencyMs: number;
+  tokensIn: number;
+  tokensOut: number;
+}
+
+export interface ModelAISettingsUpdate {
+  modelConfig: {
+    model?: AIModelName | string;
+    temperature?: number;
+    maxTokens?: number;
+    customPrompt?: string;
+  };
+}
+
+/* ---- SERVICE FUNCTIONS ---- */
+
+/** POST-SSE streaming chat round. Uses raw fetch because EventSource is GET-only. */
+export async function streamAiChat(req: ChatRequest): Promise<{
+  meta: SSEEventMap['meta'] | null;
+  chunks: string[];
+  toolCalls: SSEEventMap['tool_call'][];
+  done: SSEEventMap['done'] | null;
+  error: SSEEventMap['error'] | null;
+}> {
+  const token = (() => {
+    try {
+      // The api wrapper uses getRouterAuth().token; for raw fetch we attempt same via localStorage fallback.
+      // In practice the cookie (credentials: include) handles session auth for browser fetches.
+      return localStorage.getItem('authToken');
+    } catch { return null; }
+  })();
+
+  return new Promise((resolve) => {
+    const ret = { meta: null as SSEEventMap['meta'] | null, chunks: [] as string[], toolCalls: [] as SSEEventMap['tool_call'][], done: null as SSEEventMap['done'] | null, error: null as SSEEventMap['error'] | null };
+    fetch(`${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}ai/chat`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(req),
+    }).then(async (resp) => {
+      if (!resp.ok) {
+        try {
+          const text = await resp.text();
+          ret.error = { code: `HTTP_${resp.status}`, message: text.slice(0, 500) };
+        } catch {
+          ret.error = { code: `HTTP_${resp.status}`, message: 'Request failed' };
+        }
+        resolve(ret);
+        return;
+      }
+      if (!resp.body) { resolve(ret); return; }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+          const rawFrame = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const eventLine = rawFrame.match(/^event:\s*([a-z_]+)/im)?.[1];
+          const dataLine = rawFrame.match(/^data:\s*(.+)/ims)?.[1];
+          if (!eventLine || !dataLine) continue;
+          try {
+            const data = JSON.parse(dataLine);
+            switch (eventLine) {
+              case 'meta':    ret.meta = data; break;
+              case 'chunk':   ret.chunks.push(data.delta ?? ''); break;
+              case 'tool_call': ret.toolCalls.push(data); break;
+              case 'error':   ret.error = data; break;
+              case 'done':    ret.done = data; break;
+            }
+          } catch { /* ignore malformed frame */ }
+        }
+      }
+      resolve(ret);
+    }).catch((err) => {
+      ret.error = { code: 'FETCH_ERROR', message: String(err?.message || err) };
+      resolve(ret);
+    });
+  });
+}
+
+/* Non-streamed chat helpers */
+
+export async function listAiConversations(params: { placement?: AiPlacement; limit?: number }): Promise<AiConversation[]> {
+  return api("/ai/conversations", { query: { placement: params.placement, limit: params.limit } });
+}
+
+export async function deleteAiConversation(id: string): Promise<void> {
+  return api(`/ai/conversations/${id}`, { method: "DELETE" });
+}
+
+export async function listAiActivity(q: AiActivityQuery): Promise<PaginatedAiActivity> {
+  return api("/admin/ai/activity", { query: q });
+}
+
+/** Activity export (CSV/Excel blob). Uses raw fetch to bypass JSON parsing in the api wrapper. */
+export async function exportAiActivity(q: AiActivityQuery): Promise<Blob> {
+  const token = (() => { try { return localStorage.getItem('authToken'); } catch { return null; } })();
+  const resp = await fetch(`${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}admin/ai/activity/export`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(q),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Export failed (HTTP ${resp.status}): ${text.slice(0, 200)}`);
+  }
+  return resp.blob();
+}
+
+export async function testAIModel(body: TestAIModelRequest): Promise<TestAIModelResponse> {
+  return api("/admin/ai/model/test", { method: "POST", body: JSON.stringify(body) });
+}
+
