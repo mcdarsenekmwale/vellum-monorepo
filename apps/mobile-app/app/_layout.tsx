@@ -27,7 +27,13 @@ import {
 import { VellbaseThemeProvider, useThemeColors } from '../context/ThemeProvider';
 import { I18nProvider, useI18n } from '../context/I18nProvider';
 import { createSoundService, sounds } from '../services/SoundService';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { AIIconHeader } from '../components/ai/AIIconHeader';
+import {
+  QuickCoachSheet,
+  QuickCoachSheetProvider,
+  QuickCoachSheetRef,
+} from '../components/ai/QuickCoachSheet';
 
 const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
 
@@ -72,13 +78,19 @@ function useNotificationBadgeCount(): number | null {
   return typeof data?.count === 'number' ? data.count : 0;
 }
 
-export function ProfileHeaderActions() {
+export function ProfileHeaderActions({
+  onOpenQuickCoach,
+}: {
+  onOpenQuickCoach?: () => void;
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const unread = useNotificationBadgeCount();
   const showDot = typeof unread === 'number' && unread > 0;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 12 }}>
+      {/* AI Quick Coach icon — rendered FIRST (LEFT of notifications bell). */}
+      {onOpenQuickCoach ? <AIIconHeader onPress={onOpenQuickCoach} /> : null}
       <TouchableOpacity
         onPress={() => router.push('/notifications')}
         style={{
@@ -117,7 +129,11 @@ export function ProfileHeaderActions() {
   );
 }
 
-export function FeedHeaderActions() {
+export function FeedHeaderActions({
+  onOpenQuickCoach,
+}: {
+  onOpenQuickCoach?: () => void;
+}) {
   const router = useRouter();
   const unread = useNotificationBadgeCount();
   const showDot = typeof unread === 'number' && unread > 0;
@@ -138,6 +154,8 @@ export function FeedHeaderActions() {
       >
         <Search size={20} color="#000000" />
       </TouchableOpacity>
+      {/* AI Quick Coach icon — inserted IMMEDIATELY LEFT of notifications bell. */}
+      {onOpenQuickCoach ? <AIIconHeader onPress={onOpenQuickCoach} /> : null}
       <TouchableOpacity
         onPress={() => router.push('/notifications')}
         style={{
@@ -502,6 +520,14 @@ function AppShellContent() {
   const notificationListenerRef = useRef<Notifications.Subscription | null>(null);
   const responseListenerRef = useRef<Notifications.Subscription | null>(null);
 
+  // ════════════════════════════════════════════════════════════════
+  // AI Quick Coach sheet — top-level ref so any header icon can open
+  // ════════════════════════════════════════════════════════════════
+  const quickCoachRef = useRef<QuickCoachSheetRef>(null);
+  const openQuickCoach = useCallback(() => {
+    quickCoachRef.current?.present();
+  }, []);
+
   // Keep sound service pointed at latest settings.soundEnabled without reconstructing
   // the providers (it uses a getter — this is a cheap pointer refresh).
   useEffect(() => {
@@ -615,23 +641,24 @@ function AppShellContent() {
   }, []);
 
   return (
-    <AuthGate>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen
-          name="index"
-          options={{
-            title: 'Feed',
-            header: () => (
-              <CustomHeader
-                isMain={false}
-                customTitle={<ThemedHeaderLogo />}
-                titleAlign="left"
-                right={<FeedHeaderActions />}
-              />
-            ),
-            headerShown: true,
-          }}
-        />
+    <QuickCoachSheetProvider>
+      <AuthGate>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="index"
+            options={{
+              title: 'Feed',
+              header: () => (
+                <CustomHeader
+                  isMain={false}
+                  customTitle={<ThemedHeaderLogo />}
+                  titleAlign="left"
+                  right={<FeedHeaderActions onOpenQuickCoach={openQuickCoach} />}
+                />
+              ),
+              headerShown: true,
+            }}
+          />
         <Stack.Screen
           name="login"
           options={{
@@ -693,7 +720,7 @@ function AppShellContent() {
                 isMain={false}
                 title={t('common.profile')}
                 titleAlign="left"
-                right={<ProfileHeaderActions />}
+                right={<ProfileHeaderActions onOpenQuickCoach={openQuickCoach} />}
               />
             ),
             headerShown: true,
@@ -782,7 +809,10 @@ function AppShellContent() {
           }}
         />
       </Stack>
-    </AuthGate>
+      {/* AI Quick Coach bottom sheet — mounted once at shell level. */}
+      <QuickCoachSheet ref={quickCoachRef} />
+      </AuthGate>
+    </QuickCoachSheetProvider>
   );
 }
 
