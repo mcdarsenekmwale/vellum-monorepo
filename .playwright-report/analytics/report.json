@@ -1,0 +1,187 @@
+{
+  "startTime": "2026-08-27T21:11:59.517Z",
+  "buildStatus": "passed (vite build exit 0, verified before script)",
+  "screenshots": {
+    "overview": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/overview-stats.png",
+    "heatmap": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/heatmap-render.png",
+    "heatmapTooltip": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/heatmap-tooltip.png",
+    "realtime": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/realtime-view.png",
+    "retention": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/retention-view.png",
+    "s1": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s1-content-performance.png",
+    "s2": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s2-category-table.png",
+    "s3": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s3-support.png",
+    "s4": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s4-leaderboard.png",
+    "s5": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s5-system-health.png",
+    "s6": "/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/.playwright-report/analytics/s6-governance.png"
+  },
+  "console": {
+    "errors": [],
+    "warnings": [],
+    "summary": {
+      "errorsUnique": 0,
+      "warningsUnique": 0,
+      "errorsTotal": 0,
+      "warningsTotal": 0
+    }
+  },
+  "heatmap": {
+    "switchSucceeded": true,
+    "cells": {
+      "cellCount": 168,
+      "coloredCells": 39,
+      "gridCols": 24,
+      "xLabelsVisible": 12,
+      "yLabelsVisible": 8,
+      "legendLow": true,
+      "legendHigh": true,
+      "legendMax": "5",
+      "tooltipHtmlPresent": true
+    },
+    "hoverTriggered": true,
+    "tooltipVisible": true,
+    "checks": {
+      "cells ~168?": {
+        "expected": ">= 140",
+        "actual": 168,
+        "pass": true
+      },
+      "colored cells visible?": {
+        "expected": "> 5",
+        "actual": 39,
+        "pass": true
+      },
+      "legend (Low/High/max N) present?": {
+        "expected": "all three",
+        "actual": {
+          "Low": true,
+          "High": true,
+          "max": "5"
+        },
+        "pass": true
+      },
+      "x & y axis labels present?": {
+        "expected": "> 0 each",
+        "actual": {
+          "x": 12,
+          "y": 8
+        },
+        "pass": true
+      },
+      "hover tooltip visible?": {
+        "expected": true,
+        "actual": true,
+        "pass": true
+      }
+    }
+  },
+  "advanced": {
+    "s1": {
+      "radarTitleCaptured": true,
+      "scatterTitleCaptured": true
+    },
+    "s2": {
+      "rows": 12,
+      "progressBars": 12,
+      "cardFound": true,
+      "titleCaptured": true
+    },
+    "s3": {
+      "hasOpenTickets": true,
+      "hasCSAT": true,
+      "hasFirstResponse": true,
+      "hasVolume": true
+    },
+    "s4": {
+      "rows": 8,
+      "hasAIPill": true,
+      "hasTopBadge": true,
+      "hasSecond": true,
+      "hasThird": true,
+      "csatColors": false,
+      "cardFound": true,
+      "titleCaptured": true
+    },
+    "s5": {
+      "cards": 5,
+      "expected": [
+        "Database",
+        "API Gateway",
+        "Redis Cache",
+        "Object Storage",
+        "Webhooks"
+      ],
+      "hasOperational": true,
+      "hasDegraded": false,
+      "hasProgress": true
+    },
+    "s6": {
+      "auditTrailVisible": true,
+      "kbVisible": true,
+      "flagsVisible": true,
+      "auditCountLabel": true,
+      "rolloutRatio": true,
+      "coverageCompletion": true
+    },
+    "verdicts": {
+      "s1ok": true,
+      "s2ok": true,
+      "s3ok": true,
+      "s4ok": true,
+      "s5ok": true,
+      "s6ok": true
+    }
+  },
+  "overview": {
+    "gridsFound": 2,
+    "totalCards": 8,
+    "labels": [
+      "Total Users",
+      "Daily Active",
+      "Total Views",
+      "Engagement Rate",
+      "Weekly Active",
+      "Monthly Active",
+      "Total Articles",
+      "Total Highlights"
+    ],
+    "values": [
+      "149—",
+      "00.0%",
+      "3.6M5.3%",
+      "140.3%0.0% likes",
+      "16",
+      "100",
+      "110",
+      "91"
+    ],
+    "gridText": [
+      "TOTAL USERS\n149\n—\nDAILY ACTIVE\n0\n0.0%\nTOTAL VIEWS\n3.6M\n5.3%\nENGAGEMENT RATE\n140.3%\n0.0% likes",
+      "WEEKLY ACTIVE\n16\nMONTHLY ACTIVE\n100\nTOTAL ARTICLES\n110\nTOTAL HIGHLIGHTS\n91"
+    ]
+  },
+  "retention": {
+    "cardFound": true,
+    "headers": [
+      "Cohort",
+      "Month 1",
+      "Month 2",
+      "Month 3",
+      "Month 4",
+      "Month 5",
+      "Month 6"
+    ],
+    "cohortRows": 6,
+    "monthCols": 6,
+    "coloredBadges": 36
+  },
+  "realtime": {
+    "eventCards": 0,
+    "cardFound": true,
+    "hasEventsCard": true
+  },
+  "verdict": {
+    "heatmapFix": "VERIFIED",
+    "advancedSections": "ALL OK"
+  },
+  "endTime": "2026-08-27T21:12:33.775Z"
+}

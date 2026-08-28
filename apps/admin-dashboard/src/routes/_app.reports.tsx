@@ -10,24 +10,18 @@ import {
   AlertTriangle,
   Eye,
   ArrowUpRight,
-  Filter,
   Clock,
   User,
   Flag,
   MoreHorizontal,
-  Pencil,
   Trash2,
   RefreshCw,
-  Ban,
-  MessageSquare,
   ChevronDown,
   Sparkles,
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Minus,
   Download,
-  Mail,
   Check,
   X,
 } from "lucide-react";
@@ -57,7 +51,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   useReports,
   useUpdateReportStatus,
@@ -363,7 +356,7 @@ function ReportsPage() {
               return (
                 <div
                   key={i}
-                  className="flex-1 rounded-sm bg-primary/10 hover:bg-primary/20 transition-colors relative group"
+                  className="flex-1 rounded-sm bg-primary/30 hover:bg-primary/20 transition-colors relative group"
                   style={{ height: `${Math.max(10, height)}%` }}
                   title={`${day.date}: ${day.total} reports`}
                 >
@@ -377,7 +370,7 @@ function ReportsPage() {
             Array.from({ length: 30 }).map((_, i) => (
               <div
                 key={i}
-                className="flex-1 rounded-sm bg-muted/30 animate-pulse"
+                className="flex-1 rounded-sm bg-muted animate-pulse"
                 style={{ height: `${Math.max(10, Math.random() * 40)}%` }}
               />
             ))

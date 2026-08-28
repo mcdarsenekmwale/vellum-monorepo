@@ -77,12 +77,17 @@ type StatusFilter = "all" | "active" | "suspended";
 type TwoFAFilter = "all" | "enabled" | "disabled";
 
 function UsersList() {
-  const { data, isLoading, refetch } = useUsers();
+  const [pageSize, setPageSize] = useState(15);
+  const [pageNumber, setPageNumber] = useState(1);
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
   const { can, user: currentUser } = useAuth();
+  const { data, isLoading, refetch } = useUsers({ 
+    pageSize, 
+    page: pageNumber,
+  });
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
 
@@ -116,6 +121,7 @@ function UsersList() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
 
   // Form states
   const [createEmail, setCreateEmail] = useState("");
@@ -572,7 +578,12 @@ function UsersList() {
         eyebrow="People"
         rows={filteredRows}
         searchKeys={["name", "email", "handle", "role"]}
-        pageSize={15}
+        total={total}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+        pageNumber={pageNumber}
+        onPageChange={setPageNumber}
+        enableSearch={true}
         isLoading={isLoading}
         enableSelection={true}
         onSelectionChange={(selected) => setSelectedIds(Array.from(selected))}

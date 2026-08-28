@@ -21,8 +21,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { ListPage } from "@/components/dashboard/list-page";
-import { PermissionGuard, PermissionGate } from "@/components/dashboard/permission-guard";
-import { ReadOnlyBanner } from "@/components/dashboard/read-only-banner";
+import { PermissionGuard } from "@/components/dashboard/permission-guard";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,6 +34,8 @@ import {
   useUpdateArticle,
   useDeleteArticle,
   type Article,
+  User,
+  useUserById,
 } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth/context";
 import { format, formatDistanceToNow } from "date-fns";
@@ -82,6 +83,47 @@ type CategoryFilter = "all" | string;
 type StatusFilter = "all" | "published" | "draft";
 type SortOption = "newest" | "oldest" | "mostViews" | "mostLikes" | "title";
 
+/** Sub-component that calls useUserById at its top level (Rules-of-Hooks compliant). */
+function AuthorLookupCell({ authorId, avatar }: { authorId: string; avatar?: string }) {
+  const { data: user, isLoading } = useUserById(authorId);
+  const name = user?.name ?? "Unknown";
+  const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar className="size-7">
+        <AvatarImage src={avatar} alt={name} />
+        <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-xs">{isLoading ? "Loading…" : name}</span>
+    </div>
+  );
+}
+
+/** Cell renderer: checks the already-fetched authors list first, delegates to lookup if not found. */
+function AuthorCell({ authorId, authors, avatar }: { authorId: string; authors: User[]; avatar?: string }) {
+  const author = authors?.find((u) => u.id === authorId);
+
+  if (author) {
+    const initials = author.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
+    return (
+      <div className="flex items-center gap-2">
+        <Avatar className="size-7">
+          <AvatarImage src={avatar} alt={author.name} />
+          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-xs">{author.name}</span>
+      </div>
+    );
+  }
+
+  return <AuthorLookupCell authorId={authorId} avatar={avatar} />;
+}
+
 function ArticlesPage() {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useArticles();
@@ -95,6 +137,7 @@ function ArticlesPage() {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
+  const [authors, setAuthors] = useState<User[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -180,6 +223,7 @@ function ArticlesPage() {
     return categories?.find((c) => c.id === categoryId)?.name ?? "Unknown";
   };
 
+  // Get category color
   const getCategoryColor = (categoryId: string) => {
     const colors: Record<string, string> = {
       culture: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
@@ -192,14 +236,12 @@ function ArticlesPage() {
     return colors[categoryId?.toLowerCase()] ?? "bg-muted text-muted-foreground border-transparent";
   };
 
+  // Get author name (lookups only — no hooks inside render-path functions)
   const getAuthorName = (authorId: string) => {
-    return users?.data?.find((u) => u.id === authorId)?.name ?? "Unknown";
+    const author = authors?.find((u) => u.id === authorId);
+    return author?.name ?? "Unknown";
   };
 
-  const getAuthorInitials = (authorId: string) => {
-    const name = getAuthorName(authorId);
-    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 1);
-  };
 
   // Reset form
   const resetForm = useCallback(() => {
@@ -476,6 +518,12 @@ function ArticlesPage() {
     setStatusFilter("all");
   }, []);
 
+     // Fetch authors
+  useEffect(() => {
+    if (!users) return;
+    setAuthors(users.data);
+  }, [users]);
+
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -716,21 +764,13 @@ function ArticlesPage() {
           {
             key: "author",
             header: "Author",
-            cell: (c) => {
-              const authorName = getAuthorName(c.authorId);
-              const initials = getAuthorInitials(c.authorId);
-              return (
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-7">
-                    <AvatarImage src={(c.author as any).avatar} alt={authorName} />
-                    <AvatarFallback className="bg-secondary text-secondary-foreground text-xs font-medium">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs">{authorName}</span>
-                </div>
-              );
-            },
+            cell: (c) => (
+              <AuthorCell
+                authorId={c.authorId}
+                authors={authors}
+                avatar={(c.author as any).avatar}
+              />
+            ),
           },
           {
             key: "category",
@@ -888,7 +928,7 @@ function ArticlesPage() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="size-5 text-primary" />
@@ -1031,7 +1071,7 @@ function ArticlesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="size-5 text-primary" />

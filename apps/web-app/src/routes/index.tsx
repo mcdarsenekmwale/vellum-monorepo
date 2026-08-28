@@ -108,8 +108,9 @@ function FeedPage() {
               data={activeStoryAuthors}
               emptyTitle="No stories yet"
               emptyDescription="Stories from authors you follow will appear here."
+          
             >
-              <div className="flex gap-3 overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 overflow-x-auto no-scrollbar py-2 px-1">
                 <GuestGuard user={user} mode="hide">
                   <Link to="/profile" className="flex-none flex flex-col items-center gap-1.5 w-16">
                     <div className="size-16 rounded-full p-0.5 ring-3 ring-amber-600 ring-offset-2 ring-offset-background">

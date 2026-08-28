@@ -9,69 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SavedRouteImport } from './routes/saved'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HighlightsRouteImport } from './routes/highlights'
-import { Route as DiscoverRouteImport } from './routes/discover'
-import { Route as ComposeRouteImport } from './routes/compose'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingsIndexRouteImport } from './routes/settings.index'
-import { Route as ProfileIndexRouteImport } from './routes/profile.index'
-import { Route as SettingsSubscriptionRouteImport } from './routes/settings.subscription'
-import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
-import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
-import { Route as SettingsHelpRouteImport } from './routes/settings.help'
-import { Route as SettingsAboutRouteImport } from './routes/settings.about'
-import { Route as ProfileEditRouteImport } from './routes/profile.edit'
-import { Route as CategoryNameRouteImport } from './routes/category.$name'
-import { Route as AuthorIdRouteImport } from './routes/author.$id'
+import { Route as ComposeRouteImport } from './routes/compose'
+import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as HighlightsRouteImport } from './routes/highlights'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as SavedRouteImport } from './routes/saved'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
-import { Route as StoryAuthorIdStoryIdRouteImport } from './routes/story.$authorId.$storyId'
-import { Route as AuthorIdFollowingRouteImport } from './routes/author.$id.following'
+import { Route as AuthorIdRouteImport } from './routes/author.$id'
+import { Route as CategoryNameRouteImport } from './routes/category.$name'
+import { Route as ProfileIndexRouteImport } from './routes/profile.index'
+import { Route as ProfileEditRouteImport } from './routes/profile.edit'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAboutRouteImport } from './routes/settings.about'
+import { Route as SettingsHelpRouteImport } from './routes/settings.help'
+import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
+import { Route as SettingsPrivacyRouteImport } from './routes/settings.privacy'
+import { Route as SettingsSubscriptionRouteImport } from './routes/settings.subscription'
 import { Route as AuthorIdFollowersRouteImport } from './routes/author.$id.followers'
+import { Route as AuthorIdFollowingRouteImport } from './routes/author.$id.following'
+import { Route as StoryAuthorIdStoryIdRouteImport } from './routes/story.$authorId.$storyId'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SavedRoute = SavedRouteImport.update({
-  id: '/saved',
-  path: '/saved',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotificationsRoute = NotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HighlightsRoute = HighlightsRouteImport.update({
-  id: '/highlights',
-  path: '/highlights',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DiscoverRoute = DiscoverRouteImport.update({
-  id: '/discover',
-  path: '/discover',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComposeRoute = ComposeRouteImport.update({
@@ -79,59 +44,44 @@ const ComposeRoute = ComposeRouteImport.update({
   path: '/compose',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DiscoverRoute = DiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const ProfileIndexRoute = ProfileIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const SettingsSubscriptionRoute = SettingsSubscriptionRouteImport.update({
-  id: '/subscription',
-  path: '/subscription',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsLanguageRoute = SettingsLanguageRouteImport.update({
-  id: '/language',
-  path: '/language',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsHelpRoute = SettingsHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsAboutRoute = SettingsAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const ProfileEditRoute = ProfileEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const CategoryNameRoute = CategoryNameRouteImport.update({
-  id: '/category/$name',
-  path: '/category/$name',
+const HighlightsRoute = HighlightsRouteImport.update({
+  id: '/highlights',
+  path: '/highlights',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthorIdRoute = AuthorIdRouteImport.update({
-  id: '/author/$id',
-  path: '/author/$id',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedRoute = SavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticleSlugRoute = ArticleSlugRouteImport.update({
@@ -139,20 +89,70 @@ const ArticleSlugRoute = ArticleSlugRouteImport.update({
   path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StoryAuthorIdStoryIdRoute = StoryAuthorIdStoryIdRouteImport.update({
-  id: '/story/$authorId/$storyId',
-  path: '/story/$authorId/$storyId',
+const AuthorIdRoute = AuthorIdRouteImport.update({
+  id: '/author/$id',
+  path: '/author/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CategoryNameRoute = CategoryNameRouteImport.update({
+  id: '/category/$name',
+  path: '/category/$name',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileEditRoute = ProfileEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAboutRoute = SettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsHelpRoute = SettingsHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsLanguageRoute = SettingsLanguageRouteImport.update({
+  id: '/language',
+  path: '/language',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsPrivacyRoute = SettingsPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsSubscriptionRoute = SettingsSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const AuthorIdFollowersRoute = AuthorIdFollowersRouteImport.update({
+  id: '/followers',
+  path: '/followers',
+  getParentRoute: () => AuthorIdRoute,
 } as any)
 const AuthorIdFollowingRoute = AuthorIdFollowingRouteImport.update({
   id: '/following',
   path: '/following',
   getParentRoute: () => AuthorIdRoute,
 } as any)
-const AuthorIdFollowersRoute = AuthorIdFollowersRouteImport.update({
-  id: '/followers',
-  path: '/followers',
-  getParentRoute: () => AuthorIdRoute,
+const StoryAuthorIdStoryIdRoute = StoryAuthorIdStoryIdRouteImport.update({
+  id: '/story/$authorId/$storyId',
+  path: '/story/$authorId/$storyId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -330,60 +330,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/saved': {
-      id: '/saved'
-      path: '/saved'
-      fullPath: '/saved'
-      preLoaderRoute: typeof SavedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notifications': {
-      id: '/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/highlights': {
-      id: '/highlights'
-      path: '/highlights'
-      fullPath: '/highlights'
-      preLoaderRoute: typeof HighlightsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/discover': {
-      id: '/discover'
-      path: '/discover'
-      fullPath: '/discover'
-      preLoaderRoute: typeof DiscoverRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compose': {
@@ -393,81 +344,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComposeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/discover': {
+      id: '/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof DiscoverRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings/': {
-      id: '/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/profile/': {
-      id: '/profile/'
-      path: '/'
-      fullPath: '/profile/'
-      preLoaderRoute: typeof ProfileIndexRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/settings/subscription': {
-      id: '/settings/subscription'
-      path: '/subscription'
-      fullPath: '/settings/subscription'
-      preLoaderRoute: typeof SettingsSubscriptionRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/privacy': {
-      id: '/settings/privacy'
-      path: '/privacy'
-      fullPath: '/settings/privacy'
-      preLoaderRoute: typeof SettingsPrivacyRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/language': {
-      id: '/settings/language'
-      path: '/language'
-      fullPath: '/settings/language'
-      preLoaderRoute: typeof SettingsLanguageRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/help': {
-      id: '/settings/help'
-      path: '/help'
-      fullPath: '/settings/help'
-      preLoaderRoute: typeof SettingsHelpRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/about': {
-      id: '/settings/about'
-      path: '/about'
-      fullPath: '/settings/about'
-      preLoaderRoute: typeof SettingsAboutRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/profile/edit': {
-      id: '/profile/edit'
-      path: '/edit'
-      fullPath: '/profile/edit'
-      preLoaderRoute: typeof ProfileEditRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/category/$name': {
-      id: '/category/$name'
-      path: '/category/$name'
-      fullPath: '/category/$name'
-      preLoaderRoute: typeof CategoryNameRouteImport
+    '/highlights': {
+      id: '/highlights'
+      path: '/highlights'
+      fullPath: '/highlights'
+      preLoaderRoute: typeof HighlightsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/author/$id': {
-      id: '/author/$id'
-      path: '/author/$id'
-      fullPath: '/author/$id'
-      preLoaderRoute: typeof AuthorIdRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved': {
+      id: '/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/article/$slug': {
@@ -477,12 +407,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/story/$authorId/$storyId': {
-      id: '/story/$authorId/$storyId'
-      path: '/story/$authorId/$storyId'
-      fullPath: '/story/$authorId/$storyId'
-      preLoaderRoute: typeof StoryAuthorIdStoryIdRouteImport
+    '/author/$id': {
+      id: '/author/$id'
+      path: '/author/$id'
+      fullPath: '/author/$id'
+      preLoaderRoute: typeof AuthorIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/category/$name': {
+      id: '/category/$name'
+      path: '/category/$name'
+      fullPath: '/category/$name'
+      preLoaderRoute: typeof CategoryNameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/edit': {
+      id: '/profile/edit'
+      path: '/edit'
+      fullPath: '/profile/edit'
+      preLoaderRoute: typeof ProfileEditRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/about': {
+      id: '/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof SettingsAboutRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/help': {
+      id: '/settings/help'
+      path: '/help'
+      fullPath: '/settings/help'
+      preLoaderRoute: typeof SettingsHelpRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/language': {
+      id: '/settings/language'
+      path: '/language'
+      fullPath: '/settings/language'
+      preLoaderRoute: typeof SettingsLanguageRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/privacy': {
+      id: '/settings/privacy'
+      path: '/privacy'
+      fullPath: '/settings/privacy'
+      preLoaderRoute: typeof SettingsPrivacyRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/subscription': {
+      id: '/settings/subscription'
+      path: '/subscription'
+      fullPath: '/settings/subscription'
+      preLoaderRoute: typeof SettingsSubscriptionRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/author/$id/followers': {
+      id: '/author/$id/followers'
+      path: '/followers'
+      fullPath: '/author/$id/followers'
+      preLoaderRoute: typeof AuthorIdFollowersRouteImport
+      parentRoute: typeof AuthorIdRoute
     }
     '/author/$id/following': {
       id: '/author/$id/following'
@@ -491,12 +491,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthorIdFollowingRouteImport
       parentRoute: typeof AuthorIdRoute
     }
-    '/author/$id/followers': {
-      id: '/author/$id/followers'
-      path: '/followers'
-      fullPath: '/author/$id/followers'
-      preLoaderRoute: typeof AuthorIdFollowersRouteImport
-      parentRoute: typeof AuthorIdRoute
+    '/story/$authorId/$storyId': {
+      id: '/story/$authorId/$storyId'
+      path: '/story/$authorId/$storyId'
+      fullPath: '/story/$authorId/$storyId'
+      preLoaderRoute: typeof StoryAuthorIdStoryIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }

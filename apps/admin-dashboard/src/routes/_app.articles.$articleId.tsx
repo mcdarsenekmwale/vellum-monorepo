@@ -50,6 +50,7 @@ import { avatarUrl } from "@/lib/avatar";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import RichTextDisplay from "@/components/ui/rich-text-display";
 
 export const Route = createFileRoute("/_app/articles/$articleId")({
   head: () => ({ meta: [{ title: "Article · Vellbase Admin" }] }),
@@ -347,9 +348,10 @@ function ArticleDetailPage() {
               {article.body && article.body.length > 0 ? (
                 <div className="space-y-4">
                   {article.body.map((paragraph, index) => (
-                    <p key={index} className="text-sm leading-relaxed text-foreground/90">
-                      {paragraph}
-                    </p>
+                    <RichTextDisplay 
+                      key={index} 
+                      content={paragraph}
+                    />
                   ))}
                 </div>
               ) : (
