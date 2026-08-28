@@ -71,6 +71,9 @@ model User {
   // Phase 1 — inverses for department-head / team-lead named relations
   supportDepartmentsHead     SupportDepartment[]          @relation("SupportDepartmentHead")
   supportTeamsLead           SupportTeam[]                @relation("SupportTeamLead")
+  // Phase AI — inverses for AI feature models
+  aiActivities               AiActivity[]                 @relation("UserAiActivities")
+  aiConversations            AiConversation[]             @relation("UserAiConversations")
 
   @@index([handle])
   @@index([email])
@@ -1462,4 +1465,57 @@ model Incident {
 
   @@index([service, startedAt])
   @@map("incidents")
+}
+
+enum AiPlacement {
+  WEB_PROFILE
+  MOBILE_NAV
+  ADMIN_FAB
+  ADMIN_QUICK
+}
+
+enum AiActivityStatus {
+  SUCCESS
+  STREAM_TRUNCATED
+  ERROR
+  RATE_LIMITED
+  AUTH_FAILED
+}
+
+model AiActivity {
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation("UserAiActivities", fields: [userId], references: [id], onDelete: Cascade)
+  conversationId  String?
+  placement       AiPlacement
+  contextTag      String?
+  model           String
+  inputTokens     Int?
+  outputTokens    Int?
+  durationMs      Int
+  toolInvocations Json?
+  messages        Json
+  status          AiActivityStatus
+  errorCode       String?
+  errorMessage    String?
+  createdAt       DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([placement, createdAt])
+  @@index([status, createdAt])
+  @@map("ai_activities")
+}
+
+model AiConversation {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation("UserAiConversations", fields: [userId], references: [id], onDelete: Cascade)
+  placement     AiPlacement
+  title         String      @default("New conversation")
+  lastMessageAt DateTime    @default(now())
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@index([userId, placement, lastMessageAt])
+  @@map("ai_conversations")
 }
