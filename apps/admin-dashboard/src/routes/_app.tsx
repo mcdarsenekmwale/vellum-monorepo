@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import { getRouterAuth, waitForAuthReady } from "@/lib/auth/context";
 import { canVisit } from "@/lib/auth/rbac";
+import { AdminGlobalAIFAB } from "@/components/ai/admin-global-fab";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
@@ -75,6 +76,9 @@ function AppShell() {
         </main>
       </SidebarInset>
       <CommandPalette open={open} onOpenChange={setOpen} />
+      {/* Global AI Assistant FAB — appears on every admin page (auth-guarded in component) */}
+      {/* Keyboard shortcut: ⌘/Ctrl + K toggles the chat sheet (see admin-global-fab.tsx listener) */}
+      <AdminGlobalAIFAB />
     </SidebarProvider>
   );
 }

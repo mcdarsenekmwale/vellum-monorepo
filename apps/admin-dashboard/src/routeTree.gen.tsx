@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppAccessControlRouteImport } from './routes/_app.access-control'
 import { Route as AppAdvertisementsRouteImport } from './routes/_app.advertisements'
 import { Route as AppAiRouteImport } from './routes/_app.ai'
+import { Route as AppAiActivityRouteImport } from './routes/_app.ai-activity'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppApiRouteImport } from './routes/_app.api'
 import { Route as AppArticlesRouteImport } from './routes/_app.articles'
@@ -97,6 +98,11 @@ const AppAdvertisementsRoute = AppAdvertisementsRouteImport.update({
 const AppAiRoute = AppAiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiActivityRoute = AppAiActivityRouteImport.update({
+  id: '/ai-activity',
+  path: '/ai-activity',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
@@ -410,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/access-control': typeof AppAccessControlRoute
   '/advertisements': typeof AppAdvertisementsRoute
   '/ai': typeof AppAiRoute
+  '/ai-activity': typeof AppAiActivityRoute
   '/analytics': typeof AppAnalyticsRoute
   '/api': typeof AppApiRoute
   '/articles': typeof AppArticlesRouteWithChildren
@@ -476,6 +483,7 @@ export interface FileRoutesByTo {
   '/access-control': typeof AppAccessControlRoute
   '/advertisements': typeof AppAdvertisementsRoute
   '/ai': typeof AppAiRoute
+  '/ai-activity': typeof AppAiActivityRoute
   '/analytics': typeof AppAnalyticsRoute
   '/api': typeof AppApiRoute
   '/categories': typeof AppCategoriesRoute
@@ -538,6 +546,7 @@ export interface FileRoutesById {
   '/_app/access-control': typeof AppAccessControlRoute
   '/_app/advertisements': typeof AppAdvertisementsRoute
   '/_app/ai': typeof AppAiRoute
+  '/_app/ai-activity': typeof AppAiActivityRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/api': typeof AppApiRoute
   '/_app/articles': typeof AppArticlesRouteWithChildren
@@ -606,6 +615,7 @@ export interface FileRouteTypes {
     | '/access-control'
     | '/advertisements'
     | '/ai'
+    | '/ai-activity'
     | '/analytics'
     | '/api'
     | '/articles'
@@ -672,6 +682,7 @@ export interface FileRouteTypes {
     | '/access-control'
     | '/advertisements'
     | '/ai'
+    | '/ai-activity'
     | '/analytics'
     | '/api'
     | '/categories'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/_app/access-control'
     | '/_app/advertisements'
     | '/_app/ai'
+    | '/_app/ai-activity'
     | '/_app/analytics'
     | '/_app/api'
     | '/_app/articles'
@@ -836,6 +848,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AppAiRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai-activity': {
+      id: '/_app/ai-activity'
+      path: '/ai-activity'
+      fullPath: '/ai-activity'
+      preLoaderRoute: typeof AppAiActivityRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/analytics': {
@@ -1365,6 +1384,7 @@ interface AppRouteChildren {
   AppAccessControlRoute: typeof AppAccessControlRoute
   AppAdvertisementsRoute: typeof AppAdvertisementsRoute
   AppAiRoute: typeof AppAiRoute
+  AppAiActivityRoute: typeof AppAiActivityRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppApiRoute: typeof AppApiRoute
   AppArticlesRoute: typeof AppArticlesRouteWithChildren
@@ -1414,6 +1434,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccessControlRoute: AppAccessControlRoute,
   AppAdvertisementsRoute: AppAdvertisementsRoute,
   AppAiRoute: AppAiRoute,
+  AppAiActivityRoute: AppAiActivityRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppApiRoute: AppApiRoute,
   AppArticlesRoute: AppArticlesRouteWithChildren,
