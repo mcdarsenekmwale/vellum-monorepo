@@ -38,7 +38,7 @@ import {
 const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
 
 const PUBLIC_ROUTES = ['/login', '/register'];
-const TAB_ROUTES = ['/', '/index', '/discover', '/highlights', '/saved', '/profile'];
+const TAB_ROUTES = ['/', '/index', '/discover', '/highlights', '/notifications', '/profile'];
 
 export function BackButton() {
   const router = useRouter();
@@ -294,7 +294,7 @@ const TAB_ITEMS = [
   { key: 'index', labelKey: 'navigation.home', icon: Home, route: '/' },
   { key: 'discover', labelKey: 'navigation.discover', icon: Compass, route: '/discover' },
   { key: 'highlights', labelKey: 'navigation.highlights', icon: Play, route: '/highlights' },
-  { key: 'saved', labelKey: 'navigation.saved', icon: Bookmark, route: '/saved' },
+  { key: 'notifications', labelKey: 'navigation.notifications', icon: Bell, route: '/notifications' },
   { key: 'profile', labelKey: 'navigation.profile', icon: User, route: '/profile' },
 ];
 
@@ -320,7 +320,7 @@ function CustomTabBar() {
     if (pathname.startsWith('/author/')) return true;
     if (pathname.startsWith('/category/')) return true;
     if (pathname === '/compose') return true;
-    if (pathname === '/notifications') return true;
+    if (pathname === '/saved') return true;
     if (pathname === '/settings') return true;
     if (pathname.startsWith('/settings-')) return true;
     if (pathname === '/help-center') return true;
@@ -739,8 +739,7 @@ function AppShellContent() {
           name="notifications"
           options={{
             title: 'Activity',
-            header: () => <CustomHeader title="Activity" left={<ThemedBackButton />} />,
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Stack.Screen

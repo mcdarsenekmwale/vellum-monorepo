@@ -1,269 +1,433 @@
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-import { Heart, MessageCircle, UserPlus, Bookmark } from 'lucide-react-native';
-import { useNotifications, useArticles } from '../hooks/useApi';
-import { apiClient } from '../lib/api';
-import { useMemo } from 'react';
-import type { Notification } from '@vellbase/api-client/types';
-import { Avatar } from '../components/Avatar';
-import { useTheme } from 'context/ThemeProvider';
-import { useI18n } from '../context/I18nProvider';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  RefreshControl,
+  Alert,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
+import { useFocusEffect, useRouter } from 'expo-router';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { Check, BellRing, MessageCircleHeart } from 'lucide-react-native';
 
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = Date.now();
-  const diff = now - date.getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-  return date.toLocaleDateString();
+import {
+  MobileActivityCard,
+  type MobileActivityGroup,
+} from '../components/activity/mobile-activity-card';
+import { openActivitySseStream } from '../lib/use-activity-sse';
+import {
+  registerExpoPushToken,
+  scheduleLocalActivityReminderEveryMinutes,
+  fireTestLocalNotificationNow,
+} from '../lib/use-expo-push-registration';
+import { apiBaseUrl } from '../config/env';
+import { CustomHeader } from './_layout';
+
+const isWeb =
+  Platform.OS === 'web' ||
+  (typeof window !== 'undefined' &&
+    typeof window.localStorage !== 'undefined' &&
+    typeof window.document !== 'undefined');
+
+const API_BASE = (() => {
+  const base = (apiBaseUrl || '').replace(/\/$/, '');
+  if (base) return base;
+  return Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://127.0.0.1:3001';
+})();
+
+async function bearer(): Promise<Record<string, string>> {
+  try {
+    let t = '';
+    if (isWeb && typeof window !== 'undefined') {
+      t = window.localStorage.getItem('vellbase_access_token') || '';
+    } else {
+      t = (await SecureStore.getItemAsync('vellbase_access_token')) || '';
+    }
+    return t ? { Authorization: `Bearer ${t}` } : {};
+  } catch {
+    return {};
+  }
 }
 
-export default function NotificationsPage() {
-  const { theme: { colors } } = useTheme();
-  const { t } = useI18n();
-  const router = useRouter();
-  const { data: notificationsData, isLoading, error, refetch } = useNotifications(1, 20);
-  const { data: articlesData } = useArticles(1, 50);
-
-  const items = notificationsData?.data || [];
-  const articles = articlesData?.data || [];
-
-  const articleMap = useMemo(() => {
-    const map = new Map<string, any>();
-    articles.forEach((a) => map.set(a.slug, a));
-    return map;
-  }, [articles]);
-
-  const unreadCount = items.filter((a) => !a.read).length;
-
-  const markAllRead = async () => {
-    try {
-      await apiClient.markNotificationsRead();
-      refetch();
-    } catch (err) {
-      console.error('Failed to mark notifications read:', err);
-    }
-  };
-
-  const iconFor = (kind: Notification['kind']) => {
-    switch (kind) {
-      case 'LIKE': return Heart;
-      case 'COMMENT':
-      case 'REPLY': return MessageCircle;
-      case 'FOLLOW': return UserPlus;
-      case 'BOOKMARK': return Bookmark;
-      default: return Heart;
-    }
-  };
-
-  const verbFor = (kind: Notification['kind']) => {
-    switch (kind) {
-      case 'LIKE': return 'liked your story';
-      case 'COMMENT': return 'commented on your story';
-      case 'REPLY': return 'replied to you';
-      case 'FOLLOW': return 'started following you';
-      case 'BOOKMARK': return 'saved your story';
-      default: return 'interacted with you';
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <ScrollView style={styles.container}>
-        <View style={{ padding: 40, alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#000000" />
-          <Text style={{ marginTop: 12, color: '#666666' }}>Loading notifications...</Text>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  if (error) {
-    return (
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: colors.danger, fontSize: 16 }}>Failed to load notifications</Text>
-          <TouchableOpacity onPress={refetch} style={{ marginTop: 16 }}>
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('common.retry')}</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    );
-  }
-
+function RightActions({ onPress }: { onPress: () => void }) {
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Subtitle Header */}
-      <View style={styles.subtitleRow}>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          {unreadCount} NEW · THIS WEEK
+    <TouchableOpacity
+      style={styles.swipeAction}
+      activeOpacity={0.85}
+      onPress={onPress}
+      accessibilityLabel="Mark as read"
+    >
+      <Check size={20} color="#FFFFFF" strokeWidth={2.5} />
+      <Text style={styles.swipeActionLabel}>Read</Text>
+    </TouchableOpacity>
+  );
+}
+
+function EmptyState() {
+  return (
+    <View style={styles.emptyWrap}>
+      <View style={styles.emptyIconBox}>
+        <MessageCircleHeart size={40} color="#0EA5E9" strokeWidth={1.5} />
+      </View>
+      <Text style={styles.emptyTitle}>All caught up</Text>
+      <Text style={styles.emptySubtitle}>
+        Likes, comments, follows and replies will appear here.
+      </Text>
+    </View>
+  );
+}
+
+function Header({
+  unread,
+  onMarkAll,
+  onTestLocal,
+}: {
+  unread: number;
+  onMarkAll: () => void;
+  onTestLocal: () => void;
+}) {
+  return (
+    <View style={styles.headerRow}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <BellRing size={16} color="#0EA5E9" />
+        <Text style={styles.headerSubtitle}>
+          {unread > 0 ? `${unread} NEW` : 'NO NEW ACTIVITY'}
         </Text>
-        <TouchableOpacity onPress={markAllRead} activeOpacity={0.7}>
-          <Text style={[styles.markAllRead, { color: colors.accent }]}>{t('notifications.markAllRead')}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        {__DEV__ && (
+          <TouchableOpacity onPress={onTestLocal} activeOpacity={0.7}>
+            <Text style={styles.headerTestBtn}>TEST</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          onPress={onMarkAll}
+          activeOpacity={0.7}
+          disabled={unread === 0}
+          style={{ opacity: unread === 0 ? 0.4 : 1 }}
+        >
+          <Text style={styles.markAllBtn}>MARK ALL READ</Text>
         </TouchableOpacity>
       </View>
+    </View>
+  );
+}
 
-      {/* Notification List */}
-      <View style={styles.listContainer}>
-        {items.map((n) => {
-          const actor = n.actor;
-          const article = n.articleSlug ? articleMap.get(n.articleSlug) : null;
-          const Icon = iconFor(n.kind);
+export default function NotificationsScreen() {
+  const router = useRouter();
+  const [items, setItems] = useState<MobileActivityGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unread, setUnread] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const sseCloseRef = useRef<null | (() => void)>(null);
 
-          return (
-            <TouchableOpacity
-              key={n.id}
-              onPress={() => {
-                if (article) {
-                  router.push(`/article/${article.slug}`);
-                } else if (actor) {
-                  router.push(`/author/${actor.handle}`);
-                }
+  const reload = useCallback(async (before?: string) => {
+    try {
+      const auth = await bearer();
+      const r = await fetch(
+        `${API_BASE}/api/activity/feed${before ? `?before=${encodeURIComponent(before)}` : ''}`,
+        { headers: { ...auth } },
+      );
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const next: MobileActivityGroup[] = Array.isArray(j.items) ? j.items : [];
+      setItems((prev) => (before ? [...prev, ...next] : next));
+      setUnread(typeof j.unread === 'number' ? j.unread : 0);
+    } catch (e: any) {
+      if (!before) {
+        // Only surface hard errors on initial / pull-to-refresh to avoid noisy toasts during pagination
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let live = true;
+      setLoading(true);
+      reload();
+
+      // Register Expo push token lazily when user visits notifications
+      registerExpoPushToken().catch(() => {});
+
+      // Load cadence from secure storage and schedule repeating local reminders
+      const loadCadence = async () => {
+        try {
+          const raw = isWeb
+            ? typeof window !== 'undefined'
+              ? window.localStorage.getItem('activity:reminderMinutes')
+              : null
+            : await SecureStore.getItemAsync('activity:reminderMinutes');
+          const mins = Number(raw) || 0;
+          if (mins > 0) {
+            scheduleLocalActivityReminderEveryMinutes(mins).catch(() => {});
+          }
+        } catch {
+          /* ignore */
+        }
+      };
+      loadCadence();
+
+      // Open SSE stream for live unread & incremental updates
+      openActivitySseStream({
+        onEvent: (ev) => {
+          if (!live) return;
+          if (ev.type === 'unread' || ev.type === 'hello') {
+            setUnread(ev.unread);
+          }
+          if (ev.type === 'activity') {
+            // Brief delay then reload top of feed to pick up new row(s)
+            setTimeout(() => reload(), 250);
+          }
+        },
+        onError: () => {
+          /* no-op: reconnect happens automatically on next focus remount */
+        },
+      })
+        .then((handle) => {
+          sseCloseRef.current = handle.close;
+        })
+        .catch(() => {});
+
+      return () => {
+        live = false;
+        try {
+          sseCloseRef.current?.();
+        } catch {
+          /* ignore */
+        }
+        sseCloseRef.current = null;
+      };
+    }, [reload]),
+  );
+
+  const markAllRead = useCallback(async () => {
+    try {
+      const auth = await bearer();
+      const r = await fetch(`${API_BASE}/api/activity/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ all: true }),
+      });
+      if (r.ok) {
+        const j = await r.json().catch(() => ({}));
+        setUnread(typeof j.unread === 'number' ? j.unread : 0);
+        setItems((list) => list.map((x) => ({ ...x, read: true })));
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to mark as read');
+    }
+  }, []);
+
+  const markOneRead = useCallback(async (id: string) => {
+    try {
+      const auth = await bearer();
+      await fetch(`${API_BASE}/api/activity/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...auth },
+        body: JSON.stringify({ ids: [id] }),
+      });
+      setItems((list) =>
+        list.map((x) => (x.id === id ? { ...x, read: true } : x)),
+      );
+      setUnread((u) => Math.max(0, u - 1));
+    } catch {
+      /* optimistic-only fallback ok */
+    }
+  }, []);
+
+  const handlePressCard = useCallback(
+    (item: MobileActivityGroup) => {
+      if (!item.read) markOneRead(item.id);
+      try {
+        if (item.linkHref && item.linkHref.startsWith('/')) {
+          router.push(item.linkHref as any);
+          return;
+        }
+        if (item.articleSlug) {
+          router.push(`/article/${item.articleSlug}` as any);
+        } else if (item.commentId || item.highlightId) {
+          // Navigate to article if slug present; else no-op to stay on feed
+        }
+      } catch {
+        /* ignore router errors */
+      }
+    },
+    [markOneRead, router],
+  );
+
+  const renderSwipeRow = useCallback(
+    ({ item }: { item: MobileActivityGroup }) => {
+      if (item.read) {
+        return <MobileActivityCard item={item} onPress={() => handlePressCard(item)} />;
+      }
+      return (
+        <Swipeable
+          renderRightActions={() => <RightActions onPress={() => markOneRead(item.id)} />}
+          overshootRight={false}
+          friction={2}
+          rightThreshold={60}
+        >
+          <MobileActivityCard item={item} onPress={() => handlePressCard(item)} />
+        </Swipeable>
+      );
+    },
+    [handlePressCard, markOneRead],
+  );
+
+  const handleTestLocal = useCallback(() => {
+    fireTestLocalNotificationNow()
+      .then((id) => {
+        if (!id && Platform.OS !== 'web') {
+          Alert.alert('Note', 'Could not schedule test notification. Check permissions.');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <CustomHeader title="Activity" />
+      <Header unread={unread} onMarkAll={markAllRead} onTestLocal={handleTestLocal} />
+
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#0EA5E9" />
+          <Text style={styles.loadingLabel}>Loading activity…</Text>
+        </View>
+      ) : items.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(it) => it.id}
+          renderItem={renderSwipeRow}
+          style={{ flex: 1, backgroundColor: '#F8FAFC' }}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                reload();
               }}
-              style={styles.notificationItem}
-              activeOpacity={0.7}
-            >
-              {/* Avatar with action icon */}
-              <View style={styles.avatarWrapper}>
-                <Avatar uri={actor?.avatar} name={actor?.name} handle={actor?.handle} size={48} />
-                <View style={styles.actionIcon}>
-                  <Icon
-                    size={11}
-                    color={n.kind === 'LIKE' ? '#d4653a' : '#666666'}
-                    fill={n.kind === 'LIKE' ? '#d4653a' : 'none'}
-                    strokeWidth={2}
-                  />
-                </View>
-              </View>
-
-              {/* Content */}
-              <View style={styles.content}>
-                <Text style={styles.message} numberOfLines={3}>
-                  <Text style={styles.actorName}>{actor?.name || 'Someone'}</Text>
-                  <Text style={[styles.verb, { color: colors.textMuted }]}> {verbFor(n.kind)}</Text>
-                  {article && (
-                    <Text style={[styles.articleTitle, { color: colors.textPrimary }]}> "{article.title}"</Text>
-                  )}
-                </Text>
-                {n.body && (
-                  <Text style={[styles.replyPreview, { color: colors.textSecondary }]} numberOfLines={1}>
-                    "{n.body}"
-                  </Text>
-                )}
-                <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{formatRelativeTime(n.createdAt)}</Text>
-              </View>
-
-              {/* Article thumbnail */}
-              {article && (
-                <Image source={{ uri: article.cover || 'https://via.placeholder.com/56' }} style={styles.thumbnail} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+              tintColor="#0EA5E9"
+              colors={['#0EA5E9']}
+            />
+          }
+          onEndReached={() => {
+            const lastId = items[items.length - 1]?.id;
+            if (lastId) reload(lastId).catch(() => {});
+          }}
+          onEndReachedThreshold={0.5}
+          ItemSeparatorComponent={() => (
+            <View
+              style={{
+                height: StyleSheet.hairlineWidth,
+                backgroundColor: '#F1F5F9',
+                marginLeft: 88,
+              }}
+            />
+          )}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
-  subtitleRow: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E2E8F0',
   },
-  subtitle: {
-    fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  markAllRead: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  listContainer: {
-    paddingBottom: 100,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e8e4de',
-  },
-  avatarWrapper: {
-    position: 'relative',
-    marginTop: 2,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  actionIcon: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e5e0d8',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-  },
-  content: {
-    flex: 1,
-    paddingTop: 2,
-  },
-  message: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#333333',
-  },
-  actorName: {
-    fontWeight: '700',
-    color: '#000000',
-  },
-  verb: {
-    
-  },
-  articleTitle: {
-    
-  },
-  replyPreview: {
-    fontSize: 13,
-    fontStyle: 'italic',
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  timeAgo: {
+  headerSubtitle: {
     fontSize: 11,
-    fontWeight: '500',
-    marginTop: 6,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: '#475569',
   },
-  thumbnail: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    marginTop: 2,
+  markAllBtn: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: '#0EA5E9',
+  },
+  headerTestBtn: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: '#94A3B8',
+  },
+  loadingWrap: {
+    paddingTop: 64,
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingLabel: {
+    color: '#94A3B8',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  swipeAction: {
+    width: 90,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  swipeActionLabel: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  emptyWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 14,
+    paddingTop: 100,
+  },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#64748B',
+    textAlign: 'center',
   },
 });

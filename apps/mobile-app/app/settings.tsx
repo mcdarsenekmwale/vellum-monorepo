@@ -12,10 +12,12 @@ import {
   Switch,
   Platform,
   Linking,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as NotificationsLib from 'expo-notifications';
+import * as SecureStore from 'expo-secure-store';
 import {
   ChevronRight,
   X,
@@ -30,6 +32,8 @@ import {
   HelpCircle,
   Info,
   Volume2,
+  Clock,
+  Send,
 } from 'lucide-react-native';
 import { useSettingsStore, Appearance, LocaleTag } from '../context/SettingsStore';
 import { useThemeColors } from '../context/ThemeProvider';
@@ -39,6 +43,10 @@ import { sounds } from '../services/SoundService';
 import { backendApi, NotificationPreferences, ApiError } from '../services/BackendApi';
 import { CustomHeader, ThemedBackButton } from './_layout';
 import CustomSwitch from 'components/custom_switch';
+import {
+  fireTestLocalNotificationNow,
+  scheduleLocalActivityReminderEveryMinutes,
+} from '../lib/use-expo-push-registration';
 
 type SectionKey =
   | 'appearance'
@@ -115,9 +123,112 @@ export default function SettingsScreen() {
   const [notifBusy, setNotifBusy] = useState<Record<string, boolean>>({});
   const [osPermissionGranted, setOsPermissionGranted] = useState(true);
 
+  // Local activity reminder cadence + quiet hours
+  const [cadenceMinutes, setCadenceMinutes] = useState<number>(0);
+  const [quietHoursStart, setQuietHoursStart] = useState<string>('');
+  const [quietHoursEnd, setQuietHoursEnd] = useState<string>('');
+  const [cadenceOpen, setCadenceOpen] = useState(false);
+
   const overlayAnimated = useRef(new Animated.Value(0)).current;
   const sheetAnimated = useRef(new Animated.Value(0)).current;
   const [activeSheet, setActiveSheet] = useState<null | 'appearance' | 'language' | 'notifications'>(null);
+
+  const isWeb =
+    Platform.OS === 'web' ||
+    (typeof window !== 'undefined' &&
+      typeof window.localStorage !== 'undefined' &&
+      typeof window.document !== 'undefined');
+
+  async function storeGetItem(key: string): Promise<string | null> {
+    try {
+      if (isWeb) {
+        return typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      }
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  }
+
+  async function storeSetItem(key: string, value: string): Promise<void> {
+    try {
+      if (isWeb) {
+        if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+        return;
+      }
+      await SecureStore.setItemAsync(key, value);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const loadLocalNotifPrefs = useCallback(async () => {
+    try {
+      const [c, s, e] = await Promise.all([
+        storeGetItem('activity:reminderMinutes'),
+        storeGetItem('activity:quietHoursStart'),
+        storeGetItem('activity:quietHoursEnd'),
+      ]);
+      setCadenceMinutes(Number(c) || 0);
+      setQuietHoursStart(s ?? '');
+      setQuietHoursEnd(e ?? '');
+    } catch {
+      /* leave as defaults */
+    }
+  }, []);
+
+  const saveCadenceMinutes = useCallback(async (minutes: number) => {
+    setCadenceMinutes(minutes);
+    await storeSetItem('activity:reminderMinutes', String(minutes));
+    if (minutes > 0) {
+      scheduleLocalActivityReminderEveryMinutes(minutes).catch(() => {});
+    } else {
+      try {
+        await NotificationsLib.cancelAllScheduledNotificationsAsync().catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const saveQuietHoursStart = useCallback(async (v: string) => {
+    setQuietHoursStart(v);
+    await storeSetItem('activity:quietHoursStart', v);
+  }, []);
+
+  const saveQuietHoursEnd = useCallback(async (v: string) => {
+    setQuietHoursEnd(v);
+    await storeSetItem('activity:quietHoursEnd', v);
+  }, []);
+
+  const handleSendTest = useCallback(async () => {
+    try {
+      const id = await fireTestLocalNotificationNow();
+      if (id) {
+        toast('Test notification scheduled');
+      } else {
+        toast('Could not schedule test notification. Check permissions.');
+      }
+    } catch (e: any) {
+      toast(e?.message || 'Failed to schedule');
+    }
+  }, [toast]);
+
+  const CADENCE_OPTIONS: { minutes: number; label: string }[] = [
+    { minutes: 0, label: 'Off' },
+    { minutes: 15, label: 'Every 15 minutes' },
+    { minutes: 30, label: 'Every 30 minutes' },
+    { minutes: 60, label: 'Every hour' },
+    { minutes: 180, label: 'Every 3 hours' },
+    { minutes: 360, label: 'Every 6 hours' },
+    { minutes: 720, label: 'Every 12 hours' },
+    { minutes: 1440, label: 'Once a day' },
+  ];
+
+  const cadenceLabel = useMemo(() => {
+    const match = CADENCE_OPTIONS.find((o) => o.minutes === cadenceMinutes);
+    return match ? match.label : CADENCE_OPTIONS[0].label;
+  }, [cadenceMinutes]);
 
   const openSheet = useCallback((sheet: 'appearance' | 'language' | 'notifications') => {
     sounds().play('tap');
@@ -127,6 +238,7 @@ export default function SettingsScreen() {
     if (sheet === 'notifications') {
       setNotificationsOpen(true);
       loadNotificationPrefs();
+      loadLocalNotifPrefs();
       checkNotificationPermission().then((r) => setOsPermissionGranted(r.granted));
     }
     // react-native-web does not support useNativeDriver for Animated.spring/
@@ -151,6 +263,7 @@ export default function SettingsScreen() {
       setLanguageOpen(false);
       setNotificationsOpen(false);
       setOsPermissionGranted(false);
+      setCadenceOpen(false);
     });
   }, [overlayAnimated, sheetAnimated]);
 
@@ -592,6 +705,212 @@ export default function SettingsScreen() {
                       <Text style={[styles.sheetFooter, { color: colors.textMuted }]}>
                         {t('settings.emailSubtitle')}
                       </Text>
+
+                      {/* ===== Local reminder cadence + quiet hours + test push ===== */}
+                      <Text
+                        style={[
+                          styles.sheetSubtitle,
+                          { color: colors.textMuted, marginTop: 24 },
+                        ]}
+                      >
+                        LOCAL REMINDERS
+                      </Text>
+
+                      {/* Cadence dropdown */}
+                      <View
+                        style={[
+                          styles.localControlRow,
+                          { borderBottomColor: colors.separator },
+                        ]}
+                      >
+                        <View style={styles.localControlLeft}>
+                          <View
+                            style={[
+                              styles.optionIcon,
+                              { backgroundColor: colors.surfaceAlt },
+                            ]}
+                          >
+                            <Clock size={16} color={colors.textPrimary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                styles.localControlLabel,
+                                { color: colors.textPrimary },
+                              ]}
+                            >
+                              Reminder cadence
+                            </Text>
+                            <Text
+                              style={[
+                                styles.localControlHint,
+                                { color: colors.textMuted },
+                              ]}
+                            >
+                              Repeat local notification interval
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.cadencePickerTrigger,
+                          {
+                            backgroundColor: colors.surfaceAlt,
+                            borderColor: colors.separator,
+                          },
+                        ]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          sounds().play('tap');
+                          setCadenceOpen((v) => !v);
+                        }}
+                      >
+                        <Text style={[styles.cadencePickerValue, { color: colors.textPrimary }]}>
+                          {cadenceLabel}
+                        </Text>
+                        <ChevronRight
+                          size={16}
+                          color={colors.textMuted}
+                          style={{
+                            transform: [{ rotate: cadenceOpen ? '90deg' : '0deg' }],
+                          }}
+                        />
+                      </TouchableOpacity>
+                      {cadenceOpen && (
+                        <View
+                          style={[
+                            styles.cadenceDropdown,
+                            { backgroundColor: colors.surface, borderColor: colors.separator },
+                          ]}
+                        >
+                          {CADENCE_OPTIONS.map((opt) => {
+                            const selected = opt.minutes === cadenceMinutes;
+                            return (
+                              <TouchableOpacity
+                                key={opt.minutes}
+                                style={[
+                                  styles.cadenceOption,
+                                  { borderBottomColor: colors.separator },
+                                ]}
+                                activeOpacity={0.6}
+                                onPress={() => {
+                                  sounds().play('tap');
+                                  saveCadenceMinutes(opt.minutes);
+                                  setCadenceOpen(false);
+                                }}
+                              >
+                                <Text style={{ color: colors.textPrimary, fontSize: 14 }}>
+                                  {opt.label}
+                                </Text>
+                                {selected ? (
+                                  <Check size={18} color={colors.accent} />
+                                ) : (
+                                  <View style={{ width: 18 }} />
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {/* Quiet hours */}
+                      <View
+                        style={[
+                          styles.localControlRow,
+                          { marginTop: 18, borderBottomColor: colors.separator },
+                        ]}
+                      >
+                        <View style={styles.localControlLeft}>
+                          <View
+                            style={[
+                              styles.optionIcon,
+                              { backgroundColor: colors.surfaceAlt },
+                            ]}
+                          >
+                            <Moon size={16} color={colors.textPrimary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                styles.localControlLabel,
+                                { color: colors.textPrimary },
+                              ]}
+                            >
+                              Quiet hours
+                            </Text>
+                            <Text
+                              style={[
+                                styles.localControlHint,
+                                { color: colors.textMuted },
+                              ]}
+                            >
+                              Mute local reminders between these times (24h HH:MM)
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.quietHoursRow}>
+                        <View style={styles.quietHoursField}>
+                          <Text style={[styles.quietHoursLabel, { color: colors.textMuted }]}>
+                            Start
+                          </Text>
+                          <TextInput
+                            value={quietHoursStart}
+                            onChangeText={saveQuietHoursStart}
+                            placeholder="22:00"
+                            placeholderTextColor={colors.textMuted}
+                            keyboardType="numbers-and-punctuation"
+                            maxLength={5}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            style={[
+                              styles.quietHoursInput,
+                              {
+                                color: colors.textPrimary,
+                                backgroundColor: colors.surfaceAlt,
+                                borderColor: colors.separator,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <View style={styles.quietHoursField}>
+                          <Text style={[styles.quietHoursLabel, { color: colors.textMuted }]}>
+                            End
+                          </Text>
+                          <TextInput
+                            value={quietHoursEnd}
+                            onChangeText={saveQuietHoursEnd}
+                            placeholder="08:00"
+                            placeholderTextColor={colors.textMuted}
+                            keyboardType="numbers-and-punctuation"
+                            maxLength={5}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            style={[
+                              styles.quietHoursInput,
+                              {
+                                color: colors.textPrimary,
+                                backgroundColor: colors.surfaceAlt,
+                                borderColor: colors.separator,
+                              },
+                            ]}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Send test notification button */}
+                      <TouchableOpacity
+                        style={[
+                          styles.testButton,
+                          { backgroundColor: colors.accent },
+                        ]}
+                        activeOpacity={0.85}
+                        onPress={handleSendTest}
+                      >
+                        <Send size={16} color="#FFFFFF" />
+                        <Text style={styles.testButtonLabel}>Send test local notification</Text>
+                      </TouchableOpacity>
                     </>
                   )}
                 </View>
@@ -847,6 +1166,78 @@ function makeStyles(colors: ReturnType<typeof useThemeColors>) {
     itemDescription: {
       fontSize: 12,
       color: '#999999',
+    },
+
+    localControlRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    localControlLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    localControlLabel: { fontSize: 14, fontWeight: '600' },
+    localControlHint: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+    cadencePickerTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      marginTop: 8,
+    },
+    cadencePickerValue: { fontSize: 14, fontWeight: '500' },
+    cadenceDropdown: {
+      marginTop: 6,
+      borderRadius: 10,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    cadenceOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    quietHoursRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 8,
+    },
+    quietHoursField: { flex: 1, gap: 4 },
+    quietHoursLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+    quietHoursInput: {
+      height: 42,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      fontSize: 14,
+      textAlign: 'center',
+      letterSpacing: 2,
+    },
+    testButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      marginTop: 22,
+    },
+    testButtonLabel: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '700',
+      letterSpacing: 0.3,
     },
   });
 }
