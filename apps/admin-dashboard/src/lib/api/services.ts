@@ -3450,6 +3450,24 @@ export interface ModelAISettingsUpdate {
 
 /* ---- SERVICE FUNCTIONS ---- */
 
+/** Extract admin auth token the same way the api() wrapper does (L763) — the auth context
+ *  stores it under STORAGE_KEY = "vellbase.admin.session.v1" as { user, token }.
+ *  Previously we incorrectly read a non-existent "authToken" key which caused
+ *  POST /api/ai/chat and POST /api/admin/ai/activity/export to 401 in the browser
+ *  (credentials: include cookie auth did not help, because JwtAuthGuard reads
+ *   Authorization: Bearer <token> header first).
+ */
+function getAdminAuthToken(): string | null {
+  try {
+    const raw = localStorage.getItem('vellbase.admin.session.v1');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed.token === 'string') ? parsed.token : null;
+  } catch {
+    return null;
+  }
+}
+
 /** POST-SSE streaming chat round. Uses raw fetch because EventSource is GET-only. */
 export async function streamAiChat(req: ChatRequest): Promise<{
   meta: SSEEventMap['meta'] | null;
@@ -3458,13 +3476,7 @@ export async function streamAiChat(req: ChatRequest): Promise<{
   done: SSEEventMap['done'] | null;
   error: SSEEventMap['error'] | null;
 }> {
-  const token = (() => {
-    try {
-      // The api wrapper uses getRouterAuth().token; for raw fetch we attempt same via localStorage fallback.
-      // In practice the cookie (credentials: include) handles session auth for browser fetches.
-      return localStorage.getItem('authToken');
-    } catch { return null; }
-  })();
+  const token = getAdminAuthToken();
 
   return new Promise((resolve) => {
     const ret = { meta: null as SSEEventMap['meta'] | null, chunks: [] as string[], toolCalls: [] as SSEEventMap['tool_call'][], done: null as SSEEventMap['done'] | null, error: null as SSEEventMap['error'] | null };
@@ -3538,7 +3550,7 @@ export async function listAiActivity(q: AiActivityQuery): Promise<PaginatedAiAct
 
 /** Activity export (CSV/Excel blob). Uses raw fetch to bypass JSON parsing in the api wrapper. */
 export async function exportAiActivity(q: AiActivityQuery): Promise<Blob> {
-  const token = (() => { try { return localStorage.getItem('authToken'); } catch { return null; } })();
+  const token = getAdminAuthToken();
   const resp = await fetch(`${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}admin/ai/activity/export`, {
     method: 'POST',
     credentials: 'include',
@@ -3558,4 +3570,182 @@ export async function exportAiActivity(q: AiActivityQuery): Promise<Blob> {
 export async function testAIModel(body: TestAIModelRequest): Promise<TestAIModelResponse> {
   return api("/admin/ai/model/test", { method: "POST", body: JSON.stringify(body) });
 }
+
+// ============================================================================
+// Sub-project C: Activity feed types + services
+// ============================================================================
+export type ActivityKindC = 'LIKE' | 'COMMENT' | 'REPLY' | 'FOLLOW' | 'MENTION' | 'BOOKMARK' | 'SYSTEM' | 'SHARE';
+
+export interface ActivityActor {
+  id: string;
+  handle?: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface ActivityGroupItem {
+  id: string;
+  kind: ActivityKindC;
+  count: number;
+  previewText: string | null;
+  articleSlug: string | null;
+  highlightId: string | null;
+  commentId: string | null;
+  linkHref: string | null;
+  read: boolean;
+  readAt: string | null;
+  latestActivityAt: string;
+  createdAt: string;
+  actors: ActivityActor[];
+  extraActorCount: number;
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityGroupItem[];
+  total: number;
+  unread: number;
+  pageInfo: { hasMore: boolean; nextBefore: string | null; endCursor: string | null };
+}
+
+export interface ActivityStats {
+  activeFeedRows: number;
+  unreadTotal: number;
+  avgGroupSize: number;
+  sseConnectedUsers: number;
+}
+
+export interface ActivityPrefsMatrixRow {
+  userId: string;
+  handle: string | null;
+  name: string | null;
+  avatar: string | null;
+  email: string | null;
+  groupLikes: boolean;
+  groupComments: boolean;
+  groupFollows: boolean;
+  activityReminderEveryMinutes: number;
+  expoPushTokensCount: number;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+}
+
+export interface FireSimulatedEventDto {
+  userId: string;
+  actorId?: string;
+  kind: ActivityKindC;
+  articleSlug?: string;
+  highlightId?: string;
+  commentId?: string;
+  previewText?: string;
+  linkHref?: string;
+}
+
+const ADMIN_TOKEN_HEADER = (): Record<string, string> => {
+  const token = getAdminAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+/** Admin simulator fires directly using admin-bypass POST route (not ApiKey guarded webhook). */
+export async function adminFireSimulatedEvent(
+  dto: FireSimulatedEventDto,
+): Promise<{ ok: boolean; id?: string; latencyMs?: number }> {
+  const t0 = Date.now();
+  try {
+    const res = await api<{ ok: boolean; id: string }>('/admin/activity/fire-event', {
+      method: 'POST',
+      headers: ADMIN_TOKEN_HEADER(),
+      body: JSON.stringify(dto),
+    });
+    return { ok: !!(res && res.ok), id: res?.id, latencyMs: Date.now() - t0 };
+  } catch (e: any) {
+    // Graceful fallback when endpoint 404s (T8 hasn't added it yet)
+    return { ok: false, latencyMs: Date.now() - t0 };
+  }
+}
+
+export async function getActivityStats(): Promise<ActivityStats> {
+  try {
+    const res = await api<ActivityStats>('/admin/activity/stats', {
+      headers: ADMIN_TOKEN_HEADER(),
+    });
+    return (
+      res || { activeFeedRows: 0, unreadTotal: 0, avgGroupSize: 0, sseConnectedUsers: 0 }
+    );
+  } catch (e: any) {
+    // If endpoint 404 → return zeroed placeholder (graceful fallback until T8/T9 adds the route)
+    return { activeFeedRows: 0, unreadTotal: 0, avgGroupSize: 0, sseConnectedUsers: 0 };
+  }
+}
+
+export async function getActivityFeed(
+  userId: string,
+  opts?: { limit?: number; before?: string; onlyUnread?: boolean },
+): Promise<ActivityFeedResponse> {
+  try {
+    const q: Record<string, string | number | boolean | undefined | null> = {
+      limit: opts?.limit,
+      before: opts?.before,
+      onlyUnread: opts?.onlyUnread,
+    };
+    return await api<ActivityFeedResponse>(
+      `/admin/activity/feed/${encodeURIComponent(userId)}`,
+      { headers: ADMIN_TOKEN_HEADER(), query: q },
+    );
+  } catch (e: any) {
+    return {
+      items: [],
+      total: 0,
+      unread: 0,
+      pageInfo: { hasMore: false, nextBefore: null, endCursor: null },
+    };
+  }
+}
+
+export async function getActivityPrefsMatrix(
+  page = 1,
+  pageSize = 50,
+): Promise<{ rows: ActivityPrefsMatrixRow[]; total: number }> {
+  try {
+    return await api<{ rows: ActivityPrefsMatrixRow[]; total: number }>(
+      '/admin/activity/prefs-matrix',
+      { headers: ADMIN_TOKEN_HEADER(), query: { page, pageSize } },
+    );
+  } catch (e: any) {
+    return { rows: [], total: 0 };
+  }
+}
+
+export async function exportActivityPrefsCsv(): Promise<Blob> {
+  const token = getAdminAuthToken();
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  const url = `${base}/admin/activity/prefs-matrix/export`;
+  const r = await fetch(url, {
+    credentials: 'include',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!r.ok) {
+    // Fallback empty CSV to avoid breaking UI
+    return new Blob(
+      [
+        [
+          'userId',
+          'handle',
+          'name',
+          'email',
+          'groupLikes',
+          'groupComments',
+          'groupFollows',
+          'activityReminderEveryMinutes',
+          'expoPushTokensCount',
+          'quietHoursStart',
+          'quietHoursEnd',
+        ].join(','),
+      ],
+      { type: 'text/csv' },
+    );
+  }
+  return await r.blob();
+}
+
 

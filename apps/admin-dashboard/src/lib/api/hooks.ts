@@ -350,6 +350,18 @@ import {
   listAiActivity,
   exportAiActivity,
   testAIModel,
+  getActivityStats,
+  getActivityFeed,
+  getActivityPrefsMatrix,
+  adminFireSimulatedEvent,
+  exportActivityPrefsCsv,
+  type ActivityStats,
+  type ActivityGroupItem,
+  type ActivityFeedResponse,
+  type ActivityPrefsMatrixRow,
+  type FireSimulatedEventDto,
+  type ActivityKindC,
+  type ActivityActor,
 } from "./services";
 
 export type ListParams = {
@@ -3569,4 +3581,72 @@ export function useTestAIModel() {
     mutationFn: (body: TestAIModelRequest): Promise<TestAIModelResponse> => testAIModel(body),
   });
 }
+
+// ============================================================================
+// Sub-project C: Activity feed hooks
+// ============================================================================
+
+export function useActivityStats(opts?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['admin', 'activity', 'stats'],
+    queryFn: () => getActivityStats(),
+    staleTime: 15_000,
+    enabled: opts?.enabled ?? true,
+  });
+}
+
+export function useActivityFeed(
+  userId: string | null,
+  opts?: { limit?: number; onlyUnread?: boolean },
+) {
+  return useQuery({
+    queryKey: ['admin', 'activity', 'feed', userId, opts],
+    queryFn: () =>
+      userId
+        ? getActivityFeed(userId, opts)
+        : Promise.resolve<ActivityFeedResponse>({
+            items: [],
+            total: 0,
+            unread: 0,
+            pageInfo: { hasMore: false, nextBefore: null, endCursor: null },
+          }),
+    staleTime: 10_000,
+    enabled: !!userId,
+  });
+}
+
+export function useSimulatedEvent() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: FireSimulatedEventDto) => adminFireSimulatedEvent(dto),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ['admin', 'activity', 'stats'] });
+      client.invalidateQueries({ queryKey: ['admin', 'activity', 'feed'] });
+    },
+  });
+}
+
+export function useActivityPrefsMatrix(page = 1, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'activity', 'prefs-matrix', page, pageSize],
+    queryFn: () => getActivityPrefsMatrix(page, pageSize),
+    staleTime: 30_000,
+  });
+}
+
+export function useExportActivityPrefsCsv() {
+  return useMutation({
+    mutationFn: () => exportActivityPrefsCsv(),
+  });
+}
+
+export {
+  type ActivityStats,
+  type ActivityGroupItem,
+  type ActivityFeedResponse,
+  type ActivityPrefsMatrixRow,
+  type FireSimulatedEventDto,
+  type ActivityKindC,
+  type ActivityActor,
+};
 
