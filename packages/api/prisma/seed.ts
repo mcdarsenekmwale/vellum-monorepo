@@ -2,6 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { SETTINGS_DEFINITIONS } from '../src/modules/admin/settings-definitions';
 import { seedSupportAgents } from './seed-support-agents';
+import { runSeedActivityLikes } from './seed-activity-likes';
+import { runSeedActivityCommentsFollows } from './seed-activity-comments-follows';
+import { runSeedActivityMentionsReplies } from './seed-activity-mentions-replies';
+import { runSeedActivitySharesBookmarks } from './seed-activity-shares-bookmarks';
 
 const prisma = new PrismaClient();
 
@@ -541,6 +545,18 @@ async function main() {
     }
   }
   console.log(`FAQs seeded (created=${faqCreated}, updated=${faqUpdated}, total=${FAQS.length})`);
+
+  // ─── Seed activity feed data (likes / comments+replies / mentions+replies / shares+bookmarks)
+  //     Toggle via env: SEED_ACTIVITY=1 npm run seed   (or ts-node prisma/seed.ts)
+  if (process.env.SEED_ACTIVITY === '1') {
+    console.log('\n[seed] SEED_ACTIVITY=1 → running activity feed seeders…');
+    let total = 0;
+    total += await runSeedActivityLikes(prisma);
+    total += await runSeedActivityCommentsFollows(prisma);
+    total += await runSeedActivityMentionsReplies(prisma);
+    total += await runSeedActivitySharesBookmarks(prisma);
+    console.log(`[seed] activity seeders complete: +${total} notifications.\n`);
+  }
 }
 
 main()
