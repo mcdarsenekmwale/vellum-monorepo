@@ -41,6 +41,7 @@ model User {
   likes                      Like[]                       @relation("LikeUser")
   mediaUploads               Media[]                      @relation("MediaUploader")
   notifications              Notification[]               @relation("NotificationUser")
+  activities                  ActivityItem[]             @relation("ActivityFeedUser")
   refreshTokens              RefreshToken[]               @relation("RefreshTokenUser")
   sessions                   Session[]                    @relation("SessionUser")
   stories                    Story[]                      @relation("StoryAuthor")
@@ -113,6 +114,15 @@ model NotificationPreferences {
   emailDigest     Boolean      @default(true)
   emailMarketing  Boolean      @default(false)
   soundsEnabled   Boolean      @default(true)
+  // --- Sub-project C activity feed additions v1 ---
+  groupLikes                  Boolean    @default(true)
+  groupComments               Boolean    @default(true)
+  groupFollows                Boolean    @default(true)
+  activityReminderEveryMinutes Int       @default(0)
+  expoPushTokens              String[]   @default([])
+  quietHoursStart             String?    @db.VarChar(5)
+  quietHoursEnd               String?    @db.VarChar(5)
+  lastActivityNudgeAt         DateTime?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   userSettings    UserSettings @relation(fields: [userSettingsId], references: [id], onDelete: Cascade)
@@ -640,6 +650,7 @@ enum NotificationKind {
   ROLE_REQUEST_APPROVED
   ROLE_REQUEST_REJECTED
   ROLE_REQUEST_EXPIRED
+  SHARE
 }
 
 enum RolePermissionRequestStatus {
@@ -1518,4 +1529,31 @@ model AiConversation {
 
   @@index([userId, placement, lastMessageAt])
   @@map("ai_conversations")
+}
+
+model ActivityItem {
+  id               String           @id @default(uuid())
+  userId           String
+  kind             NotificationKind
+  groupingKey      String
+  actorIds         String[]         @db.Uuid
+  count            Int              @default(1)
+  previewText      String?
+  articleSlug      String?
+  highlightId      String?
+  commentId        String?
+  linkHref         String?
+  dismissedAt      DateTime?
+  read             Boolean          @default(false)
+  readAt           DateTime?
+  latestActivityAt DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user             User             @relation("ActivityFeedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupingKey])
+  @@index([userId])
+  @@index([userId, read])
+  @@index([userId, latestActivityAt(sort: Desc)])
 }
