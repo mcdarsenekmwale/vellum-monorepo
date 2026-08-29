@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { NotificationKind } from '@prisma/client';
@@ -19,7 +19,10 @@ export interface NotificationCreatedPayload {
 @Injectable()
 export class ActivityAggregatorService implements OnModuleInit {
   private readonly logger = new Logger(ActivityAggregatorService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   onModuleInit() {
     this.logger.log('Activity aggregator ready.');
@@ -119,6 +122,13 @@ export class ActivityAggregatorService implements OnModuleInit {
       commentId,
       linkHref || null,
     );
+
+    // Emit SSE push
+    try {
+      this.events.emit('sse.activity.created.' + userId, { userId, kind, id: groupingKey });
+      const unread = await this.countUnread(userId);
+      this.events.emit('sse.activity.unread.' + userId, { userId, unread });
+    } catch (_) { /* non-fatal */ }
   }
 
   buildDefaultPreview(kind: NotificationKind, who: string, target: { articleSlug?: string|null; highlightId?: string|null; commentId?: string|null }): string {
