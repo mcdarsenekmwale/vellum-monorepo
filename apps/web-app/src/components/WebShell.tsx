@@ -7,18 +7,22 @@ import {
   Bookmark,
   User,
   Search,
-  Bell,
   Settings,
   Plus,
   LogIn,
   UserPlus,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { WebBellInbox } from "@/components/activity/web-bell-inbox";
+import { useState, type ReactNode } from "react";
 import { useAuthState, useArticles } from "@/hooks/useApi";
 import { SuggestedAuthorsSidebar } from "@/components/SuggestedAuthorsSidebar";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { AiWebProfileCoachBar } from "./ai/web-profile-coach-bar";
+import { useAISnapshot } from "./ai/use-ai-snapshot";
+import AiWebProfileFAB from "./ai/web-profile-fab";
+import AiWebSharedChatDrawer from "./ai/web-shared-chat-drawer";
+import { cn } from "@/lib/utils";
 
-// Navigation items for authenticated users
 const authNavItems = [
   { to: "/", label: "navigation.home", icon: Home },
   { to: "/discover", label: "navigation.discover", icon: Compass },
@@ -27,7 +31,6 @@ const authNavItems = [
   { to: "/profile", label: "navigation.profile", icon: User },
 ] as const;
 
-// Navigation items for guests (public only)
 const guestNavItems = [
   { to: "/", label: "navigation.home", icon: Home },
   { to: "/discover", label: "navigation.discover", icon: Compass },
@@ -39,6 +42,16 @@ export function WebShell({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuthState();
   const { t } = useI18n();
   const { data: articlesData, isLoading: articlesLoading } = useArticles(1, 10);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isOwner = isAuthenticated && !!user;
+
+  const { data: aiSnapshot, loading: aiSnapshotLoading } = useAISnapshot({
+    profileUserId: (user as any)?.id ?? null,
+    profileUserHandle: (user as any)?.handle ?? null,
+    isOwner,
+    enabled: true,
+  });
 
   const articles = articlesData?.data ?? [];
   const suggestedAuthors = articles
@@ -63,7 +76,6 @@ export function WebShell({ children }: { children: ReactNode }) {
     )
     .slice(0, 5);
 
-
   const userDisplay = {
     name: user?.name || "Guest",
     handle: user?.handle || "@guest",
@@ -76,14 +88,15 @@ export function WebShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-[1280px] flex">
         {/* Left Sidebar */}
-        <aside className="sticky top-0 h-screen w-[244px] hidden md:flex flex-col border-r border-border px-6 py-8">
+        <aside className="sticky top-0 h-screen w-[244px] hidden md:flex flex-col border-r border-border px-6 py-8 overflow-y-auto">
           <Link
             to="/"
-            className="font-display italic text-3xl tracking-tight mb-10 inline-block"
+            className="font-display italic text-3xl tracking-tight mb-10 inline-block shrink-0"
           >
             Vellbase.
           </Link>
-          <nav className="flex flex-col gap-2 flex-1">
+
+          <nav className="flex flex-col gap-2 flex-1 min-h-0">
             {navItems.map((item) => {
               const active =
                 item.to === "/"
@@ -94,17 +107,18 @@ export function WebShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${
+                  className={cn(
+                    "flex items-center gap-4 px-4 py-3 rounded-xl transition-colors",
                     active
                       ? "bg-foreground text-background font-semibold"
-                      : "text-foreground hover:bg-muted"
-                  }`}
+                      : "text-foreground hover:bg-muted",
+                  )}
                 >
                   <Icon
-                    className="size-6"
+                    className="size-6 shrink-0"
                     strokeWidth={active ? 2.2 : 1.8}
                   />
-                  <span className="text-base">{t(item.label)}</span>
+                  <span className="text-base truncate">{t(item.label)}</span>
                 </Link>
               );
             })}
@@ -112,13 +126,13 @@ export function WebShell({ children }: { children: ReactNode }) {
             {isAuthenticated ? (
               <Link
                 to="/compose"
-                className="mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent text-white font-semibold hover:opacity-90 transition-opacity"
+                className="mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent text-white font-semibold hover:opacity-90 transition-opacity shrink-0"
               >
                 <Plus className="size-5" strokeWidth={2.2} />
                 <span>{t("navigation.compose")}</span>
               </Link>
             ) : (
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-2 shrink-0">
                 <Link
                   to="/login"
                   className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity"
@@ -137,13 +151,25 @@ export function WebShell({ children }: { children: ReactNode }) {
             )}
           </nav>
 
+          {/* AI Coach Bar */}
+          {isAuthenticated && (
+            <div className="mt-4 shrink-0">
+              <AiWebProfileCoachBar
+                snapshot={aiSnapshot}
+                snapshotLoading={aiSnapshotLoading}
+                isOwner={isOwner}
+                onOpenDrawer={() => setDrawerOpen(true)}
+              />
+            </div>
+          )}
+
           {/* User Profile Footer */}
-          <div className="border-t border-border pt-4 mt-4">
+          <div className="border-t border-border pt-4 mt-4 shrink-0">
             {isAuthenticated ? (
               <>
                 <Link
                   to="/profile"
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted"
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted min-w-0"
                 >
                   <Avatar
                     src={userDisplay.avatar}
@@ -165,13 +191,13 @@ export function WebShell({ children }: { children: ReactNode }) {
                   to="/settings"
                   className="mt-2 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted text-muted-foreground"
                 >
-                  <Settings className="size-5" strokeWidth={1.8} />
+                  <Settings className="size-5 shrink-0" strokeWidth={1.8} />
                   <span className="text-sm">{t("navigation.settings")}</span>
                 </Link>
               </>
             ) : (
               <div className="px-2 py-3">
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-muted-foreground">
                   Sign in to access your profile, saved articles, and more.
                 </p>
               </div>
@@ -181,36 +207,30 @@ export function WebShell({ children }: { children: ReactNode }) {
 
         {/* Main Content */}
         <main className="flex-1 min-w-0 pb-20 md:pb-0">
-          {/* Top Bar (mobile + search) */}
+          {/* Top Bar */}
           <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border">
             <div className="flex items-center justify-between px-6 md:px-10 py-4">
               <Link
                 to="/"
-                className="md:hidden font-display italic text-2xl"
+                className="md:hidden font-display italic text-2xl shrink-0"
               >
                 Vellbase.
               </Link>
               <div className="hidden md:flex flex-1 max-w-[280px]">
                 <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 w-full">
-                  <Search className="size-4 text-muted-foreground" />
+                  <Search className="size-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
                     placeholder={t("navigation.search")}
-                    className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground"
+                    className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground min-w-0"
                   />
                 </div>
               </div>
               <div className="flex items-center gap-3 ml-auto">
                 {isAuthenticated ? (
                   <>
-                    <Link
-                      to="/notifications"
-                      className="size-10 rounded-full bg-muted grid place-items-center hover:bg-accent/10 relative"
-                    >
-                      <Bell className="size-5" strokeWidth={1.8} />
-                      <span className="absolute top-2 right-2 size-2 bg-accent rounded-full" />
-                    </Link>
-                    <Link to="/profile" className="md:hidden">
+                    <WebBellInbox />
+                    <Link to="/profile" className="md:hidden shrink-0">
                       <Avatar
                         src={userDisplay.avatar}
                         alt=""
@@ -239,11 +259,24 @@ export function WebShell({ children }: { children: ReactNode }) {
               </div>
             </div>
           </header>
+
           <div className="px-4 md:px-10 py-6">{children}</div>
+
+          <AiWebSharedChatDrawer
+            open={drawerOpen}
+            onOpenChange={setDrawerOpen}
+            profileOwnerId={(user as any)?.id ?? null}
+            profileOwnerAvatar={user?.avatar ?? null}
+            profileOwnerName={user?.name ?? null}
+            isOwner={isOwner}
+            isAuthenticated={isAuthenticated}
+            viewerAvatar={user?.avatar ?? null}
+            viewerName={user?.name ?? null}
+          />
         </main>
 
         {/* Right Sidebar */}
-        <aside className="hidden lg:block w-[320px] flex-none p-8 sticky top-0 h-screen overflow-y-auto">
+        <aside className="hidden lg:block w-[320px] flex-none p-8 sticky top-0 h-screen overflow-y-hidden pb-24">
           {/* Suggested Authors */}
           <SuggestedAuthorsSidebar
             limit={5}
@@ -255,7 +288,7 @@ export function WebShell({ children }: { children: ReactNode }) {
           />
 
           {/* Trending */}
-          <div className="mb-8">
+          <div className="mb-5">
             <span className="text-sm text-muted-foreground font-semibold mb-4 block">
               {t("home.trending")} {t("common.now")}
             </span>
@@ -263,8 +296,8 @@ export function WebShell({ children }: { children: ReactNode }) {
               {articlesLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="flex gap-3">
-                      <div className="h-8 w-8 bg-muted rounded animate-pulse" />
-                      <div className="flex-1 space-y-2">
+                      <div className="h-8 w-8 bg-muted rounded animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-2 min-w-0">
                         <div className="h-2 w-full bg-muted rounded animate-pulse" />
                         <div className="h-3 w-3/4 bg-muted rounded animate-pulse" />
                       </div>
@@ -275,13 +308,13 @@ export function WebShell({ children }: { children: ReactNode }) {
                       key={a.slug}
                       to="/article/$slug"
                       params={{ slug: a.slug }}
-                      className="flex gap-3 group"
+                      className="flex gap-3 group min-w-0"
                     >
-                      <span className="text-2xl font-display italic text-muted-foreground/40 w-8">
+                      <span className="text-2xl font-display italic text-muted-foreground/40 w-8 shrink-0">
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-0.5">
+                        <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-0.5 truncate">
                           {a.category?.name ?? "Article"}
                         </p>
                         <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-accent transition-colors">
@@ -324,6 +357,13 @@ export function WebShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
       </div>
+
+      {/* ─── AI Coach FAB (fixed to viewport, outside sidebar flow) ─── */}
+      <AiWebProfileFAB
+        isOpen={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        className="!bottom-6 !right-6"
+      />
     </div>
   );
 }
