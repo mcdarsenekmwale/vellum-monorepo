@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ArticlesModule } from './modules/articles/articles.module';
@@ -26,6 +27,7 @@ import { HealthModule } from './modules/health/health.module';
 import { SuggestedModule } from './modules/suggested/suggested.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { HelpCenterModule } from './modules/help-center/help-center.module';
+import { ActivityModule } from './modules/activity/activity.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { CacheModule } from './shared/cache/cache.module';
 import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware';
@@ -45,6 +47,8 @@ import { AuthLoggerMiddleware } from './shared/middleware/auth-logger.middleware
     PrismaModule,
     CacheModule,
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    ActivityModule,
     AuthModule,
     UsersModule,
     ArticlesModule,
