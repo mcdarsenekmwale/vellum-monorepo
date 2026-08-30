@@ -154,6 +154,8 @@ export class ActivityController {
   // 3. SSE stream (raw stream + query-param token fallback, heartbeats 15s)
   // -------------------------------------------------------------------------
   @Get('stream')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Header('X-Accel-Buffering', 'no')
   @Header('Cache-Control', 'no-cache, no-transform')
   @Header('Content-Type', 'text/event-stream')
@@ -175,6 +177,9 @@ export class ActivityController {
       return;
     }
 
+    // Track SSE user connection for admin stats
+    this.aggregator.sseUserConnected(userId);
+
     res.flushHeaders?.();
     const send = (ev: string, data: any) => {
       res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -194,6 +199,7 @@ export class ActivityController {
       clearInterval(heartbeat);
       this.events.removeListener('sse.activity.created.' + userId, onAct);
       this.events.removeListener('sse.activity.unread.' + userId, onUnr);
+      this.aggregator.sseUserDisconnected(userId);
       res.end();
     });
   }

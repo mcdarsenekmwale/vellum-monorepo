@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { NotificationKind } from '@prisma/client';
 
 @Injectable()
 export class FollowsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async followUser(followerId: string, followingId: string) {
     if (followerId === followingId) {
@@ -12,6 +16,7 @@ export class FollowsService {
     }
 
     const MAX_RETRIES = 2;
+    let response: Record<string, any>;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -32,7 +37,7 @@ export class FollowsService {
         }
 
         try {
-          await this.prisma.follow.create({ data: { followerId, followingId } });
+          response = await this.prisma.follow.create({ data: { followerId, followingId } });
         } catch (createError: any) {
           if (createError?.code === 'P2002') {
             return { following: true };
@@ -40,7 +45,7 @@ export class FollowsService {
           throw createError;
         }
 
-        await this.prisma.notification.create({
+        const createdNotif = await this.prisma.notification.create({
           data: {
             userId: followingId,
             actorId: followerId,
@@ -48,7 +53,20 @@ export class FollowsService {
           },
         });
 
-        return { following: true };
+        // Emit notification.created for aggregator T2 listener
+        this.eventEmitter.emit('notification.created', {
+          notificationId: createdNotif.id,
+          userId: createdNotif.userId,
+          actorId: createdNotif.actorId ?? null,
+          kind: createdNotif.kind,
+          articleSlug: createdNotif.articleSlug ?? null,
+          highlightId: createdNotif.highlightId ?? null,
+          commentId: createdNotif.commentId ?? null,
+          previewText: createdNotif.body ?? null,
+          linkHref: null,
+        });
+
+        return { following: Boolean(response) || false };
       } catch (error: any) {
         const isRetryable =
           error?.code === 'P2002' ||

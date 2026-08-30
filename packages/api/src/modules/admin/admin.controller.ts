@@ -1,15 +1,19 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards, Post, UseInterceptors, UploadedFile, Req, BadRequestException, Patch, HttpException, HttpCode, HttpStatus, Res, Inject, forwardRef, Header } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Role, RolePermissionRequestStatus, RolePermissionRequestType } from '@prisma/client';
+import { Role, RolePermissionRequestStatus, RolePermissionRequestType, NotificationKind } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { SupportAdminGuard } from '../auth/support-admin.guard';
 import { WebhookTestRequest, WebhookTestService } from './webhook-test.service';
+import { LLMGatewayService } from './llm-gateway.service';
+import { PrismaService } from '../../shared/prisma/prisma.service';
+import { ActivityAggregatorService } from '../activity/activity-aggregator.service';
 
 
 // Role validation is handled by AdminService.resolveRole() / resolveRoleOrThrow
@@ -49,6 +53,10 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private webhookTestService: WebhookTestService,
+    private readonly llmGateway: LLMGatewayService,
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ActivityAggregatorService)) private readonly activityAgg: ActivityAggregatorService,
+    private readonly events: EventEmitter2,
   ) { }
 
   @Post('seed')
@@ -1072,7 +1080,11 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'AI settings updated' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   async updateAISettings(@Body() body: Record<string, any>) {
-    return this.adminService.updateAISettings(body);
+    const result = await this.adminService.updateAISettings(body);
+    // Invalidate LLM gateway cache so the next /api/ai/chat request immediately
+    // sees the newly persisted modelConfig (no 30s stale-read bug).
+    try { this.llmGateway.invalidateSettingsCache(); } catch { /* no-op */ }
+    return result;
   }
 
   @Post('ai/moderation/test')
@@ -1285,5 +1297,165 @@ export class AdminController {
     });
     await this.adminService.logAdminAiActivity(userId!, 'ai.model.test', 'AISettings', { model: body.model, success: r.success, latencyMs: r.latencyMs });
     return r;
+  }
+
+  /* ============ Activity Admin Routes ============ */
+
+  // B1 — Admin simulator: fire an activity event bypassing ApiKeyGuard / webhook guard.
+  // Writes a Notification row, calls aggregator.upsertGroup directly, pushes SSE, returns latency.
+  @Post('activity/fire-event')
+  @ApiOperation({ summary: 'Admin activity simulator — fire event directly without webhook key (bypasses ApiKeyGuard + NotificationKind webhook guard)' })
+  @ApiResponse({ status: 200, description: '{ ok, id, latencyMs, unread }' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  async adminFireActivityEvent(@Req() req: any, @Body() body: any) {
+    const t0 = Date.now();
+    actorId(req); // ensure auth valid per lesson #1 pattern
+
+    // ── DTO WHITELIST (Experience 856879): explicit coercion, no passthrough ──
+    const kindRaw = String(body.kind || '');
+    const kinds = Object.values(NotificationKind) as string[];
+    if (!kinds.includes(kindRaw))
+      throw new BadRequestException(`kind invalid, accepted: ${kinds.join(', ')}`);
+
+    const userIdRaw = String(body.userId || '').trim();
+    if (!userIdRaw) throw new BadRequestException('userId required');
+
+    const safe: {
+      userId: string;
+      actorId: string | null;
+      kind: NotificationKind;
+      articleSlug: string | null;
+      highlightId: string | null;
+      commentId: string | null;
+      previewText: string | null;
+      linkHref: string | null;
+    } = {
+      userId: userIdRaw,
+      actorId: body.actorId ? String(body.actorId).slice(0, 64) : null,
+      kind: kindRaw as NotificationKind,
+      articleSlug: body.articleSlug ? String(body.articleSlug).slice(0, 200) : null,
+      highlightId: body.highlightId ? String(body.highlightId).slice(0, 64) : null,
+      commentId: body.commentId ? String(body.commentId).slice(0, 64) : null,
+      previewText: body.previewText ? String(body.previewText).slice(0, 500) : null,
+      linkHref: body.linkHref ? String(body.linkHref).slice(0, 500) : null,
+    };
+
+    const created = await this.prisma.notification.create({
+      data: {
+        userId: safe.userId,
+        actorId: safe.actorId,
+        kind: safe.kind,
+        articleSlug: safe.articleSlug,
+        highlightId: safe.highlightId,
+        commentId: safe.commentId,
+        body: safe.previewText,
+      },
+    });
+
+    // Explicit aggregator upsert — direct call (not relying only on the event listener)
+    await this.activityAgg.upsertGroup({
+      notificationId: created.id,
+      userId: safe.userId,
+      actorId: created.actorId,
+      kind: created.kind,
+      articleSlug: created.articleSlug,
+      highlightId: created.highlightId,
+      commentId: created.commentId,
+      previewText: safe.previewText,
+      linkHref: safe.linkHref,
+    });
+
+    // Broadcast SSE push to any connected stream clients
+    const unread = await this.activityAgg.countUnread(safe.userId);
+    this.events.emit('sse.activity.created.' + safe.userId, { userId: safe.userId, kind: safe.kind, id: created.id });
+    this.events.emit('sse.activity.unread.' + safe.userId, { userId: safe.userId, unread });
+
+    return { ok: true, id: created.id, latencyMs: Date.now() - t0, unread };
+  }
+
+  // B2 — Activity stats aggregate for admin UI
+  @Get('activity/stats')
+  @ApiOperation({ summary: 'Admin activity KPIs: active feed rows, unread total, avg group size, SSE connected users' })
+  @ApiResponse({ status: 200, description: '{ activeFeedRows, unreadTotal, avgGroupSize, sseConnectedUsers }' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  async adminActivityStats() {
+    const [activeFeedRows, unreadTotal, avgGroupSizeRow] = await Promise.all([
+      this.prisma.activityItem.count({ where: { dismissedAt: null } }),
+      this.prisma.activityItem.count({ where: { read: false, dismissedAt: null } }),
+      this.prisma.$queryRawUnsafe<Array<{ avg: string | number }>>(
+        `SELECT COALESCE(AVG("count"),0)::float AS avg FROM "ActivityItem" WHERE "dismissedAt" IS NULL`,
+      ),
+    ]);
+    const avgGroupSize = Number(Array.isArray(avgGroupSizeRow) ? avgGroupSizeRow[0]?.avg || 0 : 0);
+    return {
+      activeFeedRows,
+      unreadTotal,
+      avgGroupSize: Number(avgGroupSize.toFixed(2)),
+      sseConnectedUsers: this.activityAgg.sseConnectedUsersCount(),
+    };
+  }
+
+  // B3 — Preferences matrix paginated (grouping toggles, cadence, expo tokens, quiet hours)
+  @Get('activity/prefs-matrix')
+  @ApiOperation({ summary: 'Paginated user notification preferences matrix: grouping toggles, cadence, expo tokens count, quiet hours' })
+  @ApiResponse({ status: 200, description: '{ rows, total }' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  async adminActivityPrefsMatrix(@Query() q: any) {
+    const page = Math.max(1, Number(q.page) || 1);
+    const pageSize = Math.min(500, Math.max(5, Number(q.pageSize) || 50));
+    const skip = (page - 1) * pageSize;
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(`
+      SELECT u.id as "userId", u.handle, u.name, u.avatar, u.email,
+        np."groupLikes", np."groupComments", np."groupFollows",
+        np."activityReminderEveryMinutes",
+        COALESCE(array_length(np."expoPushTokens", 1), 0)::int AS "expoPushTokensCount",
+        np."quietHoursStart", np."quietHoursEnd"
+      FROM "User" u
+      LEFT JOIN "UserSettings" us ON us."userId" = u.id
+      LEFT JOIN "NotificationPreferences" np ON np."userSettingsId" = us.id
+      ORDER BY u."createdAt" DESC
+      LIMIT ${pageSize} OFFSET ${skip}
+    `);
+    const total = await this.prisma.user.count();
+    return { rows, total };
+  }
+
+  // B3-export — CSV download of the prefs matrix
+  @Get('activity/prefs-matrix/export')
+  @ApiOperation({ summary: 'Export prefs matrix as CSV download (UTF-8 BOM for Excel)' })
+  @ApiResponse({ status: 200, description: 'CSV file streamed as attachment' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="activity-preferences.csv"')
+  @HttpCode(HttpStatus.OK)
+  async adminActivityPrefsMatrixExport(@Req() req: any, @Res() res: any) {
+    actorId(req); // per lesson #1: validate auth via local actorId helper
+    const all = await this.prisma.$queryRawUnsafe<any[]>(`
+      SELECT u.id as "userId", u.handle, u.name, u.email,
+        np."groupLikes", np."groupComments", np."groupFollows",
+        np."activityReminderEveryMinutes",
+        COALESCE(array_length(np."expoPushTokens", 1), 0)::int AS "expoPushTokensCount",
+        np."quietHoursStart", np."quietHoursEnd"
+      FROM "User" u
+      LEFT JOIN "UserSettings" us ON us."userId" = u.id
+      LEFT JOIN "NotificationPreferences" np ON np."userSettingsId" = us.id
+      ORDER BY u."createdAt" DESC
+      LIMIT 10000
+    `);
+    const q = (v: any): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const cols = ['userId', 'handle', 'name', 'email', 'groupLikes', 'groupComments', 'groupFollows', 'activityReminderEveryMinutes', 'expoPushTokensCount', 'quietHoursStart', 'quietHoursEnd'];
+    const header = cols.map(q).join(',');
+    const body = all.map((r: any) => cols.map(c => q(r[c])).join(',')).join('\n');
+    const csv = `${header}\n${body}\n`;
+    const BOM = '\uFEFF';
+    res.send(BOM + csv);
   }
 }

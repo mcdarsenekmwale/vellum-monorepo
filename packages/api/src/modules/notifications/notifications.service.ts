@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { NotificationKind } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -25,6 +26,7 @@ export class NotificationsService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -116,6 +118,20 @@ export class NotificationsService {
     metadata?: Record<string, any>;
   }) {
     const written = await this.prisma.notification.create({ data });
+
+    // Emit notification.created event immediately after successful write
+    // so the T2 aggregator listener can upsert the ActivityItem group.
+    this.eventEmitter.emit('notification.created', {
+      notificationId: written.id,
+      userId: written.userId,
+      actorId: written.actorId ?? null,
+      kind: written.kind,
+      articleSlug: written.articleSlug ?? null,
+      highlightId: written.highlightId ?? null,
+      commentId: written.commentId ?? null,
+      previewText: written.body ?? null,
+      linkHref: (data.metadata as any)?.linkHref ?? null,
+    });
 
     // Secondary channels: fire & forget with a short timeout so we never
     // block the call path. Each adapter receives its own "user" fetch so it

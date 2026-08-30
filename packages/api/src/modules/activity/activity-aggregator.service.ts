@@ -19,6 +19,8 @@ export interface NotificationCreatedPayload {
 @Injectable()
 export class ActivityAggregatorService implements OnModuleInit {
   private readonly logger = new Logger(ActivityAggregatorService.name);
+  private readonly openSockets = new Map<string, number>(); // userId → connection count
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
@@ -26,6 +28,23 @@ export class ActivityAggregatorService implements OnModuleInit {
 
   onModuleInit() {
     this.logger.log('Activity aggregator ready.');
+  }
+
+  /** Returns number of distinct users currently connected via SSE streams. */
+  sseConnectedUsersCount(): number {
+    return this.openSockets.size;
+  }
+
+  /** Track a new SSE stream opened for the given userId. */
+  sseUserConnected(userId: string) {
+    this.openSockets.set(userId, (this.openSockets.get(userId) || 0) + 1);
+  }
+
+  /** Track an SSE stream closure for the given userId. */
+  sseUserDisconnected(userId: string) {
+    const n = (this.openSockets.get(userId) || 1) - 1;
+    if (n <= 0) this.openSockets.delete(userId);
+    else this.openSockets.set(userId, n);
   }
 
   buildGroupingKey(kind: NotificationKind, row: Pick<NotificationCreatedPayload,'articleSlug'|'highlightId'|'commentId'>): string {
@@ -89,7 +108,7 @@ export class ActivityAggregatorService implements OnModuleInit {
       INSERT INTO "ActivityItem"
         (id, "userId", kind, "groupingKey", "actorIds", count, "previewText",
          "articleSlug", "highlightId", "commentId", "linkHref",
-         dismissedAt, read, "readAt", "latestActivityAt", "createdAt", "updatedAt")
+         "dismissedAt", "read", "readAt", "latestActivityAt", "createdAt", "updatedAt")
       VALUES (
         gen_random_uuid(),
         $1::uuid, $2::"NotificationKind", $3::text,
@@ -101,8 +120,9 @@ export class ActivityAggregatorService implements OnModuleInit {
         "actorIds" = CASE
           WHEN array_length("ActivityItem"."actorIds", 1) >= ${MAX_ACTORIDS}
             THEN "ActivityItem"."actorIds"
+          WHEN $4::uuid[] && "ActivityItem"."actorIds"
+            THEN "ActivityItem"."actorIds"
           ELSE array_cat("ActivityItem"."actorIds", $4::uuid[])
-            FILTER (WHERE NOT ($4::uuid[] && "ActivityItem"."actorIds"))
           END,
         count = "ActivityItem".count + 1,
         "latestActivityAt" = NOW(),

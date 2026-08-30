@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { NotificationKind, Prisma } from '@prisma/client';
 
 @Injectable()
 export class LikesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async toggleLike(userId: string, articleSlug?: string, highlightId?: string, commentId?: string) {
     if (!articleSlug && !highlightId && !commentId) {
@@ -19,7 +23,7 @@ export class LikesService {
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        return await this.prisma.$transaction(async (tx) => {
+        const txResult = await this.prisma.$transaction(async (tx) => {
           const existingLike = await tx.like.findFirst({ where });
 
           if (existingLike) {
@@ -27,26 +31,43 @@ export class LikesService {
               await tx.like.delete({ where: { id: existingLike.id } });
             } catch (deleteError: any) {
               if (deleteError?.code === 'P2025') {
-                return { liked: false };
+                return { liked: false, createdNotification: null };
               }
               throw deleteError;
             }
             await this.decrementCount(tx, targetKey, targetValue as string);
-            return { liked: false };
+            return { liked: false, createdNotification: null };
           }
 
           try {
             await tx.like.create({ data: { userId, articleSlug, highlightId, commentId } });
           } catch (createError: any) {
             if (createError?.code === 'P2002') {
-              return { liked: true };
+              return { liked: true, createdNotification: null };
             }
             throw createError;
           }
           await this.incrementCount(tx, targetKey, targetValue as string);
-          await this.maybeCreateNotification(tx, userId, targetKey, targetValue as string, articleSlug, highlightId, commentId);
-          return { liked: true };
+          const createdNotification = await this.maybeCreateNotification(tx, userId, targetKey, targetValue as string, articleSlug, highlightId, commentId);
+          return { liked: true, createdNotification };
         });
+
+        // Emit notification.created AFTER transaction commits successfully
+        if (txResult.createdNotification) {
+          const n = txResult.createdNotification;
+          this.eventEmitter.emit('notification.created', {
+            notificationId: n.id,
+            userId: n.userId,
+            actorId: n.actorId ?? null,
+            kind: n.kind,
+            articleSlug: n.articleSlug ?? null,
+            highlightId: n.highlightId ?? null,
+            commentId: n.commentId ?? null,
+            previewText: n.body ?? null,
+            linkHref: null,
+          });
+        }
+        return { liked: txResult.liked };
       } catch (error: any) {
         const isRetryable =
           error?.code === 'P2002' ||
@@ -91,7 +112,7 @@ export class LikesService {
     articleSlug?: string,
     highlightId?: string,
     commentId?: string,
-  ) {
+  ): Promise<any | null> {
     let authorId: string | null = null;
 
     if (targetKey === 'articleSlug') {
@@ -106,7 +127,7 @@ export class LikesService {
     }
 
     if (authorId && authorId !== userId) {
-      await tx.notification.create({
+      return await tx.notification.create({
         data: {
           userId: authorId,
           actorId: userId,
@@ -117,6 +138,7 @@ export class LikesService {
         },
       });
     }
+    return null;
   }
 
   async getLikedArticles(userId: string, page = 1, limit = 10) {
