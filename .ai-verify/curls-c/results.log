@@ -1,0 +1,20 @@
+== C-T9 CURL SUITE 16 GATES ==
+Using TARGET user id=5385eacb-3cbf-4ee0-82ca-f747ddfd5a6d; ADMIN_TOKEN length=247
+PASS G1 api/health HTTP 200
+PASS G2 admin login accessToken
+PASS G3 web consumer login accessToken
+PASS G4 activity/feed rows >=10 (got 16, HTTP 200)
+PASS G5 activity/unread-count integer >=0 (got 4, HTTP 200)
+PASS G6 SSE /activity/stream hello+data frames (hello=1, data=1)
+PASS G7 activity/read mode=all ok (HTTP 200, body={"ok":true,"affected":4,"unread":0})
+PASS G8 activity/preferences GET has groupLikes (HTTP 200)
+PASS G9 PUT prefs quiet hhmm persist (HTTP 200)
+PASS G10 expo register token count>=1 (got 1, HTTP 200)
+PASS G11 expo unregister token ok (HTTP 200)
+PASS G12 admin fire-event LIKE HTTP200 id (HTTP 201)
+PASS G13 admin stats activeFeedRows>=400 (got 555, HTTP 200)
+PASS G14 prefs-matrix total>=10 (got 149, HTTP 200)
+PASS G15 CSV export BOM+attachment+csv (attach=1, csv-type=1, bom=1, HTTP 200)
+PASS G16 B regression: /api/notifications/preferences still works web token (HTTP 200)
+=============
+PASS=16 FAIL=0
