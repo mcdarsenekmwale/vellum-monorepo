@@ -2,6 +2,24 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 
+/**
+ * Pure helper: returns true when `nowHM` (HH:MM 24h string) falls inside the
+ * quiet hours window [quietHoursStart, quietHoursEnd]. Correctly handles
+ * overnight wrap when start > end (e.g. 22:00 -> 08:00 the next day).
+ * Exported for testability.
+ */
+export function isInsideQuietHours(
+  nowHM: string,
+  quietHoursStart: string,
+  quietHoursEnd: string,
+): boolean {
+  if (quietHoursStart < quietHoursEnd) {
+    return nowHM >= quietHoursStart && nowHM <= quietHoursEnd;
+  } else {
+    return nowHM <= quietHoursEnd || nowHM >= quietHoursStart;
+  }
+}
+
 @Injectable()
 export class ActivityReminderService {
   private readonly logger = new Logger(ActivityReminderService.name);
@@ -35,11 +53,7 @@ export class ActivityReminderService {
 
       if (row.quietHoursStart && row.quietHoursEnd) {
         const nowHM = new Date().toTimeString().slice(0,5);
-        if (row.quietHoursStart < row.quietHoursEnd) {
-          if (nowHM >= row.quietHoursStart && nowHM <= row.quietHoursEnd) { skipped++; continue; }
-        } else {
-          if (nowHM <= row.quietHoursEnd || nowHM >= row.quietHoursStart) { skipped++; continue; }
-        }
+        if (isInsideQuietHours(nowHM, row.quietHoursStart, row.quietHoursEnd)) { skipped++; continue; }
       }
 
       try {
