@@ -37,6 +37,7 @@
     "bcrypt": "^6.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.61.1"
   },
   "overrides": {

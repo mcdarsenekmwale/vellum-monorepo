@@ -345,7 +345,7 @@ export function StatusRulesTable() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label="Threshold alert rules table">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>

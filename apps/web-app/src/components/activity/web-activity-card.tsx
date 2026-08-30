@@ -74,7 +74,7 @@ function AvatarCluster({
             <img
               src={a.avatar}
               className="w-full h-full object-cover"
-              alt=""
+              alt={a.name || a.handle || 'User avatar'}
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = 'none';
               }}

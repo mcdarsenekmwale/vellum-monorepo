@@ -361,7 +361,7 @@ export function StatusAlertsTable() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label="Status alerts table">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>

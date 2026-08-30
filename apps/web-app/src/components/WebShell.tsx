@@ -217,23 +217,25 @@ export function WebShell({ children }: { children: ReactNode }) {
                 Vellbase.
               </Link>
               <div className="hidden md:flex flex-1 max-w-[280px]">
-                <div className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 w-full">
+                <label className="flex items-center gap-2 bg-muted rounded-full px-4 py-2 w-full" htmlFor="webshell-search">
                   <Search className="size-4 text-muted-foreground shrink-0" />
+                  <span className="sr-only">Search</span>
                   <input
+                    id="webshell-search"
                     type="text"
                     placeholder={t("navigation.search")}
                     className="bg-transparent text-sm outline-none w-full placeholder:text-muted-foreground min-w-0"
                   />
-                </div>
+                </label>
               </div>
               <div className="flex items-center gap-3 ml-auto">
                 {isAuthenticated ? (
                   <>
                     <WebBellInbox />
-                    <Link to="/profile" className="md:hidden shrink-0">
+                    <Link to="/profile" className="md:hidden shrink-0" aria-label={userDisplay.handle ? `${userDisplay.handle} profile` : 'Go to profile'}>
                       <Avatar
                         src={userDisplay.avatar}
-                        alt=""
+                        alt={userDisplay.name || 'User avatar'}
                         name={userDisplay.name}
                         handle={userDisplay.handle}
                         size="sm"

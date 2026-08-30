@@ -1,0 +1,98 @@
+{
+  "timestamp": 1788129727494,
+  "dateStamp": "20260831",
+  "axeCoreVersion": "4.13.0",
+  "axeBuilder": "@axe-core/playwright",
+  "viewports": {
+    "desktop": "1440×900",
+    "mobile": "375×812"
+  },
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa"
+  ],
+  "disabledRules": [
+    "color-contrast",
+    "meta-viewport",
+    "landmark-unique",
+    "region"
+  ],
+  "totalSeriousCritical": 0,
+  "passBand": "A+ ≤5",
+  "results": [
+    {
+      "name": "A1-admin-root",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "A2-admin-notifications",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "A3-admin-ai-drawer",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "A4-admin-status",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "W1-web-root",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "W2-web-bell-open",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "W3-web-deeplink-highlight",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "W4-web-mobile-375-bell",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    },
+    {
+      "name": "W5-mobile-notifications-list",
+      "serious": 0,
+      "critical": 0,
+      "moderate": 0,
+      "minor": 0,
+      "violations": []
+    }
+  ]
+}
