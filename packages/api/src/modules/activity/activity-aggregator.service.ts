@@ -192,18 +192,20 @@ export class ActivityAggregatorService implements OnModuleInit {
     return this.prisma.activityItem.count({ where: { userId, read: false, dismissedAt: null } });
   }
 
-  async markRead(userId: string, opts: { ids?: string[]; all?: boolean }) {
+  async markRead(userId: string, opts: { ids?: string[]; all?: boolean }): Promise<{ affected: number; unread: number }> {
+    let result: { count: number } = { count: 0 };
     if (opts.all) {
-      await this.prisma.activityItem.updateMany({
+      result = await this.prisma.activityItem.updateMany({
         where: { userId, read: false },
         data: { read: true, readAt: new Date() },
       });
     } else if (opts.ids?.length) {
-      await this.prisma.activityItem.updateMany({
+      result = await this.prisma.activityItem.updateMany({
         where: { userId, id: { in: opts.ids }, read: false },
         data: { read: true, readAt: new Date() },
       });
     }
-    return this.countUnread(userId);
+    const unread = await this.countUnread(userId);
+    return { affected: Number(result.count || 0), unread };
   }
 }

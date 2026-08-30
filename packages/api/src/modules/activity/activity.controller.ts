@@ -128,6 +128,7 @@ export class ActivityController {
 
     return {
       nodes: hydrated,
+      rows: hydrated, // backward-compat alias for legacy / T9 curl gate G4 callers that expect rows[]
       pageInfo: {
         hasNextPage: hasMore,
         hasPreviousPage: !!q.before,
@@ -206,23 +207,43 @@ export class ActivityController {
 
   // -------------------------------------------------------------------------
   // 4. Mark read (ids OR all) — emits SSE unread event
+  //    Supports PUT body { all, ids } legacy DTO shape AND POST body { mode:"all"|"ids", ids } alias.
   // -------------------------------------------------------------------------
   @Put('read')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark activity items as read by ids or all' })
-  @ApiResponse({ status: 200, description: '{ unread: number } remaining' })
-  async markRead(@Req() req: any, @Body() body: MarkReadDto) {
+  @ApiOperation({ summary: 'Mark activity items as read by ids or all (PUT legacy)' })
+  @ApiResponse({ status: 200, description: '{ ok: true, affected, unread } remaining' })
+  async markReadPut(@Req() req: any, @Body() body: MarkReadDto) {
+    return this._markReadImpl(req, body);
+  }
+
+  @Post('read')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark activity items as read by ids or all — POST alias with mode:"all"|"ids"' })
+  @ApiResponse({ status: 200, description: '{ ok: true, affected, unread } remaining' })
+  async markReadPost(@Req() req: any, @Body() body: any) {
+    // Translate { mode: "all"|"ids", ids? } to legacy shape for impl
+    const translated: MarkReadDto = {
+      ids: body.ids,
+      all: body.mode === 'all' ? true : (body.all ?? false),
+    };
+    return this._markReadImpl(req, translated);
+  }
+
+  private async _markReadImpl(req: any, body: MarkReadDto) {
     const userId = actorId(req);
     if (!userId) throw new ForbiddenException('FORBIDDEN');
     if (!body.all && !body.ids?.length) {
-      throw new BadRequestException('Provide ids[] or all=true');
+      throw new BadRequestException('Provide ids[] or all=true (or mode:"all" via POST alias)');
     }
 
-    const unread = await this.aggregator.markRead(userId, { ids: body.ids, all: body.all });
+    const { affected, unread } = await this.aggregator.markRead(userId, { ids: body.ids, all: body.all });
     this.events.emit('sse.activity.unread.' + userId, { userId, unread });
-    return { unread };
+    return { ok: true, affected, unread };
   }
 
   // -------------------------------------------------------------------------
@@ -343,14 +364,30 @@ export class ActivityController {
 
   // -------------------------------------------------------------------------
   // 8. Expo push token register / unregister (dedup array)
+  //    Two route aliases coexist: legacy `expo-token` (used by mobile app) +
+  //    curl/Sub-C T9 alias `expo-push-token` (G10/G11 gate URLs).
   // -------------------------------------------------------------------------
   @Post('expo-token')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Register or unregister an Expo push token' })
+  @ApiOperation({ summary: 'Register or unregister an Expo push token (legacy route)' })
   @ApiResponse({ status: 200, description: '{ success: true, tokens: string[] }' })
   async handleExpoToken(@Req() req: any, @Body() body: ExpoTokenDto) {
+    return this._expoTokenImpl(req, body);
+  }
+
+  @Post('expo-push-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Register or unregister an Expo push token — Sub-C T9 curl alias route' })
+  @ApiResponse({ status: 200, description: '{ success: true, tokens: string[] }' })
+  async handleExpoPushToken(@Req() req: any, @Body() body: ExpoTokenDto) {
+    return this._expoTokenImpl(req, body);
+  }
+
+  private async _expoTokenImpl(req: any, body: ExpoTokenDto) {
     const userId = actorId(req);
     if (!userId) throw new ForbiddenException('FORBIDDEN');
     if (body.action !== 'register' && body.action !== 'unregister') {
