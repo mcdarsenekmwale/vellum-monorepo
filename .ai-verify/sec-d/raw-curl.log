@@ -1,0 +1,36 @@
+=== G1 resp status=401 ===
+{"statusCode":401,"message":"Unauthorized","timestamp":"2026-08-30T22:55:54.298Z","path":"/api/activity/feed"}
+=== G2 headers ===
+HTTP/1.1 200 OK
+Content-Security-Policy: default-src 'self';base-uri 'self';font-src 'self' data: https:;form-action 'self';frame-ancestors 'self';img-src 'self' data: https: http:;object-src 'none';script-src 'self' 'unsafe-inline' 'unsafe-eval';script-src-attr 'none';style-src 'self' 'unsafe-inline';upgrade-insecure-requests;connect-src 'self' http: https:;worker-src 'self' blob:
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: cross-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 60
+Content-Type: application/json; charset=utf-8
+Content-Length: 3758
+ETag: W/"eae-T7HvxMTO9rp9ZDIcoJAcUfvQfJw"
+Date: Sun, 30 Aug 2026 22:55:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+GOT 429 at request i=9
+=== G4A SQLi query-string payload HTTP 400 ===
+{"statusCode":400,"message":["limit must not be greater than 100","limit must not be less than 1","limit must be an integer number"],"timestamp":"2026-08-30T22:55:54.551Z","path":"/api/activity/feed?l
+=== G4B SQLi kind=''' OR '1'='1 payload HTTP 400 ===
+{"statusCode":400,"message":"kind invalid, accepted: LIKE, COMMENT, REPLY, FOLLOW, BOOKMARK, MENTION, SYSTEM, ROLE_REQUEST_SUBMITTED, ROLE_REQUEST_APPROVED, ROLE_REQUEST_REJECTED, ROLE_REQUEST_EXPIRED
+=== G5 Content-Type=Content-Type: application/json; charset=utf-8 script_literal_count=1 NOTIF=95db58e2-2c13-4732-9abe-5336843997cb ===
+{"nodes":[{"id":"ff908416-5d06-4347-b5f7-fc95ac762b8e","kind":"LIKE","count":2,"previewText":"<script>alert(document.cookie)</script><img src=x onerror=alert(1)>","articleSlug":null,"highlightId":null,"commentId":null,"linkHref":null,"read":false,"readAt":null,"latestActivityAt":"2026-08-31T06:55:54.603Z","createdAt":"2026-08-31T06:53:35.569Z","actorIds":[],"actors":[]},{"id":"aa980ddf-b6d2-43ff-b8ac-b0dbc839db83","kind":"REPLY","count":1,"previewText":"published a new article you might enjoy","articleSlug":"practical-guide-to-redis-streams","highlightId":null,"commentId":"de9d5075-6528-4031-8
+  Nest API main.ts helmet/CSP refs: 3 (separate — API only, not admin/web UI servers)
