@@ -1,0 +1,120 @@
+name: Testing Matrix (Sub-D T8)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mcdarsenemwale
+          POSTGRES_DB: vellum_db
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --include=workspaces
+      - run: npm -w packages/api exec prisma generate
+      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:unit
+
+  api-integ:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mcdarsenemwale
+          POSTGRES_DB: vellum_db
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --include=workspaces
+      - run: npm -w packages/api exec prisma generate
+      - run: npm -w packages/api exec prisma db push --skip-generate
+      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integ
+
+  api-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mcdarsenemwale
+          POSTGRES_DB: vellum_db
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --include=workspaces
+      - run: npm -w packages/api exec prisma generate
+      - run: npm -w packages/api exec prisma db push --skip-generate
+      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integrity
+
+  frontend-vitest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --include=workspaces
+      - run: npm run test:admin:unit
+      - run: npm run test:web:unit
