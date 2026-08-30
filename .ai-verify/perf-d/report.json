@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-08-30T20:52:14.483757Z",
+  "sla_keys": [
+    "STATUS_LIST",
+    "AI_SNAPSHOTS",
+    "ACTIVITY_FEED",
+    "ACTIVITY_UNREAD",
+    "ACTIVITY_STATS",
+    "ACTIVITY_PREFS",
+    "ACTIVITY_FEED_PAGE2"
+  ]
+}
