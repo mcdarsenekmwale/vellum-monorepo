@@ -3,6 +3,37 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EnhancedErrorBoundary } from "./EnhancedErrorBoundary";
 
+// ─── Mock useI18n hook with stub translations + mock Router Link ───
+const ERROR_BOUNDARY_STUB: Record<string, string> = {
+  "errors.generic": "Something went wrong",
+};
+
+vi.mock("@/components/providers/I18nProvider", async () => {
+  const actual: unknown = await vi.importActual("@/components/providers/I18nProvider");
+  const stubT = (k: string, _args?: Record<string, string | number>) =>
+    ERROR_BOUNDARY_STUB[k] ?? k;
+  return {
+    ...(actual as Record<string, unknown>),
+    useI18n: () => ({
+      locale: "en" as const,
+      setLocale: vi.fn(),
+      t: stubT,
+      tArray: (k: string) => stubT(k).split(",").map((s) => s.trim()),
+      getLocaleName: (_l: string) => "English",
+      supportedLocales: ["en" as const],
+      isRTL: false,
+      formatNumber: (n: number) => String(n),
+      formatDate: (d: Date) => d.toLocaleString(),
+    }),
+    useTranslate: () => stubT,
+    useLocale: () => "en" as const,
+    useSetLocale: () => vi.fn(),
+    useRTL: () => false,
+    useFormatNumber: () => (n: number) => String(n),
+    useFormatDate: () => (d: Date) => d.toLocaleString(),
+  };
+});
+
 vi.mock("@tanstack/react-router", async () => {
   const actual = await vi.importActual("@tanstack/react-router");
   return {

@@ -3,6 +3,40 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SmartState } from "./SmartState";
 
+// ─── Mock useI18n hook with stub translations matching test assertions ───
+const SMART_STATE_STUB: Record<string, string> = {
+  "common.loading": "Loading...",
+  "emptyStates.nothingHere": "Nothing here yet",
+  "emptyStates.pleaseTryAgain": "Please try again in a moment.",
+  "errors.generic": "Something went wrong",
+};
+
+vi.mock("@/components/providers/I18nProvider", async () => {
+  const actual: unknown = await vi.importActual("@/components/providers/I18nProvider");
+  const stubT = (k: string, _args?: Record<string, string | number>) =>
+    SMART_STATE_STUB[k] ?? k;
+  return {
+    ...(actual as Record<string, unknown>),
+    useI18n: () => ({
+      locale: "en" as const,
+      setLocale: vi.fn(),
+      t: stubT,
+      tArray: (k: string) => stubT(k).split(",").map((s) => s.trim()),
+      getLocaleName: (_l: string) => "English",
+      supportedLocales: ["en" as const],
+      isRTL: false,
+      formatNumber: (n: number) => String(n),
+      formatDate: (d: Date) => d.toLocaleString(),
+    }),
+    useTranslate: () => stubT,
+    useLocale: () => "en" as const,
+    useSetLocale: () => vi.fn(),
+    useRTL: () => false,
+    useFormatNumber: () => (n: number) => String(n),
+    useFormatDate: () => (d: Date) => d.toLocaleString(),
+  };
+});
+
 describe("SmartState", () => {
   it("renders children in success state", () => {
     render(

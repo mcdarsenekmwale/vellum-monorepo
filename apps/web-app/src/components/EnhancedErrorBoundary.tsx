@@ -29,7 +29,7 @@ function ErrorFallback({ error, onRetry }: { error?: Error; onRetry: () => void 
       </div>
       <h2 className="mt-6 text-lg font-semibold">{t("errors.generic")}</h2>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {error?.message || t("errors.generic")}
+        {error?.message || "An unexpected error occurred. Please try again or go back home."}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Button
