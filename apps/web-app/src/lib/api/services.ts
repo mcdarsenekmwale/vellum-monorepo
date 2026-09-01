@@ -94,7 +94,7 @@ async function httpFetch<T>(
   const apiBaseUrl =
     import.meta.env.VITE_API_BASE_URL ||
     (import.meta.env.DEV
-      ? 'http://localhost:3001'
+      ? 'http://127.0.0.1:3001'
       : 'https://ffzjnfcr4yvv2rn311ybs5tf.ewr.prisma.build');
   const qs = query
     ? '?' + new URLSearchParams(query as any).toString()
