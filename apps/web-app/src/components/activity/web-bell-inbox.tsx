@@ -39,10 +39,10 @@ export function WebBellInbox() {
 
   // ─── Paginated feed (cursor-based) ───
   const feedQuery = useWebActivityFeed({ limit: 20 });
-  const items = feedQuery.items;
-  const hasMore = feedQuery.hasMore;
-  const isLoadingMore = feedQuery.isLoadingMore && items.length > 0;
-  const isInitialLoading = feedQuery.isLoading && items.length === 0;
+  const items = feedQuery.items ?? [];
+  const hasMore = Boolean(feedQuery.hasMore);
+  const isLoadingMore = Boolean(feedQuery.isLoadingMore) && items.length > 0;
+  const isInitialLoading = Boolean(feedQuery.isLoading) && items.length === 0;
 
   // ─── Mark-all-read mutation (toasts on success) ───
   const markAll = useMarkWebActivityRead({
