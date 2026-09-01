@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-09-01T06:01:44.172Z",
+  "audit": "webapp-12-flows-T2",
+  "unique": [
+    "ERROR: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "bugs": [
+    {
+      "flow": "F2",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "ts": "2026-09-01T05:59:23.258Z"
+    },
+    {
+      "flow": "F3",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "ts": "2026-09-01T06:00:03.468Z"
+    },
+    {
+      "flow": "F4",
+      "severity": "med",
+      "category": "articles",
+      "detail": "No article cards found (tried selectors: a[href*=\"/article/\"] | li:has(a[href*=\"/article/\"]) | article:has(a[href*=\"/article/\"]) | [class*=\"ArticleCard\"] | [class*=\"article-card\"] | [data-testid*=\"article\"])",
+      "ts": "2026-09-01T06:00:55.569Z"
+    },
+    {
+      "flow": "F5",
+      "severity": "med",
+      "category": "articles",
+      "detail": "Could not click any article card (all selectors returned 0 visible)",
+      "ts": "2026-09-01T06:00:57.354Z"
+    },
+    {
+      "flow": "F6",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "ts": "2026-09-01T06:01:01.704Z"
+    },
+    {
+      "flow": "F9",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "ts": "2026-09-01T06:01:30.858Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "ts": "2026-09-01T06:01:36.934Z"
+    },
+    {
+      "flow": "F12",
+      "severity": "med",
+      "category": "bell",
+      "detail": "Bell button not visible in WebShell header",
+      "ts": "2026-09-01T06:01:44.037Z"
+    }
+  ]
+}

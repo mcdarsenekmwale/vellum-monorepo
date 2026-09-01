@@ -1,0 +1,43 @@
+Error: No tests found.
+Make sure that arguments are regular expressions matching test files.
+You may need to escape symbols like "$" or "*" and quote the arguments.
+
+FALLBACK config triggered; pw t9 didn't run our spec. Using temp config.
+
+Running 12 tests using 1 worker
+
+[1/12] [chromium] › tests/webapp-audit-12flows.spec.ts:216:5 › F1 — Landing / homepage (guest unauthenticated)
+[2/12] [chromium] › tests/webapp-audit-12flows.spec.ts:232:5 › F2 — Consumer login flow (token localStorage bootstrap + nav)
+[3/12] [chromium] › tests/webapp-audit-12flows.spec.ts:279:5 › F3 — Authenticated feed / home post-login
+[4/12] [chromium] › tests/webapp-audit-12flows.spec.ts:300:5 › F4 — Articles listing / browse cards page
+[5/12] [chromium] › tests/webapp-audit-12flows.spec.ts:338:5 › F5 — Article detail page (open first card)
+[6/12] [chromium] › tests/webapp-audit-12flows.spec.ts:382:5 › F6 — Search flow (open search, enter query, view results)
+[7/12] [chromium] › tests/webapp-audit-12flows.spec.ts:415:5 › F7 — User profile / author page
+[8/12] [chromium] › tests/webapp-audit-12flows.spec.ts:440:5 › F8 — Bookmarks / saved articles page
+[9/12] [chromium] › tests/webapp-audit-12flows.spec.ts:469:5 › F9 — Highlights / shorts feed page
+[10/12] [chromium] › tests/webapp-audit-12flows.spec.ts:498:5 › F10 — Settings page
+[11/12] [chromium] › tests/webapp-audit-12flows.spec.ts:520:5 › F11 — Help center / support tickets page
+[12/12] [chromium] › tests/webapp-audit-12flows.spec.ts:548:5 › F12 — Bell inbox: open panel, screenshot, mark read, close
+[chromium] › tests/webapp-audit-12flows.spec.ts:548:5 › F12 — Bell inbox: open panel, screenshot, mark read, close
+UNIQUE_NON_BENIGN_ERRORS=1
+
+BUGS_COUNT=8
+
+BUG: flow=F2 severity=med category=console-error
+
+BUG: flow=F3 severity=med category=console-error
+
+BUG: flow=F4 severity=med category=articles
+
+BUG: flow=F5 severity=med category=articles
+
+BUG: flow=F6 severity=med category=console-error
+
+BUG: flow=F9 severity=med category=console-error
+
+BUG: flow=F10 severity=med category=console-error
+
+BUG: flow=F12 severity=med category=bell
+
+  12 passed (3.0m)
+PW_REG_EXIT=0
