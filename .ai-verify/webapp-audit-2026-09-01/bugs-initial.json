@@ -1,0 +1,160 @@
+{
+  "generatedAt": "2026-09-01T05:17:22.498Z",
+  "audit": "webapp-12-flows-T2",
+  "unique": [
+    "ERROR: %o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modu",
+    "WARNING: Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+    "WARNING: Warning: Cannot read properties of undefined (reading 'some')",
+    "ERROR: In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <SafeFragment fallback={null}>\n      <SafeFragment getResetKey={function getResetKey} errorComponent={undefined} onCatch={function ",
+    "ERROR: <%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>"
+  ],
+  "bugs": [
+    {
+      "flow": "F2",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "%o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:12866:12)\n    at renderWithHooks (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:4213:19)\n    at updateFunctionComponent (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client",
+      "ts": "2026-09-01T05:15:30.502Z"
+    },
+    {
+      "flow": "F2",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+      "ts": "2026-09-01T05:15:30.503Z"
+    },
+    {
+      "flow": "F2",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: Cannot read properties of undefined (reading 'some')",
+      "ts": "2026-09-01T05:15:30.503Z"
+    },
+    {
+      "flow": "F3",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "%o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:12866:12)\n    at renderWithHooks (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:4213:19)\n    at updateFunctionComponent (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client",
+      "ts": "2026-09-01T05:16:05.189Z"
+    },
+    {
+      "flow": "F3",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+      "ts": "2026-09-01T05:16:05.190Z"
+    },
+    {
+      "flow": "F3",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: Cannot read properties of undefined (reading 'some')",
+      "ts": "2026-09-01T05:16:05.191Z"
+    },
+    {
+      "flow": "F3",
+      "severity": "low",
+      "category": "feed",
+      "detail": "0 story/image elements on post-auth feed",
+      "ts": "2026-09-01T05:16:46.544Z"
+    },
+    {
+      "flow": "F4",
+      "severity": "med",
+      "category": "articles",
+      "detail": "No article cards found (tried selectors: a[href*=\"/article/\"] | li:has(a[href*=\"/article/\"]) | article:has(a[href*=\"/article/\"]) | [class*=\"ArticleCard\"] | [class*=\"article-card\"] | [data-testid*=\"article\"])",
+      "ts": "2026-09-01T05:16:52.351Z"
+    },
+    {
+      "flow": "F5",
+      "severity": "med",
+      "category": "articles",
+      "detail": "Could not click any article card (all selectors returned 0 visible)",
+      "ts": "2026-09-01T05:16:54.126Z"
+    },
+    {
+      "flow": "F9",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "%o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:12866:12)\n    at renderWithHooks (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:4213:19)\n    at updateFunctionComponent (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client",
+      "ts": "2026-09-01T05:17:08.955Z"
+    },
+    {
+      "flow": "F9",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+      "ts": "2026-09-01T05:17:08.955Z"
+    },
+    {
+      "flow": "F9",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: Cannot read properties of undefined (reading 'some')",
+      "ts": "2026-09-01T05:17:08.956Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <button> button \n\n  ...\n    <SafeFragment fallback={null}>\n      <SafeFragment getResetKey={function getResetKey} errorComponent={undefined} onCatch={function onCatch}>\n        <SafeFragment fallback={function fallback}>\n          <MatchInnerImpl match={{id:\"/setti...\", ...}}>\n            <SettingsIndexPage>\n              <WebShell>\n                <div className=\"min-h-scre...\">\n                  <div className=\"mx",
+      "ts": "2026-09-01T05:17:13.808Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. button <button>",
+      "ts": "2026-09-01T05:17:13.808Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "%o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:12866:12)\n    at renderWithHooks (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:4213:19)\n    at updateFunctionComponent (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client",
+      "ts": "2026-09-01T05:17:13.991Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+      "ts": "2026-09-01T05:17:13.992Z"
+    },
+    {
+      "flow": "F10",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: Cannot read properties of undefined (reading 'some')",
+      "ts": "2026-09-01T05:17:13.992Z"
+    },
+    {
+      "flow": "F12",
+      "severity": "med",
+      "category": "console-error",
+      "detail": "%o\n\n%s\n\n%s\n TypeError: Cannot read properties of undefined (reading 'some')\n    at WebBellInbox (http://127.0.0.1:3000/src/components/activity/web-bell-inbox.tsx:59:26)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:12866:12)\n    at renderWithHooks (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client.js?v=3783e919:4213:19)\n    at updateFunctionComponent (http://127.0.0.1:3000/node_modules/.vite/deps/react-dom_client",
+      "ts": "2026-09-01T05:17:20.892Z"
+    },
+    {
+      "flow": "F12",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: The following error wasn't caught by any route! At the very least, consider setting an 'errorComponent' in your RootRoute!",
+      "ts": "2026-09-01T05:17:20.892Z"
+    },
+    {
+      "flow": "F12",
+      "severity": "low",
+      "category": "console-warning",
+      "detail": "Warning: Cannot read properties of undefined (reading 'some')",
+      "ts": "2026-09-01T05:17:20.892Z"
+    },
+    {
+      "flow": "F12",
+      "severity": "med",
+      "category": "bell",
+      "detail": "Bell button not visible in WebShell header",
+      "ts": "2026-09-01T05:17:20.912Z"
+    }
+  ]
+}
