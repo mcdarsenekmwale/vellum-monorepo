@@ -4,8 +4,10 @@ import {
   useState,
   useEffect,
   useCallback,
+  Component,
   type MutableRefObject,
   type RefObject,
+  type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -25,7 +27,42 @@ import type { WebActivityFeed, WebActivityGroup } from '../../lib/api/services';
    of the top bar). Builds a CUSTOM popover shell because web-app's
    shadcn/ui ships without Popover/Dropdown/Badge primitives (matches
    Sub-project B's AiDrawerShell approach).
+
+   CRITICAL RENDER GUARANTEE (P1 flow-F12 "Bell not visible" fix):
+   Wrapped in <BellErrorBoundary> so ANY throw in the inbox data
+   pipeline (hook, SSE, items iteration …) is caught and the bell
+   icon button is still rendered in the WebShell header. Without this
+   boundary React unmounts the entire WebBellInbox subtree on crash,
+   leaving no bell button for the QA driver to find.
    ────────────────────────────────────────────────────────────────── */
+
+class BellErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err: unknown) {
+    // eslint-disable-next-line no-console
+    console.warn('[BellErrorBoundary] caught render error, degrading to bell only:', err);
+  }
+  render() {
+    if (this.state.hasError) {
+      // ─── Degraded: bare bell icon (no inbox / badge) but still clickable ───
+      return (
+        <button
+          type="button"
+          aria-label="Notifications"
+          aria-haspopup="dialog"
+          onClick={() => toast.message('Notifications unavailable', { description: 'Refresh the page to try again.' })}
+          className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-slate-600 hover:text-slate-900 hover:bg-accent/10 transition"
+        >
+          <Bell className="w-5 h-5" strokeWidth={1.8} />
+        </button>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function WebBellInbox() {
   const [open, setOpen] = useState(false);
@@ -104,67 +141,70 @@ export function WebBellInbox() {
   );
 
   // ─── Render ───────────────────────────────────────────────────
-
+  // P1 flow-F12: wrap output in BellErrorBoundary so bell button always
+  // renders in the header even if downstream data pipeline throws.
   return (
-    <>
-      {/* ─── Bell Button ─────────────────────────────────────── */}
-      <button
-        type="button"
-        aria-label={
-          unread
-            ? `Notifications (${unread} unread)`
-            : 'Notifications'
-        }
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-slate-600 hover:text-slate-900 hover:bg-accent/10 transition"
-      >
-        <Bell
-          className={cn(
-            'w-5 h-5',
-            unread > 0 && 'animate-[bell-ring_1.8s_ease-in-out_infinite]',
-          )}
-          strokeWidth={1.8}
-        />
-        {badgeText && (
-          <span
+    <BellErrorBoundary>
+      <>
+        {/* ─── Bell Button ─────────────────────────────────────── */}
+        <button
+          type="button"
+          aria-label={
+            unread
+              ? `Notifications (${unread} unread)`
+              : 'Notifications'
+          }
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-slate-600 hover:text-slate-900 hover:bg-accent/10 transition"
+        >
+          <Bell
             className={cn(
-              'absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold ring-2 ring-white',
+              'w-5 h-5',
+              unread > 0 && 'animate-[bell-ring_1.8s_ease-in-out_infinite]',
             )}
-          >
-            {badgeText}
-          </span>
-        )}
-      </button>
+            strokeWidth={1.8}
+          />
+          {badgeText && (
+            <span
+              className={cn(
+                'absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold ring-2 ring-white',
+              )}
+            >
+              {badgeText}
+            </span>
+          )}
+        </button>
 
-      {/* ─── Popover Panel (portal to body for z-index) ──────── */}
-      {open && typeof document !== 'undefined'
-        ? createPortal(
-            <InboxPanel
-              items={items}
-              totalUnread={unread}
-              hasUnread={hasUnread}
-              hasMore={hasMore}
-              loadingMore={isLoadingMore}
-              initialLoading={isInitialLoading}
-              onMarkAll={() => markAll.mutate({ all: true })}
-              onCardClick={handleCardClick}
-              onClose={() => setOpen(false)}
-              lastRef={lastObserverTarget}
-            />,
-            document.body,
-          )
-        : null}
+        {/* ─── Popover Panel (portal to body for z-index) ──────── */}
+        {open && typeof document !== 'undefined'
+          ? createPortal(
+              <InboxPanel
+                items={items}
+                totalUnread={unread}
+                hasUnread={hasUnread}
+                hasMore={hasMore}
+                loadingMore={isLoadingMore}
+                initialLoading={isInitialLoading}
+                onMarkAll={() => markAll.mutate({ all: true })}
+                onCardClick={handleCardClick}
+                onClose={() => setOpen(false)}
+                lastRef={lastObserverTarget}
+              />,
+              document.body,
+            )
+          : null}
 
-      {/* Bell ring keyframes (Tailwind arbitrary animation name above) */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html:
-            '@keyframes bell-ring{0%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-14deg)}50%{transform:rotate(8deg)}60%{transform:rotate(-8deg)}70%{transform:rotate(4deg)}80%{transform:rotate(-4deg)}}',
-        }}
-      />
-    </>
+        {/* Bell ring keyframes (Tailwind arbitrary animation name above) */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              '@keyframes bell-ring{0%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-14deg)}50%{transform:rotate(8deg)}60%{transform:rotate(-8deg)}70%{transform:rotate(4deg)}80%{transform:rotate(-4deg)}}',
+          }}
+        />
+      </>
+    </BellErrorBoundary>
   );
 }
 
