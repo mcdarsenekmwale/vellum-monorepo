@@ -53,20 +53,20 @@ export function useActivitySse(enabled: boolean) {
         if (parsed.event === 'activity') {
           setEvents((prev) =>
             [
-              { type: 'activity', id: parsed.id, kind: parsed.kind },
+              { type: 'activity', id: parsed.id, kind: parsed.kind } as SseActivityEvent,
               ...prev,
             ].slice(0, 20),
           );
         } else if (parsed.event === 'unread') {
           setEvents((prev) =>
-            [{ type: 'unread', unread: parsed.unread }, ...prev].slice(0, 20),
+            [{ type: 'unread', unread: parsed.unread } as SseUnreadEvent, ...prev].slice(0, 20),
           );
         } else if (parsed.event === 'hello') {
           setEvents((prev) =>
-            [{ type: 'hello', unread: parsed.unread }, ...prev].slice(0, 20),
+            [{ type: 'hello', unread: parsed.unread } as { type: 'hello'; unread: number }, ...prev].slice(0, 20),
           );
         } else if (parsed.event === 'ping') {
-          setEvents((prev) => [{ type: 'ping' }, ...prev].slice(0, 20));
+          setEvents((prev) => [{ type: 'ping' } as { type: 'ping' }, ...prev].slice(0, 20));
         }
       } catch {
         // ignore malformed frame

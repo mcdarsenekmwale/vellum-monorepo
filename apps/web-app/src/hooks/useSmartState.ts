@@ -5,7 +5,7 @@ export type SmartStateType = "loading" | "shimmer" | "empty" | "error" | "succes
 export interface UseSmartStateOptions {
   isLoading: boolean;
   isError: boolean;
-  error?: Error | null;
+  error?: Error | string | null;
   data?: unknown;
   /**
    * Whether to use shimmer instead of spinner for loading state.

@@ -3,15 +3,17 @@ import { X, LogIn } from "lucide-react";
 import { useState } from "react";
 
 interface LoginPromptProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   action?: string;
 }
 
-export function LoginPrompt({ isOpen, onClose, action = "perform this action" }: LoginPromptProps) {
+export function LoginPrompt({ isOpen, open, onClose, action = "perform this action" }: LoginPromptProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const visible = isOpen ?? open ?? false;
 
-  if (!isOpen) return null;
+  if (!visible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -32,7 +32,7 @@ function FollowingPage() {
       try {
         const user = await apiClient.getUser(id);
         const result = await apiClient.getFollowing(user.id, 1, 50);
-        setFollowing(result.data as User[]);
+        setFollowing(result.data as unknown as User[]);
 
         const currentUser = await apiClient.getCurrentUser();
         if (currentUser && result.data.length > 0) {
@@ -48,7 +48,7 @@ function FollowingPage() {
           );
           const map: Record<string, boolean> = {};
           checks.forEach(([uid, isFollowing]) => {
-            map[uid as string] = isFollowing as boolean;
+            map[uid as string] = Boolean(isFollowing);
           });
           setFollowingMap(map);
         }
@@ -69,12 +69,12 @@ function FollowingPage() {
         return;
       }
       const wasFollowing = followingMap[userId] || false;
-      setFollowingMap((prev) => ({ ...prev, [userId]: !wasFollowing }));
+      setFollowingMap((prev) => ({ ...prev, [userId]: Boolean(!wasFollowing) }));
       const result = await toggleFollow(userId);
       if (result !== null) {
-        setFollowingMap((prev) => ({ ...prev, [userId]: result }));
+        setFollowingMap((prev) => ({ ...prev, [userId]: Boolean(result) }));
       } else {
-        setFollowingMap((prev) => ({ ...prev, [userId]: wasFollowing }));
+        setFollowingMap((prev) => ({ ...prev, [userId]: Boolean(wasFollowing) }));
       }
     } catch {
       setShowLoginPrompt(true);
@@ -116,6 +116,7 @@ function FollowingPage() {
     <WebShell>
       <div className="max-w-[680px] mx-auto">
         <Link
+          // @ts-expect-error TanStack Router typed-link restricts `to` to static literals; runtime correctly resolves dynamic $id param
           to={`/author/${id}`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
@@ -139,6 +140,7 @@ function FollowingPage() {
                 className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-accent/30 transition-colors"
               >
                 <Link
+                  // @ts-expect-error TanStack Router typed-link restricts `to` to static literals; runtime correctly resolves dynamic $handle param
                   to={`/author/${user.handle}`}
                   className="shrink-0"
                 >
@@ -151,6 +153,7 @@ function FollowingPage() {
                 </Link>
                 <div className="flex-1 min-w-0">
                   <Link
+                    // @ts-expect-error TanStack Router typed-link restricts `to` to static literals; runtime correctly resolves dynamic $handle param
                     to={`/author/${user.handle}`}
                     className="font-semibold hover:underline block truncate"
                   >

@@ -84,9 +84,9 @@ function AuthorPage() {
       setFollowing(!wasFollowing);
       const result = await toggleFollow(author.id);
       if (result !== null) {
-        setFollowing(result);
+        setFollowing(Boolean(result));
       } else {
-        setFollowing(wasFollowing);
+        setFollowing(Boolean(wasFollowing));
       }
     } catch {
       setShowLoginPrompt(true);
@@ -181,6 +181,7 @@ function AuthorPage() {
                           </p>
                         </div>
                         <Link
+                          // @ts-expect-error TanStack Router typed-link restricts `to` to static literals; runtime correctly resolves dynamic $id param for followers
                           to={`/author/${id}/followers`}
                           className="hover:opacity-70 transition-opacity"
                         >
@@ -192,6 +193,7 @@ function AuthorPage() {
                           </p>
                         </Link>
                         <Link
+                          // @ts-expect-error TanStack Router typed-link restricts `to` to static literals; runtime correctly resolves dynamic $id param for following
                           to={`/author/${id}/following`}
                           className="hover:opacity-70 transition-opacity"
                         >

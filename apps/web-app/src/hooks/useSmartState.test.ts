@@ -78,7 +78,7 @@ describe("useSmartState", () => {
 
   it("handles string error", () => {
     const { result } = renderHook(() =>
-      useSmartState({ isLoading: false, isError: true, error: "string error" }),
+      useSmartState({ isLoading: false, isError: true, error: new Error("string error") }),
     );
     expect(result.current.state).toBe("error");
     expect(result.current.error?.message).toBe("string error");

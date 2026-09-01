@@ -14,6 +14,7 @@ import {
 
 // ─── Web Activity Feed (cursor pagination with `before`) ───
 
+
 export interface UseWebActivityFeedResult
   extends Omit<UseQueryResult<WebActivityFeed, Error>, 'data'> {
   feed: WebActivityFeed | undefined;
@@ -50,7 +51,6 @@ export function useWebActivityFeed(opts?: {
       }),
     staleTime: 10_000,
     enabled: opts?.enabled ?? true,
-    keepPreviousData: true,
     retry: 1,
   });
 
@@ -96,9 +96,9 @@ export function useWebActivityFeed(opts?: {
     items: accumulated,
     loadNext,
     resetFeed,
-    isLoadingMore: loadingMoreRef.current || query.isFetching && before !== undefined,
+    isLoadingMore: loadingMoreRef.current || (query.isFetching && before !== undefined),
     hasMore: !!query.data?.pageInfo?.hasMore,
-  };
+  } as UseWebActivityFeedResult;
 }
 
 // ─── Unread Count ───

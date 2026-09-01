@@ -15,10 +15,9 @@ import {
   useMarkWebActivityRead,
   useWebActivityFeed,
   useWebActivityUnread,
-  type WebActivityFeed,
 } from '../../lib/api/hooks';
 import { WebActivityCard } from './web-activity-card';
-import type { WebActivityGroup } from '../../lib/api/services';
+import type { WebActivityFeed, WebActivityGroup } from '../../lib/api/services';
 
 /* ──────────────────────────────────────────────────────────────────
    WebBellInbox – global Instagram-style bell inbox panel.
@@ -340,7 +339,7 @@ function EmptyState() {
  * Adapted from Sub-project B's AiDrawerShell + useClickOutside pattern.
  */
 function useClickOutside(
-  ref: RefObject<HTMLElement>,
+  ref: RefObject<HTMLDivElement | null>,
   handler: () => void,
 ) {
   useEffect(() => {
@@ -360,7 +359,7 @@ function useClickOutside(
  * Used for infinite-scroll cursor paging.
  */
 function useIntersectionObserver(
-  targetRef: MutableRefObject<HTMLElement | null>,
+  targetRef: MutableRefObject<HTMLDivElement | null>,
   onIntersect: (entry: IntersectionObserverEntry) => void,
 ) {
   useEffect(() => {
