@@ -1,0 +1,59 @@
+=== T3 P0/P1 after fixes: tsc --noEmit 13:40:53 ===
+
+> @vellbase/web-app@1.0.0 typecheck
+> tsc --noEmit
+
+TSC_EXIT=0
+=== T3 after fixes vite build ===
+> @vellbase/web-app@1.0.0 build
+> vite build
+
+[36mvite v8.2.2 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 1957 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     1.78 kB │ gzip:   0.85 kB
+dist/assets/index-Cr1_ApdD.css     98.61 kB │ gzip:  15.80 kB
+dist/assets/index-CciDUosA.js   1,161.85 kB │ gzip: 298.94 kB
+
+[33m[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/lib/api.ts is dynamically imported by src/routes/register.tsx but also statically imported by src/components/SuggestedAuthorsSidebar.tsx, src/components/SuggestedForYou.tsx, src/components/providers/SettingsStore.tsx, src/hooks/useApi.ts, src/lib/auth.ts, ..., dynamic import will not move module into another chunk.
+[39m
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 410ms[39m
+BUILD_EXIT=0
+total 56
+drwxr-xr-x@  6 mcdarsenemwale  staff    192 Sep  1 13:40 .
+drwxr-xr-x@ 23 mcdarsenemwale  staff    736 Aug 31 05:06 ..
+drwxr-xr-x@  4 mcdarsenemwale  staff    128 Sep  1 13:40 assets
+-rw-r--r--@  1 mcdarsenemwale  staff  20373 Sep  1 13:40 favicon.ico
+-rw-r--r--@  1 mcdarsenemwale  staff   1523 Sep  1 13:40 favicon.svg
+-rw-r--r--@  1 mcdarsenemwale  staff   1783 Sep  1 13:40 index.html
+=== T3 after fixes vitest run ===
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.ts:11:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+[33mThe plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the [1mresolve.tsconfigPaths[22m option. You can remove the plugin and set [1mresolve.tsconfigPaths: true[22m in your Vite config instead.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/Users/mcdarsenemwale/projects/dev/ai_article_worskspace/apps/web-app[39m
+
+ [32m✓[39m src/hooks/useSmartState.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/hooks/usePermission.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/components/GuestGuard.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32m✓[39m src/components/SmartState.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[32m 149[2mms[22m[39m
+ [32m✓[39m src/components/EnhancedErrorBoundary.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 172[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m45 passed[39m[22m[90m (45)[39m
+[2m   Start at [22m 13:41:00
+[2m   Duration [22m 1.85s[2m (transform 780ms, setup 836ms, import 1.33s, tests 491ms, environment 4.56s)[22m
+
+VITEST_EXIT=0
+--- FINAL GATES AFTER P0P1 FIXES ---
+TSC_EXIT=0
+BUILD_EXIT=0
+VITEST_EXIT=0
