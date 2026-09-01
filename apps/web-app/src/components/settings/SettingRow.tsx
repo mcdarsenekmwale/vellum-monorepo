@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { type ReactNode } from "react";
+import { type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function SettingRow({
@@ -66,14 +66,28 @@ export function SettingRow({
       </Link>
     );
   }
+  // ─── onClick rendering: use <div role="button"> instead of native <button> ───
+  // Rationale: rows often contain nested interactive children (RowSwitch toggles,
+  // sheets, etc). HTML forbids <button> containing any other interactive element,
+  // which triggers React hydration warnings: "<button> cannot be a descendant of
+  // <button>". A div with ARIA role=button + keyboard affordances (Enter/Space) is
+  // spec-compliant accessible and allows arbitrary interactive content inside.
+  const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={onClick ? 0 : -1}
       onClick={onClick}
+      onKeyDown={handleKey}
       className={cn(className, !onClick && interactive && "cursor-default")}
       {...dataAttrs}
     >
       {body}
-    </button>
+    </div>
   );
 }
