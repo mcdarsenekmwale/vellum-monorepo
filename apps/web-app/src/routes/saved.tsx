@@ -68,7 +68,7 @@ function SavedPage() {
                   params={{ slug: a.slug }}
                   className="flex gap-4 p-4 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
                 >
-                  <img src={a.cover || undefined} alt="" className="size-24 rounded-lg object-cover shrink-0" />
+                  <img src={a.cover || undefined} alt={a.title || 'Article cover'} className="size-24 rounded-lg object-cover shrink-0" />
                   <div className="min-w-0 space-y-1 flex-1">
                     <p className="text-[10px] font-bold text-accent tracking-widest uppercase">
                       {a.category?.name || "Article"}

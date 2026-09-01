@@ -1,4 +1,9 @@
-import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  ErrorComponentProps,
+} from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SocialProvider } from "@/lib/social-store";
 import { Toaster } from "@/components/ui/sonner";
@@ -29,9 +34,40 @@ function NotFoundComponent() {
   );
 }
 
+function RootErrorComponent({ error, reset }: ErrorComponentProps) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="font-display italic text-5xl text-foreground">Oops</h1>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">
+          Something went wrong
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground break-words">
+          {error instanceof Error ? error.message : String(error)}
+        </p>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button
+            onClick={reset}
+            className="inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-background transition-opacity hover:opacity-90"
+          >
+            Try again
+          </button>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-full border border-border px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-muted"
+          >
+            Back to feed
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
+  errorComponent: RootErrorComponent,
 });
 
 function RootComponent() {

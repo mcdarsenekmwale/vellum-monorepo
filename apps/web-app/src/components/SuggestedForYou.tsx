@@ -442,6 +442,8 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
                     <button
                       onClick={() => handleShare(article)}
                       className="hover:text-amber-600 transition-colors"
+                      aria-label="Share article"
+                      title="Share article"
                     >
                       <Share2 className="size-4" strokeWidth={1.8} />
                     </button>
@@ -449,6 +451,8 @@ export function SuggestedForYou({ limit = 4 }: SuggestedForYouProps) {
                   <button
                     onClick={() => handleBookmark(article)}
                     className="hover:text-amber-600 transition-colors"
+                    aria-label={saved ? "Unsave article" : "Save article"}
+                    title={saved ? "Unsave article" : "Save article"}
                   >
                     <span key={bookmarkAnimKey} className={saved ? "ig-bounce" : ""}>
                       <Bookmark

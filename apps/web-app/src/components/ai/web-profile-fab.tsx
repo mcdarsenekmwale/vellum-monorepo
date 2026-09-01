@@ -61,11 +61,11 @@ export function AiWebProfileFAB({
       className={cn(
         'fixed z-40 right-6 bottom-6 size-11 rounded-full',
         'grid place-items-center',
-        'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-900/20',
-        'ring-1 ring-emerald-400/30',
+        'bg-accent text-white shadow-lg shadow-accent-900/20',
+        'ring-1 ring-accent-400/30',
         'transition-all duration-300 ease-out',
-        'hover:scale-105 hover:shadow-xl hover:shadow-emerald-900/25',
-        'active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-background',
+        'hover:scale-105 hover:shadow-xl hover:shadow-accent-900/25',
+        'active:scale-95 focus:outline-none focus:ring-2 focus:ring-accent-500/50 focus:ring-offset-2 focus:ring-offset-background',
         visible
           ? 'opacity-100 translate-y-0 pointer-events-auto'
           : 'opacity-0 translate-y-4 pointer-events-none',
@@ -78,7 +78,7 @@ export function AiWebProfileFAB({
       {visible && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full bg-emerald-400/30 animate-ping"
+          className="pointer-events-none absolute inset-0 rounded-full bg-accent-400/30 animate-ping"
           style={{ animationDuration: '1.6s', animationIterationCount: 1 }}
         />
       )}

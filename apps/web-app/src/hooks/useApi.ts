@@ -15,8 +15,9 @@ import type {
   TicketStatus,
   CreateTicketRequest,
   TicketListResponse,
-  TicketMessage,
 } from '../lib/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 
 // Generic hook for fetching data
 function useFetch<T>(
@@ -312,9 +313,14 @@ export function useAuthState() {
     const checkAuth = async () => {
       try {
         const currentUser = await apiClient.getCurrentUser();
+        
         if (currentUser) {
           const me = await apiClient.getMe();
-          setUser(me);
+          const profile = await apiClient.getUser(me.id);
+          setUser({
+            ...me,
+            ...profile,
+          });
           setIsAuthenticated(true);
         }
       } catch {
@@ -423,4 +429,71 @@ export function useReplyToTicket() {
   }, []);
 
   return { mutate, isLoading, error };
+}
+
+
+// ─── API Client Functions ───
+// ─── Followers Hook ───
+
+export function useFollowers(userId: string, page: number, limit: number, search: string) {
+  return useFetch(
+    () => apiClient.getFollowers(userId, page, limit, search),
+    [userId, page, limit, search]
+  );
+}
+
+// ─── Following Hook ───
+
+export function useFollowing(userId: string, page: number, limit: number, search: string) {
+  return useFetch(
+    () => apiClient.getFollowing(userId, page, limit, search),
+    [userId, page, limit, search]
+  );
+}
+
+// ─── Toggle Follow Hook ───
+
+export function useToggleFollow() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (targetUserId: string) => apiClient.toggleFollow(targetUserId),
+    onSuccess: (data, targetUserId) => {
+      // Invalidate and refetch relevant queries
+      queryClient.invalidateQueries({ queryKey: ['followers'] });
+      queryClient.invalidateQueries({ queryKey: ['following'] });
+      queryClient.invalidateQueries({ queryKey: ['user', targetUserId] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+// ─── Or, if you prefer the simpler version without React Query ───
+
+export function useToggleFollowSimple() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const toggleFollow = useCallback(async (targetUserId: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await apiClient.toggleFollow(targetUserId);
+      return response;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to toggle follow"));
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { toggleFollow, isLoading, error };
+}
+
+export function useCheckFollowStatus(userIds: string[]) {
+  return useFetch<{ [key: string]: boolean }>(
+    () => apiClient.checkFollowStatus(userIds),
+    ['follow-status', userIds.join(',')]
+  );
 }

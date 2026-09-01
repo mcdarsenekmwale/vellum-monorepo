@@ -178,6 +178,8 @@ export function AiWebSharedChatDrawer(props: AiWebSharedChatDrawerProps) {
 
       try {
         const token =
+          // @vellbase/api-client stores access token under "vellbase_access_token" (packages/api-client/src/client.ts L47)
+          localStorage.getItem('vellbase_access_token') ||
           localStorage.getItem('authToken') ||
           localStorage.getItem('token') ||
           localStorage.getItem('accessToken');
@@ -444,9 +446,9 @@ export function AiWebSharedChatDrawer(props: AiWebSharedChatDrawerProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                rows={1}
+                rows={2}
                 placeholder="Ask Vell AI Coach for help with growing your profile…"
-                className="flex-1 resize-none bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground max-h-36"
+                className="flex-1 resize-none bg-transparent px-3 py-2.5 text-[12px] outline-none placeholder:text-muted-foreground max-h-36"
                 style={{ minHeight: '40px' }}
                 onInput={(e) => {
                   const t = e.currentTarget;

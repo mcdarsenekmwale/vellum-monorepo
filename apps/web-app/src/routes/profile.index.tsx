@@ -10,10 +10,8 @@ import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { cn } from "@/lib/utils";
 import { FollowUser } from "@/lib/api";
-import { AiWebProfileCoachBar } from "@/components/ai/web-profile-coach-bar";
 import { AiWebProfileFAB } from "@/components/ai/web-profile-fab";
 import { AiWebSharedChatDrawer } from "@/components/ai/web-shared-chat-drawer";
-import { useAISnapshot } from "@/components/ai/use-ai-snapshot";
 
 function formatRelativeTime(dateStr: string | undefined): string {
   if (!dateStr) return "";
@@ -398,16 +396,6 @@ function ProfileIndexPage() {
   const [tab, setTab] = useState<"posts" | "saved" | "tagged">("posts");
   const currentProfile = user || profile;
 
-  // ─── AI Coach state ───
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const isOwner = isAuthenticated && !!user && user?.id === (currentProfile as any)?.id;
-  const { data: aiSnapshot, loading: aiSnapshotLoading } = useAISnapshot({
-    profileUserId: (currentProfile as any)?.id ?? null,
-    profileUserHandle: (currentProfile as any)?.handle ?? null,
-    isOwner,
-    enabled: true,
-  });
-
   // ─── Modal state ───
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -519,15 +507,7 @@ function ProfileIndexPage() {
                     className="size-32 ring-4 ring-accent ring-offset-4 ring-offset-card shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    {/* ─── AI Coach Bar (MUST remain ABOVE name+settings row — DOM-order literal spec) ─── */}
-                    <div className="mb-4">
-                      <AiWebProfileCoachBar
-                        snapshot={aiSnapshot}
-                        snapshotLoading={aiSnapshotLoading}
-                        isOwner={isOwner}
-                        onOpenDrawer={() => setDrawerOpen(true)}
-                      />
-                    </div>
+                   
                     <div className="flex items-center gap-4 mb-3 flex-wrap">
                       <h1 className="text-2xl font-semibold">{currentProfile?.handle || "@you"}</h1>
                       <Link
@@ -631,7 +611,7 @@ function ProfileIndexPage() {
                             className="aspect-square bg-muted rounded-lg overflow-hidden group relative"
                           >
                             {a.cover ? (
-                              <img src={a.cover} alt="" className="size-full object-cover transition-transform group-hover:scale-105" />
+                              <img src={a.cover} alt={a.title || 'Article cover'} className="size-full object-cover transition-transform group-hover:scale-105" />
                             ) : (
                               <div className="size-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">No image</span>
@@ -674,7 +654,7 @@ function ProfileIndexPage() {
                               <p className="text-xs text-muted-foreground">{a.author?.name || "Unknown"}</p>
                             </div>
                             {a.cover ? (
-                              <img src={a.cover} alt="" className="size-20 rounded-lg object-cover" />
+                              <img src={a.cover} alt={a.title || 'Article cover'} className="size-20 rounded-lg object-cover" />
                             ) : (
                               <div className="size-20 rounded-lg bg-muted flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">No image</span>
@@ -708,27 +688,8 @@ function ProfileIndexPage() {
           aria-label="New story"
         >
           <Pencil className="size-5" strokeWidth={2} />
-        </Link>
-
-        {/* ─── AI Coach FAB + Shared Drawer ─── */}
-        <AiWebProfileFAB
-          isOpen={drawerOpen}
-          onOpenChange={setDrawerOpen}
-          className="!bottom-28"
-        />
+        </Link>      
       </EnhancedErrorBoundary>
-
-      <AiWebSharedChatDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        profileOwnerId={(currentProfile as any)?.id ?? null}
-        profileOwnerAvatar={currentProfile?.avatar ?? null}
-        profileOwnerName={currentProfile?.name ?? null}
-        isOwner={isOwner}
-        isAuthenticated={isAuthenticated}
-        viewerAvatar={user?.avatar ?? null}
-        viewerName={user?.name ?? null}
-      />
 
       {/* ─── Followers/Following Modal ─── */}
       {modalState.userId && (

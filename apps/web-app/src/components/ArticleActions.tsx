@@ -47,12 +47,14 @@ function ActionButton({
   className,
   activeColor,
   active,
+  "aria-label": ariaLabel,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   className?: string;
   activeColor?: string;
   active?: boolean;
+  "aria-label"?: string;
 }) {
   const [animating, setAnimating] = useState(false);
 
@@ -67,6 +69,7 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
+      aria-label={ariaLabel}
       className={cn(
         "inline-flex items-center transition-colors duration-200",
         "hover:opacity-70 active:opacity-50",
@@ -130,6 +133,7 @@ export function ArticleActions({
       onClick={() => onCommentClick(articleSlug)}
       className="inline-flex items-center transition-colors duration-200 hover:opacity-70"
       style={{ color: isCommented ? activeTintColor : tintColor || "currentColor" }}
+      aria-label={isCommented ? "View comments" : "Comment on article"}
     >
       <MessageCircle className={config.icon} strokeWidth={1.8} />
     </button>
@@ -139,6 +143,7 @@ export function ArticleActions({
       params={{ slug: articleSlug }}
       className="inline-flex items-center transition-colors duration-200 hover:opacity-70"
       style={{ color: isCommented ? activeTintColor : tintColor || "currentColor" }}
+      aria-label="View comments"
     >
       <MessageCircle className={config.icon} strokeWidth={1.8} />
     </Link>
@@ -160,6 +165,7 @@ export function ArticleActions({
             active={isLiked}
             activeColor={activeTintColor}
             className={tintColor ? "" : "text-foreground"}
+            aria-label={isLiked ? "Unlike article" : "Like article"}
           >
             <Heart
               className={config.icon}
@@ -198,6 +204,7 @@ export function ArticleActions({
             onClick={handleShare}
             className="inline-flex items-center transition-colors duration-200 hover:opacity-70"
             style={{ color: tintColor || "currentColor" }}
+            aria-label="Share article"
           >
             <Share2 className={config.icon} strokeWidth={1.8} />
           </button>
@@ -209,6 +216,7 @@ export function ArticleActions({
             active={isBookmarked}
             activeColor={activeTintColor}
             className={tintColor ? "" : "text-foreground"}
+            aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
           >
             <Bookmark
               className={config.icon}

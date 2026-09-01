@@ -41,4 +41,7 @@ export type {
   SubscriptionPlan,
   SubscriptionStatus,
   RestorePurchasesResult,
+  FollowUser, 
+  FollowResponse
 } from '@vellbase/api-client/types';
+

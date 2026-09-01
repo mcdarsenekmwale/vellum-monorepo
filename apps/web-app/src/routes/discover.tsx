@@ -145,7 +145,7 @@ function DiscoverPage() {
                             <h4 className="text-base leading-tight font-semibold">{a.title}</h4>
                             <p className="text-xs text-muted-foreground">{a.author?.name || "Unknown"}</p>
                           </div>
-                          <img src={a.cover || undefined} alt="" className="size-16 rounded-lg object-cover shrink-0" />
+                          <img src={a.cover || undefined} alt={a.title || 'Article cover'} className="size-16 rounded-lg object-cover shrink-0" />
                         </Link>
                       </li>
                     ))}
@@ -230,7 +230,7 @@ function DiscoverPage() {
                         <span className="font-display italic text-4xl text-muted-foreground/30 w-12 shrink-0 text-center">
                           {i + 1}
                         </span>
-                        <img src={a.cover || undefined} alt="" className="size-20 rounded-lg object-cover shrink-0" />
+                        <img src={a.cover || undefined} alt={a.title || 'Article cover'} className="size-20 rounded-lg object-cover shrink-0" />
                         <div className="min-w-0 space-y-1 flex-1">
                           <p className="text-[10px] font-bold text-accent tracking-widest uppercase">{a.category?.name || "Article"}</p>
                           <h4 className="text-sm leading-tight font-semibold line-clamp-2">{a.title}</h4>

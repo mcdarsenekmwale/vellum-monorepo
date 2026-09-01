@@ -42,6 +42,8 @@ export function useAISnapshot(opts: {
     (async () => {
       try {
         const token =
+          // @vellbase/api-client stores access token under "vellbase_access_token" (packages/api-client/src/client.ts L47)
+          localStorage.getItem('vellbase_access_token') ||
           localStorage.getItem('authToken') ||
           localStorage.getItem('token') ||
           localStorage.getItem('accessToken');
@@ -59,20 +61,11 @@ export function useAISnapshot(opts: {
               opts.profileUserId,
             )}&limit=7`,
           );
-          urls.push(
-            `${apiBaseUrl}/api/posts?authorId=${encodeURIComponent(
-              opts.profileUserId,
-            )}&limit=7`,
-          );
-          urls.push(
-            `${apiBaseUrl}/api/users/${encodeURIComponent(
-              opts.profileUserId,
-            )}/articles?limit=7`,
-          );
+      
         }
         if (opts.profileUserHandle) {
           urls.push(
-            `${apiBaseUrl}/api/authors/${encodeURIComponent(
+            `${apiBaseUrl}/api/users/${encodeURIComponent(
               opts.profileUserHandle,
             )}/articles?limit=7`,
           );

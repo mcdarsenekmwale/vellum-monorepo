@@ -36,6 +36,30 @@
   --font-display: "Playfair Display", ui-serif, Georgia, serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  
+  /* ─── Chart Colors (1-10) ─── */
+  --color-chart-1: oklch(0.70 0.19 275);
+  --color-chart-2: oklch(0.72 0.15 200);
+  --color-chart-3: oklch(0.76 0.16 145);
+  --color-chart-4: oklch(0.78 0.16 60);
+  --color-chart-5: oklch(0.70 0.22 340);
+  --color-chart-6: oklch(0.78 0.36 30);
+  --color-chart-7: oklch(0.58 0.12 83);
+  --color-chart-8: oklch(0.78 0.46 190);
+  --color-chart-9: oklch(0.78 0.56 220);
+  --color-chart-10: oklch(0.65 0.18 290);
+  
+  /* ─── Extended Chart Colors (11-20) ─── */
+  --color-chart-11: oklch(0.80 0.14 110);
+  --color-chart-12: oklch(0.72 0.20 10);
+  --color-chart-13: oklch(0.68 0.25 320);
+  --color-chart-14: oklch(0.75 0.12 45);
+  --color-chart-15: oklch(0.70 0.30 250);
+  --color-chart-16: oklch(0.82 0.10 160);
+  --color-chart-17: oklch(0.60 0.28 350);
+  --color-chart-18: oklch(0.76 0.18 80);
+  --color-chart-19: oklch(0.68 0.22 300);
+  --color-chart-20: oklch(0.84 0.08 200);
 }
 
 :root {
@@ -72,6 +96,28 @@
   /* Phone frame surface (desktop backdrop) */
   --frame: oklch(0.86 0.01 80);
   --frame-foreground: var(--foreground);
+  
+  /* Chart color aliases for backward compatibility */
+  --chart-1: var(--color-chart-1);
+  --chart-2: var(--color-chart-2);
+  --chart-3: var(--color-chart-3);
+  --chart-4: var(--color-chart-4);
+  --chart-5: var(--color-chart-5);
+  --chart-6: var(--color-chart-6);
+  --chart-7: var(--color-chart-7);
+  --chart-8: var(--color-chart-8);
+  --chart-9: var(--color-chart-9);
+  --chart-10: var(--color-chart-10);
+  --chart-11: var(--color-chart-11);
+  --chart-12: var(--color-chart-12);
+  --chart-13: var(--color-chart-13);
+  --chart-14: var(--color-chart-14);
+  --chart-15: var(--color-chart-15);
+  --chart-16: var(--color-chart-16);
+  --chart-17: var(--color-chart-17);
+  --chart-18: var(--color-chart-18);
+  --chart-19: var(--color-chart-19);
+  --chart-20: var(--color-chart-20);
 }
 
 .dark {
@@ -95,9 +141,49 @@
   --frame: oklch(0.1 0.008 60);
 }
 
+/* ─── Animations ─── */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes slideOutLeft {
+  from { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translateX(-20px); 
+  }
 }
 
 @keyframes shimmer {
@@ -112,8 +198,79 @@
   100% { transform: scale(1); }
 }
 
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+@keyframes scaleOut {
+  from { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  to { 
+    opacity: 0; 
+    transform: scale(0.95); 
+  }
+}
+
+/* ─── Utility Classes ─── */
 @utility animate-entry {
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-entry-down {
+  animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-slide-out-left {
+  animation: slideOutLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+@utility animate-fade-out {
+  animation: fadeOut 0.3s ease both;
+}
+
+@utility animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-scale-out {
+  animation: scaleOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @utility shimmer {
@@ -127,17 +284,119 @@
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
+@utility pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@utility spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
 @utility no-scrollbar {
   &::-webkit-scrollbar { display: none; }
   scrollbar-width: none;
 }
 
+/* ─── Base Styles ─── */
 @layer base {
-  * { border-color: var(--color-border); }
+  * { 
+    border-color: var(--color-border); 
+  }
+  
   html, body {
     background-color: var(--color-frame);
     color: var(--color-foreground);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Selection styles */
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-foreground);
+  }
+  
+  /* Focus visible styles */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--color-muted);
+    border-radius: 2px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-muted-foreground);
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-foreground);
+  }
+}
+
+/* ─── Card Surface Styles ─── */
+@layer components {
+  .surface-card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .surface-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .surface-card-glass {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .surface-card-glass {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ─── Gradient Utilities ─── */
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(135deg, var(--color-accent) 0%, oklch(0.7 0.2 60) 100%);
+  }
+  
+  .gradient-warm {
+    background: linear-gradient(135deg, oklch(0.92 0.03 50) 0%, oklch(0.85 0.04 70) 100%);
+  }
+  
+  .dark .gradient-warm {
+    background: linear-gradient(135deg, oklch(0.25 0.02 50) 0%, oklch(0.2 0.03 70) 100%);
+  }
+}
+
+/* ─── Responsive Text Utilities ─── */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .text-pretty {
+    text-wrap: pretty;
   }
 }

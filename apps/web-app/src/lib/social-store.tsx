@@ -68,7 +68,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) setState((s) => ({ ...s, ...JSON.parse(raw) }));
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -85,6 +85,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           setState((s) => ({
             ...s,
             profile: {
+              id: user.id,
               name: user.name,
               handle: user.handle,
               bio: user.bio || "",
