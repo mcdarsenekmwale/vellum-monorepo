@@ -1,3 +1,8 @@
+---
+title: AI Agents
+layout: default
+---
+
 # AI Agents
 
 Vellbase documents an AI-agent automation model built on existing platform identities.

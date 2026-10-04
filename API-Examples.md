@@ -1,3 +1,8 @@
+---
+title: API Examples
+layout: default
+---
+
 # API Examples
 
 > Examples use placeholder hosts and credentials. Never commit real secrets.

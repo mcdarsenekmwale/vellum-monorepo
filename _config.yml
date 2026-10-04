@@ -1,5 +1,8 @@
 title: Vellbase Wiki
 description: Documentation for the Vellbase content platform monorepo
-theme: minima
 markdown: GFM
-baseurl: ""
+permalink: pretty
+exclude:
+  - README-WIKI-SETUP.md
+  - _Sidebar.md
+  - _Footer.md

@@ -1,3 +1,8 @@
+---
+title: Security
+layout: default
+---
+
 # Security
 
 ## Baseline

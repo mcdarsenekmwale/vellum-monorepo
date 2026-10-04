@@ -1,3 +1,8 @@
+---
+title: Admin Dashboard
+layout: default
+---
+
 # Admin Dashboard
 
 **Location:** `apps/admin-dashboard/`

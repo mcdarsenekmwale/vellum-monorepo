@@ -1,3 +1,8 @@
+---
+title: Web App
+layout: default
+---
+
 # Web App
 
 **Location:** `apps/web-app/`

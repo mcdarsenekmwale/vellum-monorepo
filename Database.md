@@ -1,3 +1,8 @@
+---
+title: Database
+layout: default
+---
+
 # Database
 
 Vellbase uses PostgreSQL through Prisma ORM. The schema is located at `packages/api/prisma/schema.prisma`.

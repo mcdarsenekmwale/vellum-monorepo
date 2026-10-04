@@ -1,3 +1,8 @@
+---
+title: Deployment
+layout: default
+---
+
 # Deployment
 
 ## Web and admin

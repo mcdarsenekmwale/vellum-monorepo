@@ -1,3 +1,8 @@
+---
+title: Architecture
+layout: default
+---
+
 # Architecture
 
 Vellbase is a monorepo with three application surfaces and reusable shared packages.

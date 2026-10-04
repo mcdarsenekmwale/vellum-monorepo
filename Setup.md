@@ -1,3 +1,8 @@
+---
+title: Setup
+layout: default
+---
+
 # Setup
 
 ## Requirements

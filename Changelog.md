@@ -1,3 +1,8 @@
+---
+title: Changelog
+layout: default
+---
+
 # Changelog
 
 A running log of feature commits and deployment-relevant changes across the Vellbase monorepo. Update this page whenever a feature branch merges or a deployment ships.

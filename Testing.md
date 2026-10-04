@@ -1,3 +1,8 @@
+---
+title: Testing
+layout: default
+---
+
 # Testing
 
 ## Current documented baseline

@@ -1,3 +1,8 @@
+---
+title: Webhooks
+layout: default
+---
+
 # Webhooks
 
 Vellbase provides an integration boundary for external systems and automated content publishing.

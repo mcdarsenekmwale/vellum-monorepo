@@ -1,3 +1,8 @@
+---
+title: Mobile App
+layout: default
+---
+
 # Mobile App
 
 **Location:** `apps/mobile-app/`

@@ -1,3 +1,8 @@
+---
+title: Shared Packages
+layout: default
+---
+
 # Shared Packages
 
 Shared packages prevent duplicate client implementations across web, mobile and admin surfaces.

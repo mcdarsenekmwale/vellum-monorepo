@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} — {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle">
+  <aside class="sidebar" role="navigation" aria-label="Documentation navigation">
+    <div class="sidebar-brand">
+      <a href="{{ '/' | relative_url }}" class="brand-link">
+        <span class="brand-mark">V</span>
+        <span class="brand-text">Vellbase</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-title">Overview</div>
+        <a href="{{ '/' | relative_url }}" class="nav-link">Home</a>
+        <a href="{{ '/Architecture/' | relative_url }}" class="nav-link">Architecture</a>
+        <a href="{{ '/Setup/' | relative_url }}" class="nav-link">Setup</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Applications</div>
+        <a href="{{ '/Web-App/' | relative_url }}" class="nav-link">Web App</a>
+        <a href="{{ '/Mobile-App/' | relative_url }}" class="nav-link">Mobile App</a>
+        <a href="{{ '/Admin-Dashboard/' | relative_url }}" class="nav-link">Admin Dashboard</a>
+        <a href="{{ '/Backend-API/' | relative_url }}" class="nav-link">Backend API</a>
+        <a href="{{ '/Database/' | relative_url }}" class="nav-link">Database</a>
+        <a href="{{ '/Shared-Packages/' | relative_url }}" class="nav-link">Shared Packages</a>
+        <a href="{{ '/Webhooks/' | relative_url }}" class="nav-link">Webhooks</a>
+        <a href="{{ '/AI-Agents/' | relative_url }}" class="nav-link">AI Agents</a>
+        <a href="{{ '/API-Examples/' | relative_url }}" class="nav-link">API Examples</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operations</div>
+        <a href="{{ '/Deployment/' | relative_url }}" class="nav-link">Deployment</a>
+        <a href="{{ '/Testing/' | relative_url }}" class="nav-link">Testing</a>
+        <a href="{{ '/Security/' | relative_url }}" class="nav-link">Security</a>
+        <a href="{{ '/Changelog/' | relative_url }}" class="nav-link">Changelog</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="https://github.com/mcdarsenekmwale/vellum-monorepo" target="_blank" rel="noopener" class="sidebar-github">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.1-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18.92-.26 1.91-.38 2.89-.39.98.01 1.97.13 2.89.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </aside>
+  <label for="sidebar-toggle" class="sidebar-overlay"></label>
+  <main class="main">
+    <header class="topbar">
+      <label for="sidebar-toggle" class="menu-btn" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </label>
+      <div class="topbar-title">{{ page.title | default: site.title }}</div>
+    </header>
+    <article class="content">
+      {{ content }}
+    </article>
+    <footer class="page-footer">
+      <span>&copy; {{ 'now' | date: "%Y" }} Vellbase. Built with GitHub Pages.</span>
+    </footer>
+  </main>
+</body>
+</html>

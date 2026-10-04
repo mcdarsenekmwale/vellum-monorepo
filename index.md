@@ -1,3 +1,8 @@
+---
+title: Vellbase
+layout: default
+---
+
 # Vellbase
 
 > A premium content platform monorepo with web, mobile, backend, administration, shared packages, and automation infrastructure.
