@@ -3,6 +3,6 @@
   "compilerOptions": {
     "types": ["node", "express", "multer", "jest", "supertest"]
   },
-  "include": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.d.ts"],
+  "include": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.d.ts", "__tests__/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

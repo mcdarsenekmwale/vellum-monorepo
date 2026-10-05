@@ -9,7 +9,7 @@ const config: Config = {
     '<rootDir>/__tests__/integ/**/*.spec.ts',    // integ subfolder
     '<rootDir>/__tests__/integrity/**/*.spec.ts' // integrity subfolder
   ],
-  transform: { '^.+\\.ts$': 'ts-jest' },
+  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.spec.json' }] },
   moduleFileExtensions: ['ts', 'js', 'json'],
   moduleNameMapper: {
     // ESM shims that are CLI-only uncommitted _shims files — still referenced so test works locally
