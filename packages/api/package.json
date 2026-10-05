@@ -11,7 +11,7 @@
     "start:prod": "node dist/src/main.js",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch --passWithNoTests",
-    "test:unit": "jest --config ./jest.config.ts --testPathIgnorePatterns=integ,integrity",
+    "test:unit": "jest --config ./jest.config.ts --testPathIgnorePatterns=integ",
     "test:integ": "jest --config ./jest.config.ts __tests__/integ/ --testPathIgnorePatterns=integrity",
     "test:integrity": "jest --config ./jest.config.ts __tests__/integrity/",
     "test:cov": "jest --config ./jest.config.ts --coverage --testPathIgnorePatterns=integ,integrity",

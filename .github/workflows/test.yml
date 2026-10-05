@@ -36,6 +36,7 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps --include=workspaces
       - run: npm -w packages/api exec prisma generate
+      - run: npm -w packages/api exec prisma db push --skip-generate
       - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:unit
 
   api-integ:
