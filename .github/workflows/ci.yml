@@ -15,7 +15,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Verify build dependencies are in correct package group
         run: cd packages/api && npm run check:build-deps
       - run: cd packages/api && npx prisma generate
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build:packages
       - run: npm run build:web
         env:
@@ -47,7 +47,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build:packages
       - run: npm run build:admin
         env:
@@ -62,7 +62,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build:packages
 
   deploy-migrations:
@@ -75,7 +75,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: cd packages/api && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -91,7 +91,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Deploy to Prisma Compute
         run: node packages/api/scripts/deploy-compute.mjs
         env:

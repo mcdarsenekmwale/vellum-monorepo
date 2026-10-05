@@ -12,7 +12,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Introspect production database schema
         working-directory: packages/api
         env:
