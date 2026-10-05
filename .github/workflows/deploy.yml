@@ -15,7 +15,7 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - uses: oven-sh/setup-bun@v2
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Verify build dependencies are in correct package group
         working-directory: packages/api
         run: npm run check:build-deps
@@ -40,7 +40,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build:packages
       - name: Deploy web-app to Vercel
         uses: amondnet/vercel-action@v25
@@ -63,7 +63,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build:packages
       - name: Deploy admin-dashboard to Vercel
         uses: amondnet/vercel-action@v25
