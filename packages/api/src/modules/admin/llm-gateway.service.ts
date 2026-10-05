@@ -170,6 +170,10 @@ export class LLMGatewayService {
     this.mock = new MockProvider();
   }
 
+  invalidateSettingsCache() {
+    this.settingsCache = null;
+  }
+
   private async resolveModelConfig(override?: Partial<ModelConfig>): Promise<{ cfg: ModelConfig; provider: Provider }> {
     const now = Date.now();
     if (!this.settingsCache || now - this.settingsCache.at > 30_000) {

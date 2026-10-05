@@ -13,9 +13,10 @@ import { PrismaModule } from '../../shared/prisma/prisma.module';
 import { CacheModule } from '../../shared/cache/cache.module';
 import { AccessRequestsModule } from '../access-requests/access-requests.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
-  imports: [PrismaModule, CacheModule, AccessRequestsModule, WebhooksModule],
+  imports: [PrismaModule, CacheModule, AccessRequestsModule, WebhooksModule, ActivityModule],
   controllers: [AIChatController, AdminController, AdminSseController],
   providers: [
     AdminService,
