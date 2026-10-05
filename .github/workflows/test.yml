@@ -37,7 +37,7 @@ jobs:
       - run: npm ci --legacy-peer-deps --include=workspaces
       - run: npm -w packages/api exec prisma generate
       - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" DIRECT_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm -w packages/api exec prisma db push --skip-generate
-      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:unit
+      - run: JWT_SECRET="test-secret-for-ci" DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:unit
 
   api-integ:
     runs-on: ubuntu-latest
@@ -69,7 +69,7 @@ jobs:
       - run: npm ci --legacy-peer-deps --include=workspaces
       - run: npm -w packages/api exec prisma generate
       - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" DIRECT_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm -w packages/api exec prisma db push --skip-generate
-      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integ
+      - run: JWT_SECRET="test-secret-for-ci" DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integ
 
   api-integrity:
     runs-on: ubuntu-latest
@@ -101,7 +101,7 @@ jobs:
       - run: npm ci --legacy-peer-deps --include=workspaces
       - run: npm -w packages/api exec prisma generate
       - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" DIRECT_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm -w packages/api exec prisma db push --skip-generate
-      - run: DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integrity
+      - run: JWT_SECRET="test-secret-for-ci" DATABASE_URL="postgresql://mcdarsenemwale@127.0.0.1:5432/vellum_db?schema=public" npm run test:api:integrity
 
   frontend-vitest:
     runs-on: ubuntu-latest
